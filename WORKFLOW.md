@@ -16,7 +16,7 @@
 - [ ] Chốt biến thể: Naïve Bayes (Gaussian hay Multinomial), linear (Logistic hay SVM), ensemble (RF, AdaBoost hay GB).
 - [ ] Chia việc cho từng người.
 
-### Giai đoạn 1: Nền tảng dùng chung (tuần 1)
+### Giai đoạn 1: Nền tảng dùng chung (tuần 1) TIẾN
 - [ ] Tải MNIST, chuẩn hoá, làm phẳng, chia train/val/test, cố định seed.
 - [ ] Cài các chỉ số: accuracy, precision, recall, F1 macro, confusion matrix (tính từ nhãn thật và nhãn dự đoán).
 - [ ] Hàm đo thời gian huấn luyện và dự đoán, hàm vẽ biểu đồ.
@@ -24,16 +24,15 @@
 
 > Đây là phần cả nhóm phụ thuộc vào, nên làm xong và gộp vào `main` trước khi tách ra làm riêng.
 
-### Giai đoạn 2: Cài đặt từng bộ phân lớp (tuần 2 trở đi)
+### Giai đoạn 2: Cài đặt từng bộ phân lớp (tuần 2 trở đi) 
 Mỗi bộ phân lớp đi qua cùng một vòng:
 
-1. Lý thuyết và công thức, viết ghi chú ngắn.
-2. Viết các bước thuật toán bằng pseudocode.
-3. Cài đặt trên tập con nhỏ (ví dụ vài nghìn ảnh) để chạy nhanh và dễ gỡ lỗi.
-4. Đối chiếu với scikit-learn.
-5. Chạy trên toàn bộ dữ liệu, ghi lại chỉ số và thời gian.
+1. Lý thuyết và công thức, viết ghi chú ngắn các bước thuật toán.
+2. Cài đặt trên tập con nhỏ (ví dụ vài nghìn ảnh) để chạy nhanh và dễ gỡ lỗi.
+3. Đối chiếu với scikit-learn.
+4. Chạy trên toàn bộ dữ liệu, ghi lại chỉ số và thời gian.
 
-Thứ tự đề xuất (từ dễ đến khó):
+Thứ tự đề xuất (từ dễ đến khó): **TIẾN 1, 3 - NHÂN 2, 4**
 
 | Thứ tự | Mô hình | Điểm cần lưu ý |
 |--------|---------|----------------|
@@ -42,12 +41,12 @@ Thứ tự đề xuất (từ dễ đến khó):
 | 3 | MLP | Forward, backward, khởi tạo trọng số, kiểm tra gradient bằng số (gradient checking). |
 | 4 | Ensemble | Cây quyết định là phần khó nhất; cần chọn tiêu chí chia (Gini/entropy) và giới hạn độ sâu để chạy được trong thời gian hợp lý. |
 
-### Giai đoạn 3: Thí nghiệm siêu tham số
+### Giai đoạn 3: Thí nghiệm siêu tham số TIẾN
 - [ ] Chọn ít nhất một thí nghiệm có biểu đồ (ví dụ: learning rate và số vòng lặp cho linear; số nơ-ron/số lớp cho MLP; số cây cho ensemble).
 - [ ] Mỗi lần chỉ thay đổi một siêu tham số, các yếu tố khác giữ nguyên.
 - [ ] Vẽ biểu đồ (accuracy trên train và val theo siêu tham số) và rút ra nhận xét: có overfit/underfit không, vì sao.
 
-### Giai đoạn 4: Đánh giá cuối và so sánh
+### Giai đoạn 4: Đánh giá cuối và so sánh NHÂN 2 cái, TIẾN 2 cái
 - [ ] Chốt cấu hình tốt nhất của từng mô hình dựa trên validation.
 - [ ] Chạy một lần trên test, điền bảng kết quả trong README.
 - [ ] Phân tích confusion matrix: các cặp chữ số hay bị nhầm (ví dụ 4–9, 3–5, 7–1) và giải thích.
@@ -64,6 +63,15 @@ Dàn ý gợi ý:
 7. Kết luận, hạn chế
 8. Phân công đóng góp của từng thành viên
 
+### Giai đoạn 6: Bùng nổ demo, múa lửa thuyết trình - phần mở rộng được gợi ý NHÂN
+
+ + Thử nghiệm thêm với các tập dữ liệu khác cùng dạng (Fashion-MNIST, EMNIST, chữ
+số viết tay tiếng Việt).
+ + Tăng cường dữ liệu (data augmentation: xoay, dịch, nhiễu) và đánh giá tác động.
+ + Cài đặt thêm CNN đơn giản và so sánh với MLP.
+ + Xây dựng giao diện demo (Streamlit / Gradio / Tkinter) cho phép người dùng vẽ chữ số
+và nhận kết quả dự đoán.
+
 ## 3. Mốc thời gian đề xuất
 
 Hạn nộp giữa kỳ và cuối kỳ do nhóm điền theo đề. Gợi ý chia mốc:
@@ -77,55 +85,5 @@ Hạn nộp giữa kỳ và cuối kỳ do nhóm điền theo đề. Gợi ý ch
 | Cuối kỳ - giữa | Ensemble chạy đúng, hoàn thành thí nghiệm |
 | Cuối kỳ - hạn | So sánh 4 phương pháp, báo cáo cuối, dọn repo |
 
-Luôn chừa **ít nhất 2-3 ngày** trước mỗi hạn để rà soát và sửa lỗi phút cuối.
 
-## 4. Quy trình Git cho nhóm
 
-### Nhánh
-- `main`: luôn chạy được, chỉ gộp qua Pull Request.
-- Nhánh làm việc đặt tên theo `loại/tên-việc`, ví dụ `feat/naive-bayes`, `feat/metrics`, `exp/linear-lr`, `docs/report`.
-
-### Vòng làm việc hằng ngày
-1. `git checkout main` rồi `git pull` để lấy bản mới nhất.
-2. `git checkout -b feat/ten-viec` để tạo nhánh.
-3. Làm việc, commit nhỏ và thường xuyên.
-4. `git push -u origin feat/ten-viec` để đẩy nhánh lên.
-5. Tạo Pull Request trên GitHub, nhờ người còn lại xem.
-6. Sau khi gộp, xoá nhánh và `git pull` về `main`.
-
-### Quy ước commit
-Message ngắn gọn, bắt đầu bằng động từ, ví dụ:
-- `Add accuracy and macro F1 metrics`
-- `Fix log-probability underflow in Naive Bayes`
-- `Add learning-rate experiment for linear model`
-
-### Tránh xung đột
-- Chia việc theo file/mô-đun, mỗi người một mô hình.
-- Không cùng sửa một file nếu không cần; nếu phải sửa file chung (ví dụ module metrics), báo cho nhau trước.
-- Jupyter Notebook: mỗi người một notebook riêng, logic chính đặt trong `src/`.
-- Không commit dữ liệu lớn, `.venv`, file kết quả nặng.
-
-### Pull Request
-Trước khi xin gộp, tự kiểm tra:
-- [ ] Chạy được từ đầu đến cuối, không lỗi
-- [ ] Đã đối chiếu với scikit-learn (nếu là mô hình mới)
-- [ ] Có ghi chú ngắn về cách dùng
-- [ ] Không có file thừa
-
-Người xem PR đọc để hiểu code, không chỉ để duyệt cho qua. Đây cũng là cách tốt để cả hai cùng nắm được toàn bộ đồ án.
-
-## 5. Quy trình chạy thí nghiệm
-
-1. Đặt seed.
-2. Huấn luyện trên tập train, chọn siêu tham số bằng val.
-3. Ghi lại: siêu tham số, chỉ số trên train/val, thời gian huấn luyện, thời gian dự đoán.
-4. Lưu kết quả vào `results/` (một dòng cho mỗi lần chạy).
-5. Chỉ chạy test sau khi đã chốt cấu hình.
-
-## 6. Khi gặp lỗi: cách gỡ lỗi
-
-- Mô hình cho accuracy xấp xỉ 10% → gần như đoán ngẫu nhiên, kiểm tra nhãn, chuẩn hoá, và chiều của dữ liệu.
-- Loss không giảm hoặc thành `nan` → learning rate quá lớn, hoặc lỗi trong gradient/log(0).
-- Accuracy train rất cao mà val thấp → overfit.
-- Accuracy cả train và val đều thấp → underfit hoặc lỗi cài đặt.
-- Khác scikit-learn nhiều → thử trên tập rất nhỏ rồi so từng bước trung gian.

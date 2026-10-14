@@ -36,7 +36,6 @@ MNIST gồm 70.000 ảnh xám 28×28 của chữ số viết tay từ 0 đến 9
 ├── .gitignore
 ├── data/            # dữ liệu MNIST (không đưa lên git)
 ├── src/
-│   ├── data/        # tải, chuẩn hoá, làm phẳng, chia tập
 │   ├── models/      # mỗi bộ phân lớp một file
 │   ├── metrics/     # accuracy, precision, recall, F1, confusion matrix
 │   └── utils/       # đo thời gian, vẽ biểu đồ, đặt seed
@@ -59,7 +58,10 @@ Thư viện dự kiến: `numpy`, `matplotlib`, `pandas`, `scikit-learn` (chỉ 
 
 ## 6. Dữ liệu
 
-- Tải MNIST về thư mục `data/` (cách tải ghi lại ở đây khi nhóm chốt).
+- Tải MNIST về thư mục `data/raw` 
+```
+python src/preprocessing/download_data.py
+```
 - Chia tập: _ảnh_ huấn luyện / _ảnh_ validation (tách từ 60.000 ảnh huấn luyện) / 10.000 ảnh kiểm thử.
 - Tiền xử lý: chia pixel cho 255, làm phẳng 28×28 thành vector 784 chiều.
 - Seed cố định: _điền_.
