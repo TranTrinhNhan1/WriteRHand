@@ -35,33 +35,42 @@ def preprocess(X_raw, mean, std):
     X = X_raw.reshape(-1, 784).float() / 255.0
     return (X - mean) / std
 
-def prepare_mnist(Xtr_raw, ytr_raw, Xte_raw, yte_raw,
+def prepare_mnist(Xtr_raw, ytr_raw, Xte_raw, yte_raw, has_validation=True,
                   seed=SEED, n_train=50000):
     '''
     preprocess va chia tap train - validation - test
+    dung cho K-fold thi has_validation=False
     '''
     g = torch.Generator().manual_seed(seed)
     perm = torch.randperm(len(Xtr_raw), generator=g) # tensor cac idx hoan vi ngau nhien
 
     tr_idx = perm[:n_train]
     va_idx = perm[n_train:]
+    if has_validation:
+        # Tính mean và std chỉ từ tập train
+        X_raw_train = Xtr_raw[tr_idx]
+        X_scaled_train = X_raw_train.reshape(-1, 784).float() / 255.0
 
-    # Tính mean và std chỉ từ tập train
-    X_raw_train = Xtr_raw[tr_idx]
-    X_scaled_train = X_raw_train.reshape(-1, 784).float() / 255.0
-
-    mean = X_scaled_train.mean().item()
-    std = X_scaled_train.std().item()
-
-    X_train = preprocess(Xtr_raw[tr_idx], mean, std)
-    X_val = preprocess(Xtr_raw[va_idx], mean, std)
-    X_test = preprocess(Xte_raw, mean, std)
-
-    y_train = ytr_raw[tr_idx]
-    y_val = ytr_raw[va_idx]
-    y_test = yte_raw
-
-    return X_train, y_train, X_val, y_val, X_test, y_test, mean, std
+        mean = X_scaled_train.mean().item()
+        std = X_scaled_train.std().item()
+    
+        X_train = preprocess(Xtr_raw[tr_idx], mean, std)
+        X_val = preprocess(Xtr_raw[va_idx], mean, std)
+        X_test = preprocess(Xte_raw, mean, std)
+    
+        y_train = ytr_raw[tr_idx]
+        y_val = ytr_raw[va_idx]
+        y_test = yte_raw
+    
+        return X_train, y_train, X_val, y_val, X_test, y_test, mean, std
+    else:
+        X_scaled_train = Xtr_raw.reshape(-1, 784).float() / 255.0
+        mean = X_scaled_train.mean().item()
+        std = X_scaled_train.std().item()
+        
+        X_train = preprocess(Xtr_raw, mean, std)
+        X_test = preprocess(Xte_raw, mean, std)
+        return X_train, ytr_raw, X_test, yte_raw, mean, std
 
 def save_processed_data(root=PROCESSED_PATH):
     root.mkdir(parents=True, exist_ok=True)
