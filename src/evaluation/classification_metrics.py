@@ -24,7 +24,7 @@ def _to_numpy(y):
     return y
 
 
-def get_metrics(y_true, y_pred, labels=None):
+def get_metrics(y_true, y_pred, labels=None): # labels la range(10)
     y_true = _to_numpy(y_true)
     y_pred = _to_numpy(y_pred)
 
