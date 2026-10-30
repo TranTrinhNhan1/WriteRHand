@@ -130,13 +130,13 @@ if __name__ == "__main__":
 
     X_train, y_train = Xtr_raw[:10000], ytr_raw[:10000]
 
-    # 3. Khai báo lưới siêu tham số
+    # Khai báo lưới siêu tham số
     param_grid = {
         "C": [0.01, 0.1, 1.0],
         "max_iter": [300]
     }
 
-    # 4. Tìm cấu hình tốt nhất bằng K-fold
+    # Tìm cấu hình tốt nhất bằng K-fold
     best_params, results = find_grid(
         model_class=LogisticRegression,
         param_grid=param_grid,
@@ -148,7 +148,7 @@ if __name__ == "__main__":
         labels=range(10)
     )
 
-    # 5. In kết quả
+    # In kết quả
     print("\nCấu hình tốt nhất:")
     print(best_params)
 
