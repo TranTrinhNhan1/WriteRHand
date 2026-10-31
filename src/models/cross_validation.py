@@ -2,14 +2,12 @@
 Dùng tập train để train K-fold tìm bộ siêu tham số tốt nhất
 Cần preprocess lại từ đầu vì tập train đã chuẩn hóa theo mean/std, nếu dùng thì sẽ gây data leakage trên các fold.
 '''
-from sklearn.linear_model import LogisticRegression
 
-from evaluation.classification_metrics import get_metrics
-from preprocessing.preprocess import prepare_mnist, load_mnist
 import numpy as np
 import torch
 from itertools import product
-
+from src.evaluation.classification_metrics import get_metrics
+from src.preprocessing.preprocess import prepare_mnist, load_mnist
 
 SEED = 42
 
@@ -126,6 +124,10 @@ def find_grid(
 
 
 if __name__ == "__main__":
+
+    from sklearn.linear_model import LogisticRegression
+    
+    
     Xtr_raw, ytr_raw, _, _ = load_mnist()
 
     X_train, y_train = Xtr_raw[:10000], ytr_raw[:10000]

@@ -31,19 +31,19 @@ class GaussianNB(BaseClassifier):
         if len(y) == 0:
             raise ValueError("Training data must not be empty.")
 
-        n_samples, n_features = X.shape
+        self.n_samples, self.n_features = X.shape
         self.classes = np.unique(y)
-        n_classes = len(self.classes)
-        self.mean = np.zeros((n_classes, n_features))
-        self.var = np.zeros((n_classes, n_features))
-        self.prior = np.zeros(n_classes)
+        self.n_classes = len(self.classes)
+        self.mean = np.zeros((self.n_classes, self.n_features))
+        self.var = np.zeros((self.n_classes, self.n_features))
+        self.prior = np.zeros(self.n_classes)
         eps = self.var_smoothing * X.var(axis=0).max() # avoid var = 0
 
         for idx, c in enumerate(self.classes):
             X_c = X[y==c]
             self.mean[idx] = X_c.mean(axis=0)
             self.var[idx] = X_c.var(axis=0) + eps
-            self.prior[idx] = X_c.shape[0] / n_samples
+            self.prior[idx] = X_c.shape[0] / self.n_samples
 
         return self
 
@@ -53,22 +53,36 @@ class GaussianNB(BaseClassifier):
         Returns: Array with shape (N, K).
         """
         X = self._check_X(X)
-        # Calculate log Gaussian probability
-        log_probability = np.log(2 * np.pi * self.var)
-        squared_difference = (
-            X[:, np.newaxis, :] - self.mean[np.newaxis, :, :]
-        ) ** 2
-        gaussian_term = np.sum(
-            log_probability[np.newaxis, :, :]
-            + squared_difference / self.var[np.newaxis, :, :], axis=2
-        )
 
-        # Add log class prior
-        joint_log_likelihood = (
-            np.log(self.prior)[np.newaxis, :]
-            - 0.5 * gaussian_term
+        if X.shape[1] != self.n_features:
+            raise ValueError("X has a different number of features than training data.")
+
+        n_samples = X.shape[0]
+        n_classes = len(self.classes)
+
+        # Calculate class constants once: shape (K,)
+        constants = (
+            np.log(self.prior) - 0.5 * np.sum(
+                np.log(2 * np.pi * self.var), axis=1
+            )
         )
-        return joint_log_likelihood
+        # Store scores: shape (N, K)
+        scores = np.empty((n_samples, n_classes), dtype=np.float64)
+        batch_size = 4096
+
+        for k in range(n_classes):
+            for start in range(0, n_samples, batch_size):
+                end = min(start + batch_size, n_samples)
+
+                # Calculate squared difference for class k
+                d = X[start:end] - self.mean[k]
+                np.square(d, out=d)
+                d /= self.var[k]
+
+                # Calculate scores for class k
+                scores[start:end, k] = (constants[k] - 0.5 * np.sum(d, axis=1))
+
+        return scores
 
     def predict(self, X):
         ''' pred class label '''
@@ -94,14 +108,14 @@ class GaussianNB(BaseClassifier):
 if __name__ == "__main__":
     
     from src.preprocessing.preprocess import load_mnist
-    from src.models.cross_validation import find_grid, SEED
+    from src.models.cross_validation import *
 
     Xtr_raw, ytr_raw, _, _ = load_mnist()
     X_train, y_train = Xtr_raw[:5000], ytr_raw[:5000]
 
     # Khai báo lưới siêu tham số
     param_grid = {
-        "var_smoothing": [1e-9, 1e-7, 1e-5, 1e-3]
+        "var_smoothing": [1e-9, 1e-7, 1e-5, 1e-3, 1e-1, 1.0]
     }
     best_params, results = find_grid(
         model_class=GaussianNB,
