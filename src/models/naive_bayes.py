@@ -1,5 +1,5 @@
 import numpy as np
-from base import BaseClassifier
+from src.models.base import BaseClassifier
 
 class GaussianNB(BaseClassifier):
     def __init__(self, var_smoothing=1e-9):
@@ -37,7 +37,7 @@ class GaussianNB(BaseClassifier):
         self.mean = np.zeros((n_classes, n_features))
         self.var = np.zeros((n_classes, n_features))
         self.prior = np.zeros(n_classes)
-        eps = 1e-9 * X.var(axis=0).max() # avoid var = 0
+        eps = self.var_smoothing * X.var(axis=0).max() # avoid var = 0
 
         for idx, c in enumerate(self.classes):
             X_c = X[y==c]
@@ -92,10 +92,9 @@ class GaussianNB(BaseClassifier):
 
 
 if __name__ == "__main__":
-    from sklearn.model_selection import train_test_split
-    from sklearn.metrics import accuracy_score
-    from preprocessing.preprocess import load_mnist
-    from cross_validation import find_grid, SEED
+    
+    from src.preprocessing.preprocess import load_mnist
+    from src.models.cross_validation import find_grid, SEED
 
     Xtr_raw, ytr_raw, _, _ = load_mnist()
     X_train, y_train = Xtr_raw[:5000], ytr_raw[:5000]
