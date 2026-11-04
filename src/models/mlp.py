@@ -15,6 +15,10 @@ momentum
 '''
 
 class MLP(BaseClassifier):
+    VAL_FRACTION = 0.08
+    PATIENCE = 5
+    MIN_DELTA = 1e-4
+
     def __init__(self, hidden_sizes=(128,), *,
                  learning_rate=0.1, p_drop = 0.0,
                  epochs=20, batch_size=128,
@@ -40,17 +44,41 @@ class MLP(BaseClassifier):
         if not hasattr(self, "layers_"):
             raise RuntimeError("Model is not fitted yet.")
 
-    @staticmethod
-    def _softmax(z):
-        z = z - max(axis=1, keepdims=True) # tranh tran so
-        # tinh theo hang va giu dim dang (N, 1)
-        e = np.exp(z)
-        return e / e.sum(axis=1, keepdims=True) 
+    # CAC HAM CHO EARLY STOPPING
 
-    @staticmethod
-    def _log_softmax(z):
-        z = z - z.max(axis=1, keepdims=True)
-        return z - np.log(np.exp(z).sum(axis=1, keepdims=True))
+    def _split_internal(self, n_samples):
+        ''' tach mot phan nho cua tap train de danh gia loss, phuc vu cho early stopping
+         tra ve index cua tap train thuc su va tap val cho early stopping '''
+        order = torch.randperm(n_samples, generator=self.generator)
+        n_val = int(n_samples * self.VAL_FRACTION) # lay VAL_FRACTION phan tram cua tap train\
+        if n_val < 1 or n_samples - n_val < 1:
+            return order, None
+        return order[n_val:], order[:n_val] 
+
+    def _eval_loss(self, X_t, y_t):
+        total = 0.0
+        with torch.no_grad():
+            for start in range(0, X_t.shpae[0], 1024):
+                xb = X_t[start:start+1024]
+                yb = y_t[start:start+1024]
+                _, _, logits = self._forward_cache(xb, training=False)
+                total += F.cross_entropy(logits, yb, reduction="sum").item() # tra ve tong loss cua batch
+        return total / X_t.shape[0]
+
+    def _snapshot(self):
+        # tach khoi ma tran autograd roi sao chep sang vung nho moi, de khi cap nhat trong so thi trong so duoc luu khong thay doi theo
+        return [
+            (lin.weight.detach().clone(), lin.bias.detach().clone())
+            for lin in self.layers
+        ]
+
+    def _restore_best(self, snapshot):
+        with torch.no_grad():
+            for lin, (w, b) in zip(self.layers, snapshot):
+                lin.weight.copy_(w)
+                lin.bias.copy_(b)
+
+    # CAC HAM CHO FIT
 
     def _build_layers(self, n_feat, n_classes):
         ''' dung torch tao kien truc mang voi cac node va bias ban dau
@@ -143,25 +171,63 @@ class MLP(BaseClassifier):
 
         X_t = torch.from_numpy(X).float()
         y_t = torch.from_numpy(y_idx).long()
-        self.history = {"loss": [], "val_acc": []}
+        # chia tap train de early stopping
+        train_idx, stop_val_idx = self._split_internal(X_t.shape[0])
+        X_train, y_train = X_t[train_idx], y_t[train_idx]
+        if stop_val_idx is not None:
+            X_stop, y_stop = X_t[stop_val_idx], y_t[stop_val_idx]
+            self.stop_val_idx = stop_val_idx.numpy()
+        else:
+            self.stop_val_idx = None
 
+        self.history = {"loss": [], "inner_val_loss": [], "val_acc": []}
+        best_loss = float("inf")
+        best_snapshot = None
+        self.best_epoch = 0
+
+        # Training
         with torch.no_grad():
             for epoch in range(self.epochs):
-                epoch_loss = self._train_one_epoch(X_t, y_t, optimizer)
+                epoch_loss = self._train_one_epoch(X_train, y_train, optimizer)
                 if not np.isfinite(epoch_loss):
-                    raise FloatingPointError("Loss is Nan/Inf")
+                    raise FloatingPointError(
+                        "Loss became NaN/inf!")
                 self.history["loss"].append(epoch_loss)
+                message = f"epoch {epoch + 1}/{self.epochs} loss={epoch_loss:.4f}"
 
-            has_val = False
-            if X_val is not None and y_val is not None:
-                y_val = np.asarray(y_val)
-                val_acc = np.mean(self.predict(X_val)) == y_val # dem so lan dung va lay trung binh
-                has_val = True
-            if self.verbose:
-                verbose_line = f"epoch {epoch+1}/{self.epochs}  loss={epoch_loss:.3f}"
-                if has_val:
-                    verbose_line += f"  val_acc={val_acc:.3f}"
-                print(verbose_line)
+                if stop_val_idx is not None:
+                    inner_loss = self._eval_loss(X_stop, y_stop)
+                    self.history["inner_val_loss"].append(inner_loss)
+                    message += f" inner_val_loss={inner_loss:.4f}"
+                    if inner_loss < best_loss - self.MIN_DELTA:
+                        best_loss = inner_loss
+                        best_snapshot = self._snapshot()
+                        self.best_epoch_ = epoch + 1
+                        wait = 0
+                    else:
+                        wait += 1
+
+                if X_val is not None and y_val is not None:
+                    val_acc = np.mean(self.predict(X_val) == np.asarray(y_val))
+                    self.history["val_acc"].append(val_acc)
+                    message += f" val_acc={val_acc:.4f}"
+                if self.verbose:
+                    print(message)
+
+                if stop_val_idx is not None and wait >= self.PATIENCE:
+                    break
+
+            self.stopped_epoch_ = len(self.history["loss"])
+            if best_snapshot is not None:
+                self._restore(best_snapshot)
+                self.best_inner_loss_ = best_loss
+            else:
+                self.best_epoch_ = self.stopped_epoch_
+                self.best_inner_loss_ = None
+
+        if self.verbose:
+            print(f"stopped at epoch {self.stopped_epoch_}, "
+                  f"best epoch {self.best_epoch_}")
 
         return self
 
@@ -171,8 +237,8 @@ class MLP(BaseClassifier):
         X = self._check_X(X)
         outputs = []
         with torch.no_grad():
-            for start in range(0, len(X), self.batch_size):
-                chunk = torch.from_numpy(X[start:start + self.batch_size]).float()
+            for start in range(0, len(X), 1024): # lay tung batch de khi forward khong tran ram
+                chunk = torch.from_numpy(X[start:start + 1024]).float()
                 _, _, logits = self._forward_cache(chunk, training=False)
                 outputs.append(logits)
         return torch.cat(outputs, dim=0)  # noi theo hang
