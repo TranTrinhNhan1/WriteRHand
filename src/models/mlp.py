@@ -21,7 +21,7 @@ class MLP(BaseClassifier):
 
     def __init__(self, hidden_sizes=(128,), *,
                  learning_rate=0.1, p_drop = 0.0,
-                 epochs=20, batch_size=128,
+                 epochs=100, batch_size=128,
                  momentum=0.0, seed=42, verbose=False):
         self.hidden_sizes = tuple(hidden_sizes)
         self.learning_rate = learning_rate
@@ -41,7 +41,7 @@ class MLP(BaseClassifier):
         return X 
 
     def _check_fitted(self):
-        if not hasattr(self, "layers_"):
+        if not hasattr(self, "layers"):
             raise RuntimeError("Model is not fitted yet.")
 
     # CAC HAM CHO EARLY STOPPING
@@ -58,7 +58,7 @@ class MLP(BaseClassifier):
     def _eval_loss(self, X_t, y_t):
         total = 0.0
         with torch.no_grad():
-            for start in range(0, X_t.shpae[0], 1024):
+            for start in range(0, X_t.shape[0], 1024):
                 xb = X_t[start:start+1024]
                 yb = y_t[start:start+1024]
                 _, _, logits = self._forward_cache(xb, training=False)
@@ -137,7 +137,7 @@ class MLP(BaseClassifier):
     def _make_optimizer(self):
         ''' cap nhat trong so '''
         params = [p for lin in self.layers for p in lin.parameters()]
-        return torch.optim.sgd(params, lr=self.learning_rate, momentum=self.momentum)
+        return torch.optim.SGD(params, lr=self.learning_rate, momentum=self.momentum)
 
     def _train_one_epoch(self, X_tr, y_tr, optimizer):
         n_samples = X_tr.shape[0]
@@ -219,7 +219,7 @@ class MLP(BaseClassifier):
 
             self.stopped_epoch_ = len(self.history["loss"])
             if best_snapshot is not None:
-                self._restore(best_snapshot)
+                self._restore_best(best_snapshot)
                 self.best_inner_loss_ = best_loss
             else:
                 self.best_epoch_ = self.stopped_epoch_
