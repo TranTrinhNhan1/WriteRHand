@@ -5,7 +5,7 @@ from torchvision.datasets import MNIST
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent # lấy đường dẫn của file đang chạy, sau đó truy về folder cha 3 lần để ra folder project
 
 # Xác định nơi lưu dataset
-RAW_DIR = PROJECT_ROOT / "data" / "raw"
+RAW_DIR = PROJECT_ROOT / "data" # code tự tạo thư mục raw bruh
 RAW_DIR.mkdir(parents=True, exist_ok=True)
 
 print("Project root:", PROJECT_ROOT)
