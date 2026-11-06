@@ -18,6 +18,8 @@ def _json_default(obj):
         return obj.item()
     if isinstance(obj, torch.Tensor):
         return obj.detach().cpu().tolist()
+    raise TypeError(f"Không thể lưu kiểu {type(obj)} vào JSON")
+    
 
 class Evaluator:
     def __init__(self, name, model, num_classes=10):
@@ -37,7 +39,7 @@ class Evaluator:
         self.model.fit(X_tr, y_tr)
 
         elapsed = time.perf_counter() - start
-        self.result["train_time_sec"] = elapsed
+        self.results["train_time_sec"] = elapsed
 
         return self
 
