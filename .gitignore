@@ -1,0 +1,31 @@
+# Môi trường ảo
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Dữ liệu và mô hình lưu ra (nặng, tải/huấn luyện lại được)
+data/
+*.npy
+*.npz
+*.pkl
+*.pt
+*.pth
+*.h5
+
+# Log, file tạm
+*.log
+.cache/
+
+# Editor và hệ điều hành
+.vscode/
+.idea/
+.DS_Store
+
+# Bí mật
+.env
