@@ -1,17 +1,11 @@
-from pathlib import Path
 from torchvision.datasets import MNIST
 import torch
-
-current_dir = Path.cwd()
-PROJECT_ROOT = current_dir 
-RAW_DIR = PROJECT_ROOT / "data"
-RAW_DIR.mkdir(parents=True, exist_ok=True)
-PROCESSED_PATH = RAW_DIR / "processed"
+from src.utils.paths import *
 
 SEED = 42
 torch.manual_seed(SEED)
 
-def load_mnist(root=RAW_DIR):
+def load_mnist(root=DATA_DIR):
     '''
     tra ve X_tr, y_tr, X_te, y_te
     '''
@@ -58,8 +52,8 @@ def prepare_mnist(Xtr_raw, ytr_raw, Xte_raw, yte_raw, has_validation=True,
         std = X_scaled_train.std().item()
     
         X_train = standardize(X_scaled_train, mean, std)
-        X_val = standardize(flatten(Xtr_raw[tr_idx]), mean, std)
-        X_test = standardize(flatten(Xtr_raw[tr_idx]), mean, std)
+        X_val = standardize(flatten(Xtr_raw[va_idx]), mean, std)
+        X_test = standardize(flatten(Xte_raw), mean, std)
     
         y_train = ytr_raw[tr_idx]
         y_val = ytr_raw[va_idx]
@@ -110,9 +104,12 @@ def load_processed_data(root=PROCESSED_PATH):
     )
 
 if __name__ == "__main__":
-    X_train, y_train, X_val, y_val, X_test, y_test = load_processed_data()
-    print("X_train", tuple(X_train.shape), "| X_val", tuple(X_val.shape), "| X_test", tuple(X_test.shape))
-    print("So mau moi lop (train):", torch.bincount(y_train).tolist())
+    print(ROOT)
+    print(DATA_DIR)
+    print(PROCESSED_PATH)
+    # X_train, y_train, X_val, y_val, X_test, y_test = load_processed_data()
+    # print("X_train", tuple(X_train.shape), "| X_val", tuple(X_val.shape), "| X_test", tuple(X_test.shape))
+    # print("So mau moi lop (train):", torch.bincount(y_train).tolist())
     # print("Working directory:", Path.cwd())
     # print("Processed folder:", PROCESSED_PATH.resolve())
 

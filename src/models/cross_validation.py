@@ -2,14 +2,12 @@
 Dùng tập train để train K-fold tìm bộ siêu tham số tốt nhất
 Cần preprocess lại từ đầu vì tập train đã chuẩn hóa theo mean/std, nếu dùng thì sẽ gây data leakage trên các fold.
 '''
-from sklearn.linear_model import LogisticRegression
 
-from evaluation.classification_metrics import get_metrics
-from preprocessing.preprocess import prepare_mnist, load_mnist
 import numpy as np
 import torch
 from itertools import product
-
+from src.evaluation.classification_metrics import get_metrics
+from src.preprocessing.preprocess import prepare_mnist, load_mnist
 
 SEED = 42
 
@@ -126,17 +124,21 @@ def find_grid(
 
 
 if __name__ == "__main__":
+
+    from sklearn.linear_model import LogisticRegression
+    
+    
     Xtr_raw, ytr_raw, _, _ = load_mnist()
 
     X_train, y_train = Xtr_raw[:10000], ytr_raw[:10000]
 
-    # 3. Khai báo lưới siêu tham số
+    # Khai báo lưới siêu tham số
     param_grid = {
         "C": [0.01, 0.1, 1.0],
         "max_iter": [300]
     }
 
-    # 4. Tìm cấu hình tốt nhất bằng K-fold
+    # Tìm cấu hình tốt nhất bằng K-fold
     best_params, results = find_grid(
         model_class=LogisticRegression,
         param_grid=param_grid,
@@ -148,7 +150,7 @@ if __name__ == "__main__":
         labels=range(10)
     )
 
-    # 5. In kết quả
+    # In kết quả
     print("\nCấu hình tốt nhất:")
     print(best_params)
 

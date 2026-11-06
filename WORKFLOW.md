@@ -39,7 +39,7 @@ Thứ tự đề xuất (từ dễ đến khó): **TIẾN 1, 3 - NHÂN 2, 4**
 | 1 | Naïve Bayes | Dùng log xác suất để tránh underflow. Pixel có phương sai bằng 0 cần smoothing. |
 | 2 | Linear (softmax/Logistic) | Công thức gradient, chọn learning rate, theo dõi đường cong loss. |
 | 3 | MLP | Forward, backward, khởi tạo trọng số, kiểm tra gradient bằng số (gradient checking). |
-| 4 | Ensemble | Cây quyết định là phần khó nhất; cần chọn tiêu chí chia (Gini/entropy) và giới hạn độ sâu để chạy được trong thời gian hợp lý. |
+| 4 | Ensemble | Kết hợp các classifier |
 
 Quy uớc:
 + X có hình (N, 784), mỗi hàng là một mẫu; y là nhãn số nguyên hình (N,).
