@@ -6,7 +6,7 @@
 2. **Kiểm tra từng bước.** Mỗi mô-đun phải có kiểm tra nhỏ trước khi ghép vào pipeline (ví dụ: xác suất cộng lại bằng 1, loss giảm dần qua các vòng lặp).
 3. **Đối chiếu với scikit-learn.** Kết quả của bản tự cài đặt phải gần với bản scikit-learn tương ứng. Nếu lệch nhiều, coi như có lỗi cần tìm.
 4. **Tập test để dành đến cuối.** Chọn siêu tham số chỉ dựa trên validation. Chỉ báo cáo test một lần cho cấu hình cuối cùng.
-5. **Tái lập được.** Cố định seed, ghi lại siêu tham số và kết quả mỗi lần chạy vào `results/`.
+5. **Tái lập được.** Cố định seed=42, ghi lại siêu tham số và kết quả mỗi lần chạy vào `results/`.
 
 ## 2. Các giai đoạn
 
@@ -17,7 +17,7 @@
 - [ ] Chia việc cho từng người.
 
 ### Giai đoạn 1: Nền tảng dùng chung (tuần 1) TIẾN
-- [ ] Tải MNIST, chuẩn hoá, làm phẳng, chia train/val/test, cố định seed.
+- [ ] Tải MNIST, chuẩn hoá, làm phẳng, chia train/val/test, cố định seed = 42.
 - [ ] Cài các chỉ số: accuracy, precision, recall, F1 macro, confusion matrix (tính từ nhãn thật và nhãn dự đoán).
 - [ ] Hàm đo thời gian huấn luyện và dự đoán, hàm vẽ biểu đồ.
 - [ ] Thống nhất giao diện chung cho mọi mô hình (cùng kiểu phương thức huấn luyện và dự đoán) để thí nghiệm và so sánh viết một lần dùng cho tất cả.
@@ -40,6 +40,12 @@ Thứ tự đề xuất (từ dễ đến khó): **TIẾN 1, 3 - NHÂN 2, 4**
 | 2 | Linear (softmax/Logistic) | Công thức gradient, chọn learning rate, theo dõi đường cong loss. |
 | 3 | MLP | Forward, backward, khởi tạo trọng số, kiểm tra gradient bằng số (gradient checking). |
 | 4 | Ensemble | Cây quyết định là phần khó nhất; cần chọn tiêu chí chia (Gini/entropy) và giới hạn độ sâu để chạy được trong thời gian hợp lý. |
+
+Quy uớc:
++ X có hình (N, 784), mỗi hàng là một mẫu; y là nhãn số nguyên hình (N,).
++ predict luôn trả về nhãn số nguyên, không phải one-hot. Nếu model nội bộ dùng one-hot (softmax, MLP) thì + tự đổi về nhãn ở cuối predict.
++ fit nên trả về chính model (self) để dễ viết nối tiếp.
++ Siêu tham số (learning rate, số cây, ...) truyền qua __init__, không truyền qua fit.
 
 ### Giai đoạn 3: Thí nghiệm siêu tham số TIẾN
 - [ ] Chọn ít nhất một thí nghiệm có biểu đồ (ví dụ: learning rate và số vòng lặp cho linear; số nơ-ron/số lớp cho MLP; số cây cho ensemble).
