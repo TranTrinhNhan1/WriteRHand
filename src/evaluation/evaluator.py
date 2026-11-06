@@ -3,12 +3,9 @@ import time
 import torch
 from pathlib import Path
 import numpy as np
-from classification_metrics import get_metrics
+from src.evaluation.classification_metrics import get_metrics
+from src.utils.paths import *
 
-
-PROJECT_ROOT = Path.cwd() 
-RESULT_DIR = PROJECT_ROOT / "results"
-RESULT_DIR.mkdir(parents=True, exist_ok=True)
 
 def _json_default(obj):
     ''' Chuyen kieu np thanh kieu co the luu json '''
@@ -70,11 +67,14 @@ class Evaluator:
     ):
         self.evaluate(X_tr, y_tr, "train")
         self.evaluate(X_val, y_val, "val")
-        self.evaluate(X_te, y_te, "test")
+        if X_te is not None and y_te is not None:
+            self.evaluate(X_te, y_te, "test")
 
         return self.results
 
-    def save(self, path=RESULT_DIR):
+    def save(self, folder=RESULTS_DIR):
+        folder.mkdir(parents=True, exist_ok=True)
+        path = folder / f"{self.name}.json"
         with path.open("w", encoding="utf-8") as file:
             json.dump(
                 self.results,
