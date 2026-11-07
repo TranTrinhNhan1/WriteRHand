@@ -1,254 +1,283 @@
-from src.models.base import BaseClassifier
+"""Multilayer perceptron trained with hand-written backpropagation.
+
+Architecture   x -> [Linear -> ReLU (-> inverted dropout)] * H -> Linear -> softmax
+Loss           mean cross-entropy
+Backprop       delta_L = (softmax(z_L) - onehot(y)) / B
+               dW_l = a_{l-1}^T delta_l ,   db_l = sum_rows(delta_l)
+               delta_{l-1} = (delta_l W_l^T) * 1[a_{l-1} > 0] * dropout_mask_{l-1}
+Update         SGD with momentum:  v <- mu * v + g ;  theta <- theta - lr * v   (explicit code)
+Initialisation He normal (std = sqrt(2 / fan_in)), zero biases, drawn from a private seeded RNG.
+
+PyTorch is used only as a tensor library (matmul, random numbers): *autograd is never used for
+training* and no ``nn.Module`` / ``torch.optim`` object is involved. ``tests/test_mlp.py`` checks
+the manual gradients against finite differences and against autograd.
+
+Early stopping uses an *internal* hold-out (``val_fraction`` of the training data), so the
+project's validation split never influences training.
+"""
+
 import numpy as np
 import torch
-from torch import nn
-from torch.nn import functional as F
 
+from src.models.base import BaseClassifier, NotFittedError, check_X, check_Xy
 
-'''
-hyper_param can fine-tune
-batch_size
-hidden_sizes
-p_drop
-learning_rate
-momentum
-'''
+_DTYPES = {"float32": torch.float32, "float64": torch.float64}
+
 
 class MLP(BaseClassifier):
-    VAL_FRACTION = 0.08
-    PATIENCE = 5
-    MIN_DELTA = 1e-4
-
-    def __init__(self, hidden_sizes=(128,), *,
-                 learning_rate=0.1, p_drop = 0.0,
-                 epochs=100, batch_size=128,
-                 momentum=0.0, seed=42, verbose=False):
-        self.hidden_sizes = tuple(hidden_sizes)
+    def __init__(self, hidden_sizes=(128,), *, learning_rate=0.1, p_drop=0.0, epochs=100,
+                 batch_size=128, momentum=0.0, seed=42, early_stopping=True, val_fraction=0.08,
+                 patience=5, min_delta=1e-4, dtype="float32", verbose=False):
+        super().__init__()
+        hidden_sizes = tuple(int(h) for h in hidden_sizes)
+        if any(h < 1 for h in hidden_sizes):
+            raise ValueError("hidden_sizes must be positive integers.")
+        if learning_rate <= 0:
+            raise ValueError("learning_rate must be > 0.")
+        if not 0.0 <= p_drop < 1.0:
+            raise ValueError("p_drop must be in [0, 1).")
+        if not 0.0 <= momentum < 1.0:
+            raise ValueError("momentum must be in [0, 1).")
+        if epochs < 1 or batch_size < 1:
+            raise ValueError("epochs and batch_size must be >= 1.")
+        if dtype not in _DTYPES:
+            raise ValueError(f"dtype must be one of {list(_DTYPES)}.")
+        self.hidden_sizes = hidden_sizes
         self.learning_rate = learning_rate
+        self.p_drop = p_drop
         self.epochs = epochs
         self.batch_size = batch_size
         self.momentum = momentum
-        self.p_drop = p_drop
         self.seed = seed
+        self.early_stopping = early_stopping
+        self.val_fraction = val_fraction
+        self.patience = patience
+        self.min_delta = min_delta
+        self.dtype = dtype
         self.verbose = verbose
 
-    def _check_X(self, X):
-        X = np.asarray(X, dtype=np.float64)
-        if X.ndim != 2:
-            raise ValueError("X must be a 2D array!")
-        if not np.isfinite(X).all():
-            raise ValueError("X cannot contain Nan or inf")
-        return X 
+    # ------------------------------------------------------------------ parameters
+    @property
+    def _tdtype(self):
+        return _DTYPES[self.dtype]
+
+    def _init_params(self, n_features, n_classes):
+        """He-normal weights ``W_l`` of shape (fan_in, fan_out) and zero biases."""
+        sizes = [n_features, *self.hidden_sizes, n_classes]
+        gen = torch.Generator().manual_seed(self.seed)
+        self.W, self.b = [], []
+        for fan_in, fan_out in zip(sizes[:-1], sizes[1:], strict=True):
+            std = (2.0 / fan_in) ** 0.5
+            self.W.append((torch.randn(fan_in, fan_out, generator=gen, dtype=torch.float64) * std)
+                          .to(self._tdtype))
+            self.b.append(torch.zeros(fan_out, dtype=self._tdtype))
+        self.generator = gen  # continues the same stream for shuffling and dropout
 
     def _check_fitted(self):
-        if not hasattr(self, "layers"):
-            raise RuntimeError("Model is not fitted yet.")
+        if not hasattr(self, "W"):
+            raise NotFittedError("MLP is not fitted yet.")
 
-    # CAC HAM CHO EARLY STOPPING
-
-    def _split_internal(self, n_samples):
-        ''' tach mot phan nho cua tap train de danh gia loss, phuc vu cho early stopping
-         tra ve index cua tap train thuc su va tap val cho early stopping '''
-        order = torch.randperm(n_samples, generator=self.generator)
-        n_val = int(n_samples * self.VAL_FRACTION) # lay VAL_FRACTION phan tram cua tap train\
-        if n_val < 1 or n_samples - n_val < 1:
-            return order, None
-        return order[n_val:], order[:n_val] 
-
-    def _eval_loss(self, X_t, y_t):
-        total = 0.0
-        with torch.no_grad():
-            for start in range(0, X_t.shape[0], 1024):
-                xb = X_t[start:start+1024]
-                yb = y_t[start:start+1024]
-                _, _, logits = self._forward_cache(xb, training=False)
-                total += F.cross_entropy(logits, yb, reduction="sum").item() # tra ve tong loss cua batch
-        return total / X_t.shape[0]
-
-    def _snapshot(self):
-        # tach khoi ma tran autograd roi sao chep sang vung nho moi, de khi cap nhat trong so thi trong so duoc luu khong thay doi theo
-        return [
-            (lin.weight.detach().clone(), lin.bias.detach().clone())
-            for lin in self.layers
-        ]
-
-    def _restore_best(self, snapshot):
-        with torch.no_grad():
-            for lin, (w, b) in zip(self.layers, snapshot):
-                lin.weight.copy_(w)
-                lin.bias.copy_(b)
-
-    # CAC HAM CHO FIT
-
-    def _build_layers(self, n_feat, n_classes):
-        ''' dung torch tao kien truc mang voi cac node va bias ban dau
-        tra ve layers chua cac lop, moi lop gom cac node '''
-        sizes = [n_feat, *self.hidden_sizes, n_classes]
-        layers = []
-        for i in range(len(sizes) - 1):
-            lin = nn.Linear(sizes[i], sizes[i+1])
-            nn.init.kaiming_normal_(lin.weight, nonlinearity="relu") # khoi tao He
-            nn.init.zeros_(lin.bias) # khoi tao bias bang 0
-            layers.append(lin)
-        return layers
-
+    # ------------------------------------------------------------------ forward / backward
     def _forward_cache(self, xb, training=False):
-        ''' training: chi True khi train, con False khi predict, vi pred khong can dropout
-
-        '''
-        inputs = []
-        masks = []
+        """Return (inputs_of_each_layer, dropout_masks, logits)."""
+        inputs, masks = [], []
         a = xb
-        last = len(self.layers) - 1 # lop cuoi khong co dropout
-        for i, lin in enumerate(self.layers):
+        last = len(self.W) - 1
+        for i, (W, b) in enumerate(zip(self.W, self.b, strict=True)):
             inputs.append(a)
-            z = lin(a)
+            z = a @ W + b
+            mask = None
             if i < last:
                 a = torch.relu(z)
                 if training and self.p_drop > 0:
-                    rand = torch.rand(a.shape, generator=self.generator)
-                    keep = (rand >= self.p_drop).float()
+                    keep = (torch.rand(a.shape, generator=self.generator, dtype=a.dtype)
+                            >= self.p_drop).to(a.dtype)
                     mask = keep / (1.0 - self.p_drop)
-                    a = a * mask # logits
-                else:
-                    mask = None
+                    a = a * mask
             else:
-                a = z # logits, dau vao cua lop tiep theo
-                mask = None
+                a = z  # logits
             masks.append(mask)
         return inputs, masks, a
 
-    def _backward(self, inputs, masks, logits, yb):
-        ''' chi tinh va luu dao ham, chua cap nhat tham so, khong co tra ve '''
-        batch = yb.shape[0]
-        onehot = F.one_hot(yb, self.n_classes).float()
-        delta = (torch.softmax(logits, dim=1) - onehot) / batch
+    @staticmethod
+    def _log_softmax(logits):
+        shifted = logits - logits.max(dim=1, keepdim=True).values
+        return shifted - torch.log(torch.exp(shifted).sum(dim=1, keepdim=True))
 
-        for i in range(len(self.layers)-1, -1, -1): # duyet tu lop cuoi
-            lin = self.layers[i]
+    def _backward(self, inputs, masks, logits, yb):
+        """Manual backpropagation. Returns ``[(dW_0, db_0), ..., (dW_L, db_L)]``."""
+        batch = yb.shape[0]
+        onehot = torch.zeros_like(logits)
+        onehot[torch.arange(batch), yb] = 1.0
+        delta = (torch.exp(self._log_softmax(logits)) - onehot) / batch
+        grads = [None] * len(self.W)
+        for i in range(len(self.W) - 1, -1, -1):
             a_prev = inputs[i]
-            lin.weight.grad = delta.T @ a_prev
-            lin.bias.grad = delta.sum(dim=0)
+            grads[i] = (a_prev.T @ delta, delta.sum(dim=0))
             if i > 0:
-                delta = (delta @ lin.weight) * (a_prev > 0)
+                delta = (delta @ self.W[i].T) * (a_prev > 0).to(delta.dtype)
                 if masks[i - 1] is not None:
                     delta = delta * masks[i - 1]
+        return grads
 
-    def _make_optimizer(self):
-        ''' cap nhat trong so '''
-        params = [p for lin in self.layers for p in lin.parameters()]
-        return torch.optim.SGD(params, lr=self.learning_rate, momentum=self.momentum)
+    def loss_and_grads(self, X, y_idx, training=False):
+        """Mean cross-entropy and manual gradients on a batch (``y_idx`` are class indices)."""
+        X = torch.as_tensor(np.asarray(X), dtype=self._tdtype)
+        y_idx = torch.as_tensor(np.asarray(y_idx), dtype=torch.long)
+        inputs, masks, logits = self._forward_cache(X, training=training)
+        loss = -self._log_softmax(logits)[torch.arange(len(y_idx)), y_idx].mean().item()
+        return loss, self._backward(inputs, masks, logits, y_idx)
 
-    def _train_one_epoch(self, X_tr, y_tr, optimizer):
-        n_samples = X_tr.shape[0]
-        order = torch.randperm(n_samples, generator=self.generator) # hoan vi de cac batch train theo thu tu khac nhau
-        total_loss = 0.0
+    def _eval_loss(self, X_t, y_t):
+        total = 0.0
+        for s in range(0, X_t.shape[0], 2048):
+            _, _, logits = self._forward_cache(X_t[s:s + 2048], training=False)
+            lp = self._log_softmax(logits)
+            total += -lp[torch.arange(len(lp)), y_t[s:s + 2048]].sum().item()
+        return total / X_t.shape[0]
 
-        for start in range(0, n_samples, self.batch_size):
-            idx = order[start:start + self.batch_size]
-            xb = X_tr[idx]
-            yb = y_tr[idx]
+    def _sgd_step(self, grads, velocity):
+        """theta <- theta - lr * v,  v <- momentum * v + g  (identical to torch.optim.SGD)."""
+        for i, (gW, gb) in enumerate(grads):
+            vW, vb = velocity[i]
+            vW.mul_(self.momentum).add_(gW)
+            vb.mul_(self.momentum).add_(gb)
+            self.W[i].sub_(self.learning_rate * vW)
+            self.b[i].sub_(self.learning_rate * vb)
 
-            inputs, masks, logits = self._forward_cache(xb, training=True)
-            total_loss += F.cross_entropy(logits, yb).item() * len(idx) # cong loss theo kich thuoc batch
-            self._backward(inputs, masks, logits, yb)
-            optimizer.step()
-        return total_loss / n_samples
+    def _snapshot(self):
+        return [(W.clone(), b.clone()) for W, b in zip(self.W, self.b, strict=True)]
 
+    def _restore(self, snap):
+        self.W = [W.clone() for W, _ in snap]
+        self.b = [b.clone() for _, b in snap]
+
+    # ------------------------------------------------------------------ training
     def fit(self, X, y, X_val=None, y_val=None):
-        X = self._check_X(X)
-        y = np.asarray(y)
-        if y.ndim != 1 or len(y) != len(X):
-            raise ValueError("y must be 1D and have the same length with X")
-        self.classes, y_idx = np.unique(y, return_inverse=True) # self.classes chua cac label da sort, y_idx chua mang chi so cua tung label trong self.classes
+        """Train. ``X_val``/``y_val`` are only *monitored* (history); they never affect training."""
+        X, y = check_Xy(X, y)
+        self.classes, y_idx = np.unique(y, return_inverse=True)
         self.n_classes = len(self.classes)
+        self._init_params(X.shape[1], self.n_classes)
 
-        torch.manual_seed(self.seed)
-        self.generator = torch.Generator().manual_seed(self.seed)
-
-        self.layers = self._build_layers(X.shape[1], self.n_classes)
-        optimizer = self._make_optimizer()
-
-        X_t = torch.from_numpy(X).float()
+        X_t = torch.from_numpy(X).to(self._tdtype)
         y_t = torch.from_numpy(y_idx).long()
-        # chia tap train de early stopping
-        train_idx, stop_val_idx = self._split_internal(X_t.shape[0])
-        X_train, y_train = X_t[train_idx], y_t[train_idx]
-        if stop_val_idx is not None:
-            X_stop, y_stop = X_t[stop_val_idx], y_t[stop_val_idx]
-            self.stop_val_idx = stop_val_idx.numpy()
+        n = X_t.shape[0]
+
+        n_stop = int(n * self.val_fraction) if self.early_stopping else 0
+        if n_stop >= 1 and n - n_stop >= 1:
+            order = torch.randperm(n, generator=self.generator)
+            stop_idx, train_idx = order[:n_stop], order[n_stop:]
+            X_stop, y_stop = X_t[stop_idx], y_t[stop_idx]
+            X_tr, y_tr = X_t[train_idx], y_t[train_idx]
+            self.stop_val_idx = stop_idx.numpy()
         else:
+            n_stop = 0
+            X_tr, y_tr = X_t, y_t
             self.stop_val_idx = None
 
-        self.history = {"loss": [], "inner_val_loss": [], "val_acc": []}
-        best_loss = float("inf")
-        best_snapshot = None
-        self.best_epoch = 0
+        have_val = X_val is not None and y_val is not None
+        if have_val:
+            Xv = torch.from_numpy(check_X(X_val, X.shape[1], "X_val")).to(self._tdtype)
+            yv = torch.from_numpy(np.searchsorted(self.classes, np.asarray(y_val))).long()
 
-        # Training
-        with torch.no_grad():
-            for epoch in range(self.epochs):
-                epoch_loss = self._train_one_epoch(X_train, y_train, optimizer)
-                if not np.isfinite(epoch_loss):
-                    raise FloatingPointError(
-                        "Loss became NaN/inf!")
-                self.history["loss"].append(epoch_loss)
-                message = f"epoch {epoch + 1}/{self.epochs} loss={epoch_loss:.4f}"
+        velocity = [(torch.zeros_like(W), torch.zeros_like(b))
+                    for W, b in zip(self.W, self.b, strict=True)]
+        self.history = {"loss": [], "inner_val_loss": [], "val_loss": [], "val_acc": []}
+        best_loss, best_snap, wait = float("inf"), None, 0
+        self.best_epoch_ = 0
+        n_tr = X_tr.shape[0]
 
-                if stop_val_idx is not None:
-                    inner_loss = self._eval_loss(X_stop, y_stop)
-                    self.history["inner_val_loss"].append(inner_loss)
-                    message += f" inner_val_loss={inner_loss:.4f}"
-                    if inner_loss < best_loss - self.MIN_DELTA:
-                        best_loss = inner_loss
-                        best_snapshot = self._snapshot()
-                        self.best_epoch_ = epoch + 1
-                        wait = 0
-                    else:
-                        wait += 1
+        for epoch in range(self.epochs):
+            order = torch.randperm(n_tr, generator=self.generator)
+            total = 0.0
+            for s in range(0, n_tr, self.batch_size):
+                idx = order[s:s + self.batch_size]
+                loss, grads = self.loss_and_grads(X_tr[idx], y_tr[idx], training=True)
+                total += loss * len(idx)
+                self._sgd_step(grads, velocity)
+            epoch_loss = total / n_tr
+            if not np.isfinite(epoch_loss):
+                raise FloatingPointError("Loss became NaN/inf - lower the learning rate.")
+            self.history["loss"].append(epoch_loss)
+            msg = f"epoch {epoch + 1}/{self.epochs} loss={epoch_loss:.4f}"
 
-                if X_val is not None and y_val is not None:
-                    val_acc = np.mean(self.predict(X_val) == np.asarray(y_val))
-                    self.history["val_acc"].append(val_acc)
-                    message += f" val_acc={val_acc:.4f}"
-                if self.verbose:
-                    print(message)
+            if n_stop:
+                inner = self._eval_loss(X_stop, y_stop)
+                self.history["inner_val_loss"].append(inner)
+                msg += f" inner_val_loss={inner:.4f}"
+                if inner < best_loss - self.min_delta:
+                    best_loss, best_snap, wait = inner, self._snapshot(), 0
+                    self.best_epoch_ = epoch + 1
+                else:
+                    wait += 1
+            if have_val:
+                self.history["val_loss"].append(self._eval_loss(Xv, yv))
+                logits = self._logits_t(Xv)
+                self.history["val_acc"].append(float((logits.argmax(1) == yv).double().mean()))
+                msg += f" val_acc={self.history['val_acc'][-1]:.4f}"
+            if self.verbose:
+                print(msg)
+            if n_stop and wait >= self.patience:
+                break
 
-                if stop_val_idx is not None and wait >= self.PATIENCE:
-                    break
-
-            self.stopped_epoch_ = len(self.history["loss"])
-            if best_snapshot is not None:
-                self._restore_best(best_snapshot)
-                self.best_inner_loss_ = best_loss
-            else:
-                self.best_epoch_ = self.stopped_epoch_
-                self.best_inner_loss_ = None
-
+        self.stopped_epoch_ = len(self.history["loss"])
+        if best_snap is not None:
+            self._restore(best_snap)
+            self.best_inner_loss_ = best_loss
+        else:
+            self.best_epoch_ = self.stopped_epoch_
+            self.best_inner_loss_ = None
         if self.verbose:
-            print(f"stopped at epoch {self.stopped_epoch_}, "
-                  f"best epoch {self.best_epoch_}")
-
+            print(f"stopped at epoch {self.stopped_epoch_}, best epoch {self.best_epoch_}")
         return self
 
-    # CAC HAM PREDICT
+    # ------------------------------------------------------------------ inference
+    def _logits_t(self, X_t):
+        out = []
+        for s in range(0, X_t.shape[0], 2048):
+            out.append(self._forward_cache(X_t[s:s + 2048], training=False)[2])
+        return torch.cat(out, dim=0)
+
     def _get_logits(self, X):
         self._check_fitted()
-        X = self._check_X(X)
-        outputs = []
-        with torch.no_grad():
-            for start in range(0, len(X), 1024): # lay tung batch de khi forward khong tran ram
-                chunk = torch.from_numpy(X[start:start + 1024]).float()
-                _, _, logits = self._forward_cache(chunk, training=False)
-                outputs.append(logits)
-        return torch.cat(outputs, dim=0)  # noi theo hang
+        X = check_X(X, self.W[0].shape[0])
+        return self._logits_t(torch.from_numpy(X).to(self._tdtype))
 
     def predict(self, X):
         idx = self._get_logits(X).argmax(dim=1).numpy()
         return self.classes[idx]
 
     def predict_proba(self, X):
-        return torch.softmax(self._get_logits(X), dim=1).numpy().astype(np.float64)
+        return torch.exp(self._log_softmax(self._get_logits(X))).numpy().astype(np.float64)
 
     def predict_log_proba(self, X):
-        return torch.log_softmax(self._get_logits(X), dim=1).numpy().astype(np.float64)
+        return self._log_softmax(self._get_logits(X)).numpy().astype(np.float64)
+
+    # ------------------------------------------------------------------ persistence
+    def weights_numpy(self):
+        """List of ``(W (fan_in, fan_out), b)`` float arrays (used by the ONNX export)."""
+        self._check_fitted()
+        return [(W.numpy().copy(), b.numpy().copy()) for W, b in zip(self.W, self.b, strict=True)]
+
+    def _get_arrays(self):
+        arrays = {"classes": np.asarray(self.classes)}
+        for i, (W, b) in enumerate(self.weights_numpy()):
+            arrays[f"W{i}"] = W
+            arrays[f"b{i}"] = b
+        return arrays
+
+    def _set_arrays(self, arrays):
+        self.classes = arrays["classes"]
+        self.n_classes = len(self.classes)
+        n_layers = len(self.hidden_sizes) + 1
+        self.W = [torch.from_numpy(arrays[f"W{i}"].copy()).to(self._tdtype) for i in range(n_layers)]
+        self.b = [torch.from_numpy(arrays[f"b{i}"].copy()).to(self._tdtype) for i in range(n_layers)]
+
+    def _extra_state(self):
+        return {"best_epoch": int(getattr(self, "best_epoch_", 0)),
+                "stopped_epoch": int(getattr(self, "stopped_epoch_", 0))}
+
+    def _set_extra_state(self, extra):
+        self.best_epoch_ = extra.get("best_epoch", 0)
+        self.stopped_epoch_ = extra.get("stopped_epoch", 0)

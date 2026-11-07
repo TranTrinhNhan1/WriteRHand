@@ -12,15 +12,25 @@ from src.preprocessing.preprocess import prepare_mnist, load_mnist
 SEED = 42
 
 
-def create_folds(n_samples, k=4, seed=SEED):
-    ''' tra ve cac chi so cua tap train va cua tap val'''
+def create_folds(n_samples, k=4, seed=SEED, y=None):
+    ''' tra ve cac chi so cua tap train va cua tap val.
+    Neu truyen nhan ``y`` thi chia phan tang (moi fold giu ti le cac lop).'''
     if k < 2 or k > n_samples:
         raise ValueError("k phải nằm trong khoảng [2, n_samples].")
 
-    generator = torch.Generator().manual_seed(seed)
-    shuffled_indices = torch.randperm(n_samples, generator=generator)
-
-    folds = torch.tensor_split(shuffled_indices, k) # chia thanh k phan bang nhau
+    if y is None:
+        generator = torch.Generator().manual_seed(seed)
+        shuffled_indices = torch.randperm(n_samples, generator=generator)
+        folds = torch.tensor_split(shuffled_indices, k) # chia thanh k phan bang nhau
+    else:
+        y = np.asarray(y)
+        rng = np.random.default_rng(seed)
+        parts = [[] for _ in range(k)]
+        for c in np.unique(y):
+            idx = rng.permutation(np.flatnonzero(y == c))
+            for i, chunk in enumerate(np.array_split(idx, k)):
+                parts[i].append(chunk)
+        folds = [torch.from_numpy(np.sort(np.concatenate(p))) for p in parts]
     splits = []
 
     for i in range(k):
@@ -40,7 +50,7 @@ def run_kfold(model_factory, X, y, K=4, seed=SEED, labels=None):
     model_factory la ham tao model moi
     X, y la data chua preprocess
     '''
-    splits = create_folds(len(X), K, seed)
+    splits = create_folds(len(X), K, seed, y=y)
     metric_names = [
         "accuracy",
         "precision_macro",
@@ -57,7 +67,7 @@ def run_kfold(model_factory, X, y, K=4, seed=SEED, labels=None):
         y_val = y[idx_val]
 
         # preprocess de thanh du lieu chuan
-        X_tr, y_tr, X_val, y_val, _, _ = prepare_mnist(X_tr, y_tr, X_val, y_val, has_validation=False, n_train=len(X))
+        X_tr, y_tr, X_val, y_val, _, _ = prepare_mnist(X_tr, y_tr, X_val, y_val, has_validation=False)
         model = model_factory()
         model.fit(X_tr, y_tr)
         y_pred = model.predict(X_val)
@@ -66,18 +76,14 @@ def run_kfold(model_factory, X, y, K=4, seed=SEED, labels=None):
         scores = {name: metrics[name] for name in metric_names}
 
         fold_scores.append(scores)
-        print(f"Fold {fold_no}: acc={scores["accuracy"]:.3f}")
+        print(f"Fold {fold_no}: acc={scores['accuracy']:.3f}")
 
-        mean_scores = {}
-        std_scores = {}
-
-        for name in metric_names:
-            values = torch.tensor(
-                [scores[name] for scores in fold_scores],
-                dtype=torch.float64
-            )
-            mean_scores[name] = values.mean().item()
-            std_scores[name] = values.std(unbiased=False).item()
+    mean_scores = {}
+    std_scores = {}
+    for name in metric_names:
+        values = np.array([s[name] for s in fold_scores], dtype=np.float64)
+        mean_scores[name] = float(values.mean())
+        std_scores[name] = float(values.std())
 
     return mean_scores, std_scores, fold_scores
 

@@ -2,8 +2,23 @@ import numpy as np
 from src.models.base import BaseClassifier
 
 class GaussianNB(BaseClassifier):
+    """Gaussian Naive Bayes: per-class, per-pixel normal likelihoods + class priors (MLE).
+
+    ``var_smoothing`` adds ``var_smoothing * max_j Var(x_j)`` to every variance (same convention
+    as scikit-learn) so constant pixels do not give a zero variance.
+    """
+
+    _state_arrays = ("classes", "mean", "var", "prior")
+
     def __init__(self, var_smoothing=1e-9):
+        super().__init__()
+        if var_smoothing < 0:
+            raise ValueError("var_smoothing must be >= 0.")
         self.var_smoothing = var_smoothing
+
+    def _set_arrays(self, arrays):
+        super()._set_arrays(arrays)
+        self.n_classes, self.n_features = self.mean.shape
 
     def _check_X(self, X):
         ''' check input shape and values '''
