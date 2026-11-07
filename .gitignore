@@ -62,3 +62,6 @@ results/_notebook_*/
 
 # keep the small per-split prediction vectors that back the reported metrics
 !results/**/*_predictions.npz
+
+# the website ships same-origin copies of the benchmark data
+!web/public/data/

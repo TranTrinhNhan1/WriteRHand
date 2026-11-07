@@ -1,0 +1,139 @@
+{
+  "name": "WriteRHand-MNIST",
+  "version": "1.0.0",
+  "created": "2026-11-07T19:33:12+00:00",
+  "preprocessing": {
+    "version": "mnist-global-standardize-v2-stratified",
+    "image": "28x28 grayscale, white digit on black",
+    "scale": "pixel/255",
+    "mean": 0.13063468480215842,
+    "std": 0.3080791897808302,
+    "eps": 1e-08,
+    "formula": "x = (pixel/255 - mean) / (std + eps)"
+  },
+  "classes": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "dataset": {
+    "preprocess_version": "mnist-global-standardize-v2-stratified",
+    "seed": 42,
+    "n_train": 50000,
+    "n_val": 10000,
+    "n_test": 10000,
+    "mean": 0.13063468480215842,
+    "std": 0.3080791897808302,
+    "split_fingerprint": "52cc8206ff96f56d"
+  },
+  "models": {
+    "naive_bayes": {
+      "title": "Gaussian Naive Bayes",
+      "class": "GaussianNB",
+      "format": "onnx",
+      "file": "models/naive_bayes.onnx",
+      "size_bytes": 63244,
+      "params": {
+        "var_smoothing": 0.1
+      },
+      "validation": {
+        "max_abs_prob_diff": 0.0001806818490259765,
+        "argmax_agreement": 1.0,
+        "n_checked": 10000,
+        "ok": true
+      },
+      "input": "pixels",
+      "output": "probabilities"
+    },
+    "softmax": {
+      "title": "Softmax regression",
+      "class": "SoftmaxRegression",
+      "format": "onnx",
+      "file": "models/softmax.onnx",
+      "size_bytes": 31765,
+      "params": {
+        "learning_rate": 0.03,
+        "l2": 0.0,
+        "epochs": 67,
+        "batch_size": 128,
+        "lr_decay": 0.0,
+        "tol": null,
+        "n_iter_no_change": 3,
+        "seed": 42,
+        "verbose": false
+      },
+      "validation": {
+        "max_abs_prob_diff": 3.4039994351031666e-06,
+        "argmax_agreement": 1.0,
+        "n_checked": 10000,
+        "ok": true
+      },
+      "input": "pixels",
+      "output": "probabilities"
+    },
+    "mlp": {
+      "title": "Multilayer perceptron",
+      "class": "MLP",
+      "format": "onnx",
+      "file": "models/mlp.onnx",
+      "size_bytes": 2143806,
+      "params": {
+        "hidden_sizes": [
+          512,
+          256
+        ],
+        "learning_rate": 0.05,
+        "p_drop": 0.0,
+        "epochs": 40,
+        "batch_size": 128,
+        "momentum": 0.9,
+        "seed": 42,
+        "early_stopping": true,
+        "val_fraction": 0.08,
+        "patience": 5,
+        "min_delta": 0.0001,
+        "dtype": "float32",
+        "verbose": false
+      },
+      "validation": {
+        "max_abs_prob_diff": 1.9073486328125e-06,
+        "argmax_agreement": 1.0,
+        "n_checked": 10000,
+        "ok": true
+      },
+      "input": "pixels",
+      "output": "probabilities"
+    },
+    "adaboost": {
+      "title": "AdaBoost (SAMME)",
+      "class": "AdaBoostSAMME",
+      "format": "json",
+      "file": "models/adaboost.json",
+      "size_bytes": 15981079,
+      "params": {
+        "n_estimators": 393,
+        "max_depth": 10,
+        "learning_rate": 0.1,
+        "n_bins": 32,
+        "max_features": 0.5,
+        "seed": 42,
+        "verbose": false
+      },
+      "validation": {
+        "max_abs_prob_diff": 0.0,
+        "argmax_agreement": 1.0,
+        "n_checked": 1000,
+        "ok": true
+      },
+      "input": "pixels",
+      "output": "vote_shares"
+    }
+  }
+}

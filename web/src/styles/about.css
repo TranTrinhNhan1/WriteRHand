@@ -1,0 +1,61 @@
+.linkrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.prose {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  max-width: 720px;
+  padding-bottom: 24px;
+}
+
+.prose > section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  padding-block: 36px;
+  border-top: 1px solid var(--line);
+}
+
+.prose p {
+  text-wrap: pretty;
+}
+
+.kv {
+  display: grid;
+  gap: 0;
+  border-top: 1px solid var(--line);
+}
+
+.kv > div {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.4fr) 1fr;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.9375rem;
+}
+
+.kv dt {
+  color: var(--ink-2);
+}
+
+.kv dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.formula {
+  font: 500 1.0625rem/1.5 var(--display);
+  background: var(--sunken);
+  border-radius: var(--r-sm);
+  padding: 12px 16px;
+  overflow-x: auto;
+}
+
+.about .bullets {
+  gap: 12px;
+}

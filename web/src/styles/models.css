@@ -1,0 +1,166 @@
+.jump ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.jump .btn[aria-current='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.model {
+  padding-block: clamp(40px, 6vw, 72px);
+  border-top: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 36px;
+  scroll-margin-top: 16px;
+}
+
+.model__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  max-width: 760px;
+}
+
+.facts--inline {
+  margin-top: 4px;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), max-content));
+  gap: 12px 40px;
+}
+
+.model__body {
+  display: grid;
+  gap: 40px 56px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 980px) {
+  .model__body {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  }
+  .model__pros {
+    grid-column: 1 / -1;
+  }
+}
+
+.model__col {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  align-content: start;
+  min-width: 0;
+}
+
+.model__col .label {
+  margin-top: 10px;
+}
+
+.model__col p {
+  max-width: 64ch;
+  text-wrap: pretty;
+}
+
+.model__pros {
+  display: grid;
+  gap: 32px 56px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 760px) {
+  .model__pros {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.model__pros > div {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.bullets {
+  display: grid;
+  gap: 8px;
+}
+
+.bullets li {
+  position: relative;
+  padding-left: 18px;
+  max-width: 62ch;
+}
+
+.bullets li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0.72em;
+  width: 6px;
+  height: 1px;
+  background: var(--ink-2);
+}
+
+.equations {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  max-width: 100%;
+}
+
+.equation {
+  display: grid;
+  gap: 2px;
+  padding: 14px 0 12px;
+  border-top: 1px solid var(--line);
+  min-width: 0;
+}
+
+.equation .caption {
+  color: var(--ink-3);
+  font-size: 0.8125rem;
+}
+
+.tex--block {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 2px;
+}
+
+.tex--block math {
+  display: block;
+  margin: 0;
+  text-align: left;
+}
+
+.tex .katex {
+  display: inline;
+}
+
+.params--grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px 24px;
+}
+
+.impl {
+  display: grid;
+  gap: 16px;
+  max-width: 64ch;
+}
+
+.impl dt {
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 2px;
+}
+
+.impl dd {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.model__impl {
+  grid-column: 1 / -1;
+}
