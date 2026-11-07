@@ -251,7 +251,7 @@ def write_tables(data, out_dir):
 
     # tuning summary
     tex = [
-        r"\begin{tabular}{llr}",
+        r"\begin{tabular}{@{}lp{9.0cm}r@{}}",
         r"\toprule",
         r"Mô hình & Siêu tham số được chọn & Số cấu hình đã chạy \\",
         r"\midrule",
@@ -406,6 +406,47 @@ def _save_single(plt, mid, cm, norm, out):
     plt.close(fig)
 
 
+def sweep_points(tuning):
+    """``{param: [trial, ...]}`` for every one-factor sweep, in the order of the tested values.
+
+    ``tune`` re-uses the record of a configuration that was already fitted (the incumbent value
+    is part of every sweep but is fitted only once), so the incumbent of a sweep lives in an
+    earlier stage. Here it is put back into the sweep it belongs to: a trial belongs to the sweep
+    of ``param`` when it differs from the sweep's reference configuration in ``param`` only.
+    """
+    sweeps = {}
+    trials = tuning["trials"]
+    for tr in trials:
+        if tr["param"] and tr["stage"].startswith("sweep:"):
+            sweeps.setdefault(tr["param"], []).append(tr)
+    out = {}
+    for param, trs in sweeps.items():
+        ref = {k: v for k, v in trs[0]["params"].items() if k != param}
+        have = {json.dumps(t["value"]) for t in trs}
+        pts = list(trs)
+        for tr in trials:
+            rest = {k: v for k, v in tr["params"].items() if k != param}
+            v = tr["params"].get(param)
+            if (
+                rest == ref
+                and json.dumps(v) not in have
+                and tr["stage"].startswith(("sweep:", "base"))
+            ):
+                pts.append({**tr, "value": v})
+                have.add(json.dumps(v))
+        order = {
+            json.dumps(list(v) if isinstance(v, tuple) else v): i
+            for i, v in enumerate(dict(SPECS[_mid_of(tuning)]["sweeps"])[param])
+        }
+        pts.sort(key=lambda t: order.get(json.dumps(t["value"]), 1e9))
+        out[param] = pts
+    return out
+
+
+def _mid_of(tuning):
+    return next(m for m, c in CLASS_NAME.items() if c == tuning["model"])
+
+
 def fig_sweeps(plt, data, out):
     from matplotlib.gridspec import GridSpec
 
@@ -413,25 +454,37 @@ def fig_sweeps(plt, data, out):
         t = data[mid]["tuning"]
         if not t:
             continue
-        by = {}
-        for tr in t["trials"]:
-            if tr["param"] and tr["stage"].startswith("sweep"):
-                by.setdefault(tr["param"], []).append(tr)
-        if not by:
+        by = sweep_points(t)
+        if not by or t.get("smoke"):
             continue
         n = len(by)
-        cols = min(n, 3)
+        cols = 2 if n == 4 else min(n, 3)
         rows = (n + cols - 1) // cols
-        fig = plt.figure(figsize=(3.7 * cols, 3.5 * rows))
-        gs = GridSpec(rows * 2, cols, height_ratios=[3, 1.05] * rows, hspace=0.12, wspace=0.34)
+        from matplotlib.gridspec import GridSpecFromSubplotSpec
+
+        fig = plt.figure(figsize=(3.7 * cols, 4.1 * rows))
+        gs = GridSpec(rows, cols, hspace=0.5, wspace=0.34)
         first = None
         for idx, (param, trs) in enumerate(by.items()):
             r, c = divmod(idx, cols)
-            ax = fig.add_subplot(gs[2 * r, c])
-            axt = fig.add_subplot(gs[2 * r + 1, c], sharex=ax)
+            sub = GridSpecFromSubplotSpec(
+                2, 1, subplot_spec=gs[r, c], height_ratios=[3, 1.05], hspace=0.14
+            )
+            ax = fig.add_subplot(sub[0])
+            axt = fig.add_subplot(sub[1], sharex=ax)
             vals = [tr["value"] for tr in trs]
             numeric = all(isinstance(v, (int, float)) for v in vals)
             x = np.array(vals, dtype=float) if numeric else np.arange(len(vals))
+            if numeric and len(x) > 2:  # crowded linear axis (e.g. 0.9 / 0.95): use even spacing
+                gaps = np.diff(np.sort(x))
+                if gaps.min() / (x.max() - x.min()) < 0.08 and not (
+                    min(vals) > 0 and max(vals) / min(vals) >= 20
+                ):
+                    x_labels, x = [f"{v:g}" for v in vals], np.arange(len(vals), dtype=float)
+                else:
+                    x_labels = [f"{v:g}" for v in vals]
+            else:
+                x_labels = [f"{v:g}" for v in vals] if numeric else None
             va = np.array([100 * tr["val_acc"] for tr in trs])
             ta = np.array([100 * tr["train_acc"] for tr in trs])
             ax.fill_between(x, va, ta, color="#bbb", alpha=0.25, lw=0, label="generalisation gap")
@@ -475,7 +528,7 @@ def fig_sweeps(plt, data, out):
             if numeric:
                 axt.set_xticks(x)
                 axt.set_xticklabels(
-                    [f"{v:g}" for v in x],
+                    x_labels,
                     rotation=0 if len(x) <= 6 else 45,
                     ha="center" if len(x) <= 6 else "right",
                 )
@@ -494,7 +547,7 @@ def fig_sweeps(plt, data, out):
         fig.suptitle(
             f"{TITLE[mid]}: one-factor sweeps on the validation split "
             "(circle = selected value; lower strip = fit time)",
-            y=1.03,
+            y=1.0,
             fontsize=10.5,
         )
         _save(fig, out, f"sweep_{mid}")
@@ -844,6 +897,9 @@ def build_report(results_dir, artifacts_dir=ARTIFACTS_DIR, log=print):
     write_tables(data, results_dir / "tables")
     if results_dir.resolve() == (ROOT / "results").resolve():
         update_readme(ROOT / "README.md", (results_dir / "tables" / "benchmark.md").read_text())
+        from src.experiments.texfrag import write_fragments
+
+        write_fragments(results_dir, ROOT / "report" / "generated", artifacts_dir)
     fig_confusions(plt, data, fig_dir)
     fig_sweeps(plt, data, fig_dir)
     fig_learning_curves(plt, data, fig_dir)

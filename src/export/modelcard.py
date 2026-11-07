@@ -19,7 +19,8 @@ def write_model_card(path, manifest, site):
         )
     files = "\n".join(
         f"| `{v['file']}` | {v['format']} | {v['size_bytes'] / 1024:.0f} KiB | "
-        f"{v['validation']['argmax_agreement'] * 100:.2f}% / {v['validation']['max_abs_prob_diff']:.1e} |"
+        f"{v['validation']['argmax_agreement'] * 100:.2f}% / {v['validation']['max_abs_prob_diff']:.1e} | "
+        f"{v['validation']['n_checked']:,} |"
         for v in manifest["models"].values()
     )
     hw = site.get("hardware") or {}
@@ -79,8 +80,8 @@ the full 50 000-image train split and median latency of a single-image `predict`
 {chr(10).join(rows)}
 
 ## Files
-| file | format | size | ONNX/JSON vs Python: argmax agreement / max prob. diff (10 000 test images) |
-|---|---|---|---|
+| file | format | size | exported vs Python: argmax agreement / max prob. diff | test images checked |
+|---|---|---|---|---|
 {files}
 
 `python/*.npz` hold the original weights (`BaseClassifier.load`), `test_vectors.json` raw test
