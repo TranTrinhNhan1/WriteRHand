@@ -65,3 +65,4 @@ results/_notebook_*/
 
 # the website ships same-origin copies of the benchmark data
 !web/public/data/
+slides/node_modules
