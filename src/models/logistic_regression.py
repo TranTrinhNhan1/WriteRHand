@@ -45,8 +45,18 @@ class SoftmaxRegression(BaseClassifier):
 
     _state_arrays = ("classes", "W", "b")
 
-    def __init__(self, learning_rate=0.1, l2=0.0, epochs=50, batch_size=128, lr_decay=0.0,
-                 tol=None, n_iter_no_change=3, seed=42, verbose=False):
+    def __init__(
+        self,
+        learning_rate=0.1,
+        l2=0.0,
+        epochs=50,
+        batch_size=128,
+        lr_decay=0.0,
+        tol=None,
+        n_iter_no_change=3,
+        seed=42,
+        verbose=False,
+    ):
         super().__init__()
         if learning_rate <= 0:
             raise ValueError("learning_rate must be > 0.")
@@ -105,12 +115,12 @@ class SoftmaxRegression(BaseClassifier):
             lr = self.learning_rate / (1.0 + self.lr_decay * epoch)
             order = rng.permutation(n)
             for s in range(0, n, bs):
-                idx = order[s:s + bs]
+                idx = order[s : s + bs]
                 _, gW, gb = self.loss_and_grad(self.W, self.b, X[idx], Y[idx], self.l2)
                 self.W -= lr * gW
                 self.b -= lr * gb
             Z = X @ self.W + self.b
-            loss = cross_entropy(Z, y_idx) + 0.5 * self.l2 * float((self.W ** 2).sum())
+            loss = cross_entropy(Z, y_idx) + 0.5 * self.l2 * float((self.W**2).sum())
             if not np.isfinite(loss):
                 raise FloatingPointError("Loss became NaN/inf - lower the learning rate.")
             self.history["loss"].append(loss)

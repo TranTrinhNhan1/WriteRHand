@@ -1,0 +1,86 @@
+% !TEX program = pdflatex
+\documentclass[11pt,a4paper]{article}
+
+% ---- encoding / fonts (Vietnamese via T5 + Latin Modern) -------------------------------
+\usepackage[T5]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% ---- layout -------------------------------------------------------------------------------
+\usepackage[a4paper,margin=2.4cm]{geometry}
+\usepackage{setspace}
+\setstretch{1.08}
+\usepackage{parskip}
+\setlength{\parskip}{4pt}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{14pt}{5pt}
+\titlespacing*{\subsection}{0pt}{9pt}{3pt}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+% ---- math / tables / figures ----------------------------------------------------------------
+\usepackage{amsmath,amssymb,mathtools,bm}
+\usepackage{booktabs,multirow,array}
+\usepackage{graphicx}
+\usepackage{caption,subcaption}
+\captionsetup{font=small,labelfont=bf}
+\usepackage{float}
+\usepackage{enumitem}
+\setlist{nosep,leftmargin=1.4em}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable,skins}
+\usepackage{listings}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,linkcolor=NavyBlue,citecolor=NavyBlue,urlcolor=NavyBlue]{hyperref}
+
+% Vietnamese names for generated labels (no babel-vietnamese on this system)
+\renewcommand{\figurename}{Hình}
+\renewcommand{\tablename}{Bảng}
+\renewcommand{\refname}{Tài liệu tham khảo}
+\renewcommand{\contentsname}{Mục lục}
+
+% ---- helpers ------------------------------------------------------------------------------------
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\indic}[1]{\mathbb{1}\!\left[#1\right]}
+\newcommand{\todo}[1]{\textcolor{BrickRed}{\textbf{[#1]}}}   % only for admin data the group must fill
+\newenvironment{algo}[1]{%
+  \begin{tcolorbox}[breakable,colback=black!2,colframe=black!35,boxrule=0.4pt,arc=2pt,
+    left=6pt,right=6pt,top=4pt,bottom=4pt,title={\small\bfseries #1},
+    coltitle=black,colbacktitle=black!8,fonttitle=\small]\small\begin{enumerate}[label=\arabic*.,itemsep=1pt]}%
+  {\end{enumerate}\end{tcolorbox}}
+
+\title{\textbf{Nhận dạng chữ số viết tay MNIST\\ bằng các bộ phân lớp tự cài đặt}\\[4pt]
+\large Naïve Bayes, Softmax Regression, MLP và AdaBoost-SAMME}
+\author{Môn Nhận dạng mẫu (Pattern Recognition) -- Đồ án giữa kỳ\\[2pt]
+Nhóm: Trần Trinh Nhân (24280088) \quad Lâm Nhật Tiến (24280029)}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\input{sections/00_abstract}
+\tableofcontents
+\newpage
+\input{sections/01_intro}
+\input{sections/02_data}
+\input{sections/03_methods}
+\input{sections/04_protocol}
+\input{sections/05_verification}
+\input{sections/06_results}
+\input{sections/07_discussion}
+\input{sections/08_extensions}
+\input{sections/09_conclusion}
+\input{sections/10_contributions}
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+\end{document}

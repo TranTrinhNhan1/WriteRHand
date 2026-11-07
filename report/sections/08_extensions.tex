@@ -1,0 +1,9 @@
+\section{Mở rộng: tăng cường dữ liệu và bản demo web}
+\label{sec:extensions}
+
+\subsection{Tăng cường dữ liệu cho MLP}
+\input{generated/augmentation}
+
+\subsection{Bản demo web và quy trình triển khai}
+\label{sec:demo}
+Mô hình được xuất ra một ``bundle'' gồm ONNX cho Naïve Bayes, softmax và MLP (đồ thị dựng tay bằng \texttt{onnx.helper}, bước chuẩn hóa $(x-\bar x)/(s+\varepsilon)$ nằm \emph{trong} đồ thị nên tiền xử lý huấn luyện và suy luận trùng nhau) và JSON cho các cây của AdaBoost (bộ đánh giá nhỏ viết bằng TypeScript). Mỗi tệp xuất được kiểm tra số học trên toàn bộ $10\,000$ ảnh test: \input{generated/export_check}. Bundle cùng model card được đẩy lên Hugging Face Hub (không đưa trọng số lên GitHub). Trang web (React + TypeScript + Vite + ONNX Runtime Web, hoàn toàn tĩnh) cho phép vẽ hoặc tải ảnh, xem ảnh $28\times28$ sau tiền xử lý, chọn một trong bốn mô hình, xem top-$k$ xác suất và bảng kết quả/ma trận nhầm lẫn/đường cong; ảnh vẽ được cắt, thu về hộp $20\times20$ và căn trọng tâm về $(14,14)$ đúng như quy trình tạo MNIST. Quy trình CI (GitHub Actions) chạy kiểm tra mã, kiểm thử đơn vị, một lượt chạy thử nhỏ của pipeline và build giao diện; không huấn luyện lại MNIST ở mỗi commit.

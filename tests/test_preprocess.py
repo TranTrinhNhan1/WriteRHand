@@ -62,7 +62,8 @@ def test_normalisation_statistics_come_from_train_only():
     Xtr, ytr, Xte, yte = _fake_mnist()
     Xte = (Xte // 2).to(torch.uint8)  # test distribution differs on purpose
     X_train, y_train, X_val, y_val, X_test, y_test, mean, std = prepare_mnist(
-        Xtr, ytr, Xte, yte, n_train=500)
+        Xtr, ytr, Xte, yte, n_train=500
+    )
     raw = flatten(Xtr)
     tr_idx, _ = stratified_split_indices(ytr.numpy(), 100, seed=42)
     expected_mean = raw[torch.from_numpy(tr_idx)].mean().item()
@@ -71,7 +72,8 @@ def test_normalisation_statistics_come_from_train_only():
     assert abs(X_test.mean().item()) > 0.05  # NOT re-centred with test statistics
     assert X_train.shape == (500, 784) and X_val.shape == (100, 784) and X_test.shape == (100, 784)
     np.testing.assert_allclose(
-        X_test.numpy(), standardize(flatten(Xte), mean, std).numpy(), atol=1e-6)
+        X_test.numpy(), standardize(flatten(Xte), mean, std).numpy(), atol=1e-6
+    )
 
 
 def test_folds_partition_and_are_stratified():

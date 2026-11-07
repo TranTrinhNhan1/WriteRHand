@@ -1,20 +1,22 @@
-'''
+"""
 Cần đảm bảo các model khác nhau dự đoán trên cùng một thứ tự mẫu mới có thể áp dụng file .py này
 True means incorrect, False means correct
-'''
-from sklearn.datasets import load_iris
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import make_pipeline
-from sklearn.linear_model import LogisticRegression
-from sklearn.naive_bayes import GaussianNB
+"""
+
 import numpy as np
+from sklearn.datasets import load_iris
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+
 
 def get_error_mask(y_true, y_pred):
-    '''
+    """
     Return boolean mask indicating the wrong predictions
     True means incorrect, False means correct
-    '''
+    """
     y_true = np.asarray(y_true)
     y_pred = np.asarray(y_pred)
     if y_true.ndim != 1 or y_pred.ndim != 1:
@@ -24,12 +26,13 @@ def get_error_mask(y_true, y_pred):
 
     return y_true != y_pred
 
+
 def make_error_matrix(y_true, predictions):
-    '''
+    """
     predictions: a dict of {model_name: y_pred}
     returns Boolean error (N, M) matrix
     each column is a model
-    '''
+    """
     if not predictions:
         raise ValueError("predictions is empty!")
     model_names = list(predictions.keys())
@@ -38,15 +41,16 @@ def make_error_matrix(y_true, predictions):
     for model in model_names:
         y_pred = predictions[model]
         error_masks.append(get_error_mask(y_true, y_pred))
-    E = np.column_stack(error_masks) # ghep nhieu 1D array thanh cac cot cua ma tran
+    E = np.column_stack(error_masks)  # ghep nhieu 1D array thanh cac cot cua ma tran
 
     return E, model_names
 
+
 def summarize_error(error_matrix, model_names):
-    '''
+    """
     return dict containing aggregate error statistics
     at_least_one_correct is the crucial metric to measure diversity for ensemble, the higher the more suitable
-    '''
+    """
     error_matrix = np.asarray(error_matrix, dtype=bool)
 
     if error_matrix.ndim != 2:
@@ -64,19 +68,19 @@ def summarize_error(error_matrix, model_names):
 
     return {
         "error_counts": {
-            name: int(count)
-            for name, count in zip(model_names, errors_per_model)
+            name: int(count) for name, count in zip(model_names, errors_per_model, strict=True)
         },
         "all_wrong_count": int(np.sum(all_wrong_mask)),
         "all_correct_count": int(np.sum(all_correct_mask)),
         "oracle_accuracy": float(np.mean(at_least_one_correct)),
-        "errors_per_sample": errors_per_sample
+        "errors_per_sample": errors_per_sample,
     }
 
+
 def compare_pair_errors(mask_a, mask_b):
-    '''
+    """
     return the four counts of correct/error - a/b matrix
-    '''
+    """
     mask_a = np.asarray(mask_a, dtype=bool)
     mask_b = np.asarray(mask_b, dtype=bool)
 
@@ -93,28 +97,20 @@ def compare_pair_errors(mask_a, mask_b):
 
     return int(ab_correct), int(a_error_b_correct), int(a_correct_b_error), int(ab_error)
 
+
 if __name__ == "__main__":
-     # 1. Load and split Iris dataset
+    # 1. Load and split Iris dataset
     iris = load_iris()
     X, y = iris.data, iris.target
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y,
-        test_size=0.3,
-        random_state=42,
-        stratify=y
+        X, y, test_size=0.3, random_state=42, stratify=y
     )
 
     # 2. Define models
     models = {
-        "Logistic Regression": make_pipeline(
-            StandardScaler(),
-            LogisticRegression(max_iter=200)
-        ),
-        "Naive Bayes": make_pipeline(
-            StandardScaler(),
-            GaussianNB()
-        )
+        "Logistic Regression": make_pipeline(StandardScaler(), LogisticRegression(max_iter=200)),
+        "Naive Bayes": make_pipeline(StandardScaler(), GaussianNB()),
     }
 
     # 3. Train models and collect predictions

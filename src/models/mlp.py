@@ -25,9 +25,23 @@ _DTYPES = {"float32": torch.float32, "float64": torch.float64}
 
 
 class MLP(BaseClassifier):
-    def __init__(self, hidden_sizes=(128,), *, learning_rate=0.1, p_drop=0.0, epochs=100,
-                 batch_size=128, momentum=0.0, seed=42, early_stopping=True, val_fraction=0.08,
-                 patience=5, min_delta=1e-4, dtype="float32", verbose=False):
+    def __init__(
+        self,
+        hidden_sizes=(128,),
+        *,
+        learning_rate=0.1,
+        p_drop=0.0,
+        epochs=100,
+        batch_size=128,
+        momentum=0.0,
+        seed=42,
+        early_stopping=True,
+        val_fraction=0.08,
+        patience=5,
+        min_delta=1e-4,
+        dtype="float32",
+        verbose=False,
+    ):
         super().__init__()
         hidden_sizes = tuple(int(h) for h in hidden_sizes)
         if any(h < 1 for h in hidden_sizes):
@@ -68,8 +82,11 @@ class MLP(BaseClassifier):
         self.W, self.b = [], []
         for fan_in, fan_out in zip(sizes[:-1], sizes[1:], strict=True):
             std = (2.0 / fan_in) ** 0.5
-            self.W.append((torch.randn(fan_in, fan_out, generator=gen, dtype=torch.float64) * std)
-                          .to(self._tdtype))
+            self.W.append(
+                (torch.randn(fan_in, fan_out, generator=gen, dtype=torch.float64) * std).to(
+                    self._tdtype
+                )
+            )
             self.b.append(torch.zeros(fan_out, dtype=self._tdtype))
         self.generator = gen  # continues the same stream for shuffling and dropout
 
@@ -90,8 +107,9 @@ class MLP(BaseClassifier):
             if i < last:
                 a = torch.relu(z)
                 if training and self.p_drop > 0:
-                    keep = (torch.rand(a.shape, generator=self.generator, dtype=a.dtype)
-                            >= self.p_drop).to(a.dtype)
+                    keep = (
+                        torch.rand(a.shape, generator=self.generator, dtype=a.dtype) >= self.p_drop
+                    ).to(a.dtype)
                     mask = keep / (1.0 - self.p_drop)
                     a = a * mask
             else:
@@ -131,9 +149,9 @@ class MLP(BaseClassifier):
     def _eval_loss(self, X_t, y_t):
         total = 0.0
         for s in range(0, X_t.shape[0], 2048):
-            _, _, logits = self._forward_cache(X_t[s:s + 2048], training=False)
+            _, _, logits = self._forward_cache(X_t[s : s + 2048], training=False)
             lp = self._log_softmax(logits)
-            total += -lp[torch.arange(len(lp)), y_t[s:s + 2048]].sum().item()
+            total += -lp[torch.arange(len(lp)), y_t[s : s + 2048]].sum().item()
         return total / X_t.shape[0]
 
     def _sgd_step(self, grads, velocity):
@@ -181,8 +199,9 @@ class MLP(BaseClassifier):
             Xv = torch.from_numpy(check_X(X_val, X.shape[1], "X_val")).to(self._tdtype)
             yv = torch.from_numpy(np.searchsorted(self.classes, np.asarray(y_val))).long()
 
-        velocity = [(torch.zeros_like(W), torch.zeros_like(b))
-                    for W, b in zip(self.W, self.b, strict=True)]
+        velocity = [
+            (torch.zeros_like(W), torch.zeros_like(b)) for W, b in zip(self.W, self.b, strict=True)
+        ]
         self.history = {"loss": [], "inner_val_loss": [], "val_loss": [], "val_acc": []}
         best_loss, best_snap, wait = float("inf"), None, 0
         self.best_epoch_ = 0
@@ -192,7 +211,7 @@ class MLP(BaseClassifier):
             order = torch.randperm(n_tr, generator=self.generator)
             total = 0.0
             for s in range(0, n_tr, self.batch_size):
-                idx = order[s:s + self.batch_size]
+                idx = order[s : s + self.batch_size]
                 loss, grads = self.loss_and_grads(X_tr[idx], y_tr[idx], training=True)
                 total += loss * len(idx)
                 self._sgd_step(grads, velocity)
@@ -236,7 +255,7 @@ class MLP(BaseClassifier):
     def _logits_t(self, X_t):
         out = []
         for s in range(0, X_t.shape[0], 2048):
-            out.append(self._forward_cache(X_t[s:s + 2048], training=False)[2])
+            out.append(self._forward_cache(X_t[s : s + 2048], training=False)[2])
         return torch.cat(out, dim=0)
 
     def _get_logits(self, X):
@@ -271,12 +290,18 @@ class MLP(BaseClassifier):
         self.classes = arrays["classes"]
         self.n_classes = len(self.classes)
         n_layers = len(self.hidden_sizes) + 1
-        self.W = [torch.from_numpy(arrays[f"W{i}"].copy()).to(self._tdtype) for i in range(n_layers)]
-        self.b = [torch.from_numpy(arrays[f"b{i}"].copy()).to(self._tdtype) for i in range(n_layers)]
+        self.W = [
+            torch.from_numpy(arrays[f"W{i}"].copy()).to(self._tdtype) for i in range(n_layers)
+        ]
+        self.b = [
+            torch.from_numpy(arrays[f"b{i}"].copy()).to(self._tdtype) for i in range(n_layers)
+        ]
 
     def _extra_state(self):
-        return {"best_epoch": int(getattr(self, "best_epoch_", 0)),
-                "stopped_epoch": int(getattr(self, "stopped_epoch_", 0))}
+        return {
+            "best_epoch": int(getattr(self, "best_epoch_", 0)),
+            "stopped_epoch": int(getattr(self, "stopped_epoch_", 0)),
+        }
 
     def _set_extra_state(self, extra):
         self.best_epoch_ = extra.get("best_epoch", 0)

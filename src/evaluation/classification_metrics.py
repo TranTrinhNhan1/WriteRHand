@@ -28,7 +28,7 @@ def confusion_matrix(y_true, y_pred, labels):
     Samples whose label (true or predicted) is not in ``labels`` are ignored.
     """
     labels = np.asarray(list(labels))
-    pos = {int(l): i for i, l in enumerate(labels)}
+    pos = {int(lab): i for i, lab in enumerate(labels)}
     k = len(labels)
     yt = np.array([pos.get(int(v), -1) for v in y_true])
     yp = np.array([pos.get(int(v), -1) for v in y_pred])
@@ -52,13 +52,16 @@ def per_class_metrics(cm):
 def format_report(cm, labels):
     precision, recall, f1, support = per_class_metrics(cm)
     lines = [f"{'':>12}{'precision':>10}{'recall':>10}{'f1-score':>10}{'support':>10}", ""]
-    for l, p, r, f, s in zip(labels, precision, recall, f1, support, strict=True):
-        lines.append(f"{l!s:>12}{p:>10.2f}{r:>10.2f}{f:>10.2f}{s:>10d}")
+    for label, p, r, f, s in zip(labels, precision, recall, f1, support, strict=True):
+        lines.append(f"{label!s:>12}{p:>10.2f}{r:>10.2f}{f:>10.2f}{s:>10d}")
     total = int(support.sum())
     acc = float(np.trace(cm) / total) if total else 0.0
-    lines += ["", f"{'accuracy':>12}{'':>20}{acc:>10.2f}{total:>10d}",
-              f"{'macro avg':>12}{precision.mean():>10.2f}{recall.mean():>10.2f}"
-              f"{f1.mean():>10.2f}{total:>10d}"]
+    lines += [
+        "",
+        f"{'accuracy':>12}{'':>20}{acc:>10.2f}{total:>10d}",
+        f"{'macro avg':>12}{precision.mean():>10.2f}{recall.mean():>10.2f}"
+        f"{f1.mean():>10.2f}{total:>10d}",
+    ]
     return "\n".join(lines)
 
 

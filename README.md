@@ -1,93 +1,86 @@
-# Nhận dạng chữ số viết tay MNIST bằng các bộ phân lớp tự cài đặt
+# WriteRHand - nhận dạng chữ số viết tay MNIST bằng các bộ phân lớp tự cài đặt
 
-Đồ án môn **Nhận dạng mẫu (Pattern Recognition)**.
+Đồ án môn **Nhận dạng mẫu (Pattern Recognition)**. Bốn bộ phân lớp, phần tính toán lõi viết bằng NumPy
+(PyTorch chỉ làm tensor cho MLP, **không dùng autograd**; scikit-learn chỉ để đối chiếu):
 
-## 1. Giới thiệu
+| # | Bộ phân lớp | Cách huấn luyện | Mã nguồn |
+|---|-------------|-----------------|----------|
+| 1 | Gaussian Naïve Bayes | MLE + log-xác suất | `src/models/naive_bayes.py` |
+| 2 | Hồi quy logistic đa lớp (softmax) | mini-batch Gradient Descent, L2 | `src/models/logistic_regression.py` |
+| 3 | MLP (ReLU, dropout, momentum) | lan truyền ngược viết tay, early stopping | `src/models/mlp.py` |
+| 4 | AdaBoost-SAMME (cây Gini có trọng số) | boosting tuần tự | `src/models/adaboost.py` |
 
-MNIST gồm 70.000 ảnh xám 28×28 của chữ số viết tay từ 0 đến 9 (60.000 ảnh huấn luyện, 10.000 ảnh kiểm thử). Đồ án tự cài đặt các bộ phân lớp đã học, huấn luyện trên MNIST, rồi so sánh và phân tích kết quả.
+**English summary.** Handwritten digit classification on MNIST with four classifiers implemented from scratch,
+a leak-free reproducible protocol (stratified 50k/10k train/validation split, official 10k test), validation-only
+hyper-parameter search, scikit-learn parity tests, W&B tracking (offline fallback), ONNX export to Hugging Face,
+an in-browser demo (React + ONNX Runtime Web) and a LaTeX report with slides.
 
-**Quy ước "from scratch":** phần tính toán lõi của mỗi thuật toán được viết bằng NumPy. `scikit-learn` chỉ dùng để đối chiếu kết quả. Riêng MLP được phép dùng PyTorch/TensorFlow cho phần khung.
+## Kết quả
 
-## 2. Các bộ phân lớp
+Đo trên CPU (xem `results/final/*.json` để biết phần cứng và phiên bản thư viện). Siêu tham số chọn **chỉ trên validation**;
+test chỉ để báo cáo. Bảng này được sinh tự động từ `results/` bằng `uv run python -m src report`.
 
-| # | Bộ phân lớp | Biến thể chọn | Cách huấn luyện |
-|---|-------------|---------------|-----------------|
-| 1 | Naïve Bayes | Gaussian / Multinomial (chọn 1) | Ước lượng tham số theo MLE |
-| 2 | Bộ phân lớp tuyến tính | Logistic Regression (softmax) / SVM tuyến tính (chọn 1) | Gradient Descent |
-| 3 | Mạng nơ-ron nhiều lớp (MLP) | _điền cấu trúc_ | Lan truyền ngược (backpropagation) |
-| 4 | Ensemble | Random Forest / AdaBoost / Gradient Boosting (chọn 1) | _điền_ |
+<!-- BENCHMARK:START -->
+_Chạy `uv run python -m src report` để sinh bảng._
+<!-- BENCHMARK:END -->
 
-> Điền lựa chọn cuối cùng của nhóm vào bảng trên.
+Chi tiết: báo cáo `report/main.pdf`, slide `slides/slides.pdf`, notebook `notebooks/`, nhật ký thí nghiệm `results/`.
 
-## 3. Đánh giá
+## Cài đặt
 
-- Chỉ số: accuracy, precision, recall, F1 (macro), confusion matrix.
-- Tính trên cả **tập huấn luyện, validation và kiểm thử**.
-- Thí nghiệm siêu tham số (learning rate, số lớp/nơ-ron, số cây, số vòng lặp, ...) có biểu đồ.
-- So sánh 4 phương pháp về: độ chính xác, thời gian huấn luyện, thời gian dự đoán, khả năng giải thích.
+Yêu cầu: [uv](https://docs.astral.sh/uv/) và Python ≥ 3.11 (phát triển/CI trên 3.12). PyTorch được cài bản CPU.
 
-## 4. Cấu trúc thư mục
-
-```
-.
-├── README.md
-├── WORKFLOW.md
-├── requirements.txt
-├── .gitignore
-├── data/            # dữ liệu MNIST (không đưa lên git)
-├── src/
-│   ├── models/      # mỗi bộ phân lớp một file
-│   ├── metrics/     # accuracy, precision, recall, F1, confusion matrix
-│   └── utils/       # đo thời gian, vẽ biểu đồ, đặt seed
-├── notebooks/       # thí nghiệm, trực quan hoá (mỗi người một notebook)
-├── results/         # bảng số liệu, biểu đồ, log
-└── report/          # báo cáo giữa kỳ, cuối kỳ
+```bash
+uv sync --extra export --extra track --group dev   # môi trường tái lập từ uv.lock
+uv run pytest                                      # kiểm thử (chạy offline, ~30 s)
+uv run ruff check src tests && uv run ruff format --check src tests
 ```
 
-## 5. Cài đặt
+## Tái lập toàn bộ thí nghiệm (CLI)
 
-Yêu cầu: Python 3.10+.
-
+```bash
+uv run python -m src prepare                  # tải MNIST, chia phân tầng 50k/10k, ghi thống kê chuẩn hóa
+uv run python -m src tune --model all         # quét siêu tham số (chỉ train/val)  -> results/tuning/
+uv run python -m src train --model all        # huấn luyện cấu hình đã chọn, đánh giá train/val/test -> results/final/
+uv run python -m src baselines --model all    # đối chứng scikit-learn cùng giao thức -> results/baselines/
+uv run python -m src augment                  # (tuỳ chọn) nghiên cứu tăng cường dữ liệu -> results/augmentation.json
+uv run python -m src report                   # bảng + hình (results/tables, results/figures) và cập nhật README
+uv run python -m src export                   # ONNX/JSON + kiểm chứng số học -> artifacts/bundle
+uv run python -m src upload --dry-run         # xem sẽ đẩy gì lên Hugging Face (bỏ --dry-run để đẩy)
 ```
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+
+`--smoke` chạy bản siêu nhỏ (vài giây) để kiểm tra pipeline; `--results-dir`/`--artifacts-dir` đổi nơi ghi.
+Notebook tái lập kết quả chính: `notebooks/reproduce_results.ipynb` (không phụ thuộc trạng thái ẩn).
+
+### Theo dõi thí nghiệm (Weights & Biases)
+`--wandb auto` (mặc định) dùng chế độ online nếu có `WANDB_API_KEY` (hoặc đã `wandb login`), ngược lại **offline** (ghi vào `./wandb`,
+đồng bộ sau bằng `wandb sync wandb/offline-run-*`); `--wandb disabled` tắt hẳn. Mỗi run ghi tên mô hình, siêu tham số, seed, git commit,
+mã băm phép chia dữ liệu, loss/accuracy theo epoch, ma trận nhầm lẫn, thời gian và artifact mô hình. Nhật ký JSON trong `results/` luôn được ghi, không phụ thuộc W&B.
+
+### Mô hình và website
+Trọng số **không** được commit. Bundle (ONNX + JSON + model card) nằm trên Hugging Face:
+<https://huggingface.co/TranTrinhNhan1111/WriteRHand-MNIST>. Website tĩnh (React + TypeScript + Vite + ONNX Runtime Web) nằm trong `web/`
+(xem `web/README.md`); CI build và triển khai lên GitHub Pages bằng `.github/workflows/pages.yml`.
+
+## Giao thức thực nghiệm (tóm tắt)
+- 60 000 ảnh huấn luyện chính thức → **50 000 train / 10 000 validation** (phân tầng, seed 42); 10 000 ảnh test chính thức.
+- Chuẩn hóa `(pixel/255 − mean)/(std + 1e-8)` với `mean`, `std` chỉ tính trên train; cùng công thức dùng trong trình duyệt.
+- Chọn siêu tham số bằng quét tuần tự từng tham số, chọn theo validation; mọi cấu hình đã chạy được ghi lại. Hàm tìm kiếm không nhận mảng test.
+- Mô hình cuối huấn luyện trên 50 000 ảnh train; báo cáo train/val/test với accuracy, macro precision/recall/F1, confusion matrix.
+
+## Cấu trúc thư mục
+```
+src/                 models/ (4 bộ phân lớp), preprocessing/, evaluation/, experiments/ (tune, train, report, augment), export/ (ONNX, Hugging Face), cli.py
+tests/               kiểm thử đơn vị + đối chiếu scikit-learn (63+ kiểm thử, chạy offline)
+notebooks/           EDA, reproduce_results (chính), fine-tuning, final_eval_with_test_set, eval_for_ensemble (khám phá)
+results/             tuning/ final/ baselines/ tables/ figures/ (sinh ra bởi chương trình)
+report/              báo cáo LaTeX (main.tex → main.pdf)    slides/   slide Beamer
+web/                 website demo      .github/workflows/   CI + GitHub Pages
 ```
 
-Thư viện dự kiến: `numpy`, `matplotlib`, `pandas`, `scikit-learn` (chỉ để đối chiếu), `torch` hoặc `tensorflow` (chỉ cho MLP), `jupyter`.
+## Thành viên
+Xem mục 10 của báo cáo (đóng góp theo bằng chứng Git; MSSV và tỉ lệ do nhóm tự điền). Phần hoàn thiện đồ án được thực hiện **với sự hỗ trợ của
+trợ lý lập trình AI (Claude Code)** theo đúng công bố trong báo cáo. Quy trình nhóm: [WORKFLOW.md](WORKFLOW.md).
 
-## 6. Dữ liệu
-
-- Tải MNIST về thư mục `data/raw` 
-```
-python src/preprocessing/download_data.py
-```
-- Chia tập: _ảnh_ huấn luyện / _ảnh_ validation (tách từ 60.000 ảnh huấn luyện) / 10.000 ảnh kiểm thử.
-- Tiền xử lý: chia pixel cho 255, làm phẳng 28×28 thành vector 784 chiều.
-- Seed cố định: _điền_.
-
-## 7. Cách chạy
-
-_Cập nhật lệnh chạy huấn luyện và đánh giá khi các script đã sẵn sàng._
-
-## 8. Kết quả
-
-_Điền sau khi chạy thí nghiệm._
-
-| Mô hình | Acc (train) | Acc (val) | Acc (test) | F1 macro (test) | Thời gian huấn luyện | Thời gian dự đoán |
-|---------|-------------|-----------|------------|-----------------|----------------------|-------------------|
-| Naïve Bayes | | | | | | |
-| Linear (GD) | | | | | | |
-| MLP | | | | | | |
-| Ensemble | | | | | | |
-
-## 9. Thành viên
-
-| Họ tên | MSSV | Phụ trách |
-|--------|------|-----------|
-| | | |
-| | | |
-
-## 10. Quy trình làm việc nhóm
-
-Xem [WORKFLOW.md](WORKFLOW.md).
+## Tài liệu / nguồn
+LeCun et al. (1998) cho MNIST; Zhu et al. (2009) cho SAMME; xem danh mục đầy đủ trong báo cáo.

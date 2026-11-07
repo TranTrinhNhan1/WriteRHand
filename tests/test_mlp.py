@@ -72,7 +72,9 @@ def test_manual_backprop_equals_autograd():
         z = a @ params[2 * i] + params[2 * i + 1]
         if i < last:
             a = torch.relu(z)
-            keep = (torch.rand(a.shape, generator=m.generator, dtype=a.dtype) >= m.p_drop).to(a.dtype)
+            keep = (torch.rand(a.shape, generator=m.generator, dtype=a.dtype) >= m.p_drop).to(
+                a.dtype
+            )
             a = a * keep / (1 - m.p_drop)
         else:
             a = z
@@ -132,7 +134,9 @@ def test_dropout_mask_is_inverted_and_only_in_training():
 
 def test_training_learns_digits_and_is_reproducible(digits):
     Xtr, ytr, Xte, yte = digits
-    kw = dict(hidden_sizes=(32,), learning_rate=0.05, momentum=0.9, epochs=12, batch_size=32, seed=7)
+    kw = dict(
+        hidden_sizes=(32,), learning_rate=0.05, momentum=0.9, epochs=12, batch_size=32, seed=7
+    )
     a = MLP(**kw).fit(Xtr, ytr, Xte, yte)
     b = MLP(**kw).fit(Xtr, ytr)
     assert a.score(Xte, yte) > 0.93
@@ -152,7 +156,9 @@ def test_early_stopping_uses_internal_holdout_and_restores_best(digits):
     assert len(m.stop_val_idx) == int(len(Xtr) * 0.1)
     assert m.best_inner_loss_ == pytest.approx(min(m.history["inner_val_loss"]))
     # the explicit validation set never influenced the stopping rule:
-    m2 = MLP((64,), learning_rate=0.2, epochs=200, patience=2, val_fraction=0.1, seed=0).fit(Xtr, ytr)
+    m2 = MLP((64,), learning_rate=0.2, epochs=200, patience=2, val_fraction=0.1, seed=0).fit(
+        Xtr, ytr
+    )
     assert m2.stopped_epoch_ == m.stopped_epoch_ and m2.best_epoch_ == m.best_epoch_
 
 
@@ -183,7 +189,12 @@ def test_save_load_roundtrip(digits, tmp_path):
 
 def test_validation_errors(digits):
     Xtr, ytr, Xte, _ = digits
-    for bad in (dict(p_drop=1.0), dict(momentum=1.0), dict(learning_rate=0), dict(hidden_sizes=(0,))):
+    for bad in (
+        dict(p_drop=1.0),
+        dict(momentum=1.0),
+        dict(learning_rate=0),
+        dict(hidden_sizes=(0,)),
+    ):
         with pytest.raises(ValueError):
             MLP(**bad)
     with pytest.raises(RuntimeError):

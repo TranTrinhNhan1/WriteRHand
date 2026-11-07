@@ -81,8 +81,16 @@ def split_fingerprint(train_idx, val_idx):
     return h.hexdigest()[:16]
 
 
-def prepare_mnist(Xtr_raw, ytr_raw, Xte_raw, yte_raw, has_validation=True,
-                  seed=SEED, n_train=N_TRAIN, stratified=True):
+def prepare_mnist(
+    Xtr_raw,
+    ytr_raw,
+    Xte_raw,
+    yte_raw,
+    has_validation=True,
+    seed=SEED,
+    n_train=N_TRAIN,
+    stratified=True,
+):
     """Split + normalise.
 
     ``has_validation=True``  -> ``X_train, y_train, X_val, y_val, X_test, y_test, mean, std``
@@ -140,9 +148,12 @@ def build_dataset(root=DATA_DIR, seed=SEED, n_train=N_TRAIN):
         "split_fingerprint": split_fingerprint(tr_idx, va_idx),
     }
     data = {
-        "X_train": norm(X_all[tr_idx]), "y_train": ytr_raw.numpy()[tr_idx].astype(np.int64),
-        "X_val": norm(X_all[va_idx]), "y_val": ytr_raw.numpy()[va_idx].astype(np.int64),
-        "X_test": norm(X_test_raw), "y_test": yte_raw.numpy().astype(np.int64),
+        "X_train": norm(X_all[tr_idx]),
+        "y_train": ytr_raw.numpy()[tr_idx].astype(np.int64),
+        "X_val": norm(X_all[va_idx]),
+        "y_val": ytr_raw.numpy()[va_idx].astype(np.int64),
+        "X_test": norm(X_test_raw),
+        "y_test": yte_raw.numpy().astype(np.int64),
     }
     return data, meta
 
@@ -161,8 +172,11 @@ def load_dataset(root=PROCESSED_PATH, seed=SEED, n_train=N_TRAIN):
     meta = None
     if npz.is_file() and meta_path.is_file():
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
-        if (meta.get("preprocess_version") != PREPROCESS_VERSION
-                or meta.get("seed") != seed or meta.get("n_train") != n_train):
+        if (
+            meta.get("preprocess_version") != PREPROCESS_VERSION
+            or meta.get("seed") != seed
+            or meta.get("n_train") != n_train
+        ):
             meta = None  # stale cache
     if meta is None:
         meta = save_processed_data(root, seed, n_train)
@@ -174,5 +188,7 @@ def load_dataset(root=PROCESSED_PATH, seed=SEED, n_train=N_TRAIN):
 def load_processed_data(root=PROCESSED_PATH):
     """Backward-compatible tuple of torch tensors (X_train, y_train, X_val, y_val, X_test, y_test)."""
     data, _ = load_dataset(root)
-    return tuple(torch.from_numpy(data[k]) for k in
-                 ("X_train", "y_train", "X_val", "y_val", "X_test", "y_test"))
+    return tuple(
+        torch.from_numpy(data[k])
+        for k in ("X_train", "y_train", "X_val", "y_val", "X_test", "y_test")
+    )

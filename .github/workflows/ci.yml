@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python (lint, tests, smoke run)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --extra export --extra track --group dev
+      - name: Ruff lint
+        run: uv run ruff check src tests
+      - name: Ruff format check
+        run: uv run ruff format --check src tests
+      - name: Unit tests
+        run: uv run pytest tests
+      - name: Cache MNIST
+        uses: actions/cache@v4
+        with:
+          path: data/MNIST
+          key: mnist-raw-v1
+      - name: Smoke pipeline (tiny subset, CPU, no W&B)
+        run: |
+          set -e
+          out="$RUNNER_TEMP/smoke"
+          uv run python -m src prepare
+          uv run python -m src tune --model all --smoke --wandb disabled --results-dir "$out"
+          uv run python -m src train --model all --smoke --wandb disabled --results-dir "$out" --artifacts-dir "$out/art"
+          uv run python -m src baselines --model all --smoke --results-dir "$out"
+          uv run python -m src export --results-dir "$out" --artifacts-dir "$out/art"
+          test -f "$out/art/bundle/manifest.json"
+
+  web:
+    name: Web (typecheck, test, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - name: Fetch model bundle from Hugging Face (public) for parity tests
+        run: |
+          base="https://huggingface.co/TranTrinhNhan1111/WriteRHand-MNIST/resolve/main"
+          mkdir -p public/bundle/models
+          for f in manifest.json results.json test_vectors.json models/naive_bayes.onnx models/softmax.onnx models/mlp.onnx models/adaboost.json; do
+            curl -fsSL "$base/$f" -o "public/bundle/$f" || echo "could not fetch $f"
+          done
+      - run: npm test
+      - run: npm run build
+        env:
+          VITE_BASE: /WriteRHand/

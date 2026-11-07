@@ -34,7 +34,8 @@ def check_X(X, n_features=None, name="X"):
         raise ValueError(f"{name} must not contain NaN or infinity.")
     if n_features is not None and X.shape[1] != n_features:
         raise ValueError(
-            f"{name} has {X.shape[1]} features but the model was fitted with {n_features}.")
+            f"{name} has {X.shape[1]} features but the model was fitted with {n_features}."
+        )
     return X
 
 
@@ -107,7 +108,7 @@ class BaseClassifier(ABC):
         """Extra JSON-serialisable fitted values (override when needed)."""
         return {}
 
-    def _set_extra_state(self, extra):
+    def _set_extra_state(self, extra):  # noqa: B027 - optional hook
         pass
 
     def save(self, path):

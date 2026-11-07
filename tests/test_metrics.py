@@ -1,6 +1,12 @@
 import numpy as np
 import pytest
-from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, precision_score, recall_score
+from sklearn.metrics import (
+    accuracy_score,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+)
 
 from src.evaluation.classification_metrics import get_metrics
 
@@ -29,7 +35,8 @@ def test_matches_scikit_learn_on_random_predictions():
     assert m["recall_macro"] == pytest.approx(recall_score(y_true, y_pred, **kw))
     assert m["f1_macro"] == pytest.approx(f1_score(y_true, y_pred, **kw))
     np.testing.assert_array_equal(
-        m["confusion_matrix"], confusion_matrix(y_true, y_pred, labels=range(10)))
+        m["confusion_matrix"], confusion_matrix(y_true, y_pred, labels=range(10))
+    )
 
 
 def test_class_never_predicted_gives_zero_not_nan():
@@ -40,6 +47,7 @@ def test_class_never_predicted_gives_zero_not_nan():
 
 def test_accepts_torch_tensors_and_checks_shapes():
     import torch
+
     m = get_metrics(torch.tensor([0, 1]), torch.tensor([0, 1]), labels=range(2))
     assert m["accuracy"] == 1.0
     with pytest.raises(ValueError):

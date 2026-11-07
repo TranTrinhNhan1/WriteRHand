@@ -1,0 +1,14 @@
+\section{Giới thiệu}
+Nhận dạng chữ số viết tay trên MNIST \citep{lecun1998} là bài toán phân lớp 10 lớp kinh điển của nhận dạng mẫu: mỗi ảnh xám $28\times28$ chứa một chữ số từ 0 đến 9 đã được căn giữa. Đồ án này \emph{tự cài đặt} bốn bộ phân lớp thuộc bốn họ phương pháp khác nhau -- mô hình sinh (Gaussian Naïve Bayes), mô hình tuyến tính phân biệt (hồi quy softmax huấn luyện bằng Gradient Descent), mạng nơ-ron nhiều lớp (MLP, lan truyền ngược) và ensemble (AdaBoost-SAMME) -- rồi so sánh chúng trên cùng một giao thức đánh giá về độ chính xác, thời gian huấn luyện, thời gian dự đoán và khả năng giải thích.
+
+\textbf{Quy ước ``from scratch''.} Phần tính toán lõi của mỗi thuật toán (ước lượng tham số, hàm mất mát, gradient, cập nhật, dựng cây, cập nhật trọng số boosting) do nhóm viết bằng NumPy. scikit-learn chỉ được dùng để \emph{đối chiếu} (kiểm thử và so sánh baseline); PyTorch chỉ cung cấp tensor và sinh số ngẫu nhiên cho MLP, \emph{không dùng autograd để huấn luyện}.
+
+\textbf{Đóng góp chính.}
+(i) Bốn bộ phân lớp với giao diện thống nhất, có kiểm thử đối chiếu scikit-learn và kiểm tra gradient bằng sai phân hữu hạn;
+(ii) một giao thức thực nghiệm nhất quán, không rò rỉ dữ liệu, điều khiển bằng dòng lệnh và ghi nhận bằng Weights \& Biases;
+(iii) các thí nghiệm siêu tham số với đầy đủ nhật ký, so sánh công bằng với scikit-learn;
+(iv) bản demo web chạy hoàn toàn trên trình duyệt (ONNX Runtime Web) và quy trình xuất/kiểm chứng mô hình;
+(v) một nghiên cứu mở rộng có đối chứng về tăng cường dữ liệu.
+Toàn bộ mã nguồn, kết quả và notebook nằm trong kho GitHub của đồ án; mô hình đã huấn luyện được đưa lên Hugging Face Hub (Mục~\ref{sec:demo}).
+
+\textbf{Bố cục.} Mục~\ref{sec:data} mô tả dữ liệu; Mục~\ref{sec:methods} trình bày lý thuyết và cài đặt; Mục~\ref{sec:protocol} giao thức thực nghiệm; Mục~\ref{sec:verification} kiểm chứng; Mục~\ref{sec:results} kết quả; Mục~\ref{sec:discussion} thảo luận; các mục cuối là mở rộng, kết luận, đóng góp nhóm và công bố việc sử dụng AI.

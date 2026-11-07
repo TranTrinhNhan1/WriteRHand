@@ -4,7 +4,7 @@ from sklearn.ensemble import AdaBoostClassifier
 from sklearn.tree import DecisionTreeClassifier
 
 from src.models.adaboost import AdaBoostSAMME, WeightedTree
-from src.models.base import BaseClassifier
+from src.models.base import BaseClassifier, NotFittedError
 
 
 def _fit_tree(X, y, w, depth, n_bins=16):
@@ -14,7 +14,9 @@ def _fit_tree(X, y, w, depth, n_bins=16):
     Xb = np.empty(X.shape, dtype=np.uint8, order="F")
     Xb[:] = np.clip(np.floor((X - lo) / step), 0, n_bins - 1)
     classes, yi = np.unique(y, return_inverse=True)
-    t = WeightedTree(depth, n_bins).fit_binned(Xb, yi, w, len(classes), np.arange(X.shape[1]), lo, step)
+    t = WeightedTree(depth, n_bins).fit_binned(
+        Xb, yi, w, len(classes), np.arange(X.shape[1]), lo, step
+    )
     return t, classes
 
 
@@ -115,7 +117,7 @@ def test_validation_errors(digits):
         AdaBoostSAMME(max_features=0)
     with pytest.raises(ValueError):
         AdaBoostSAMME().fit(Xtr, np.zeros(len(Xtr)))  # a single class
-    with pytest.raises(Exception):
+    with pytest.raises(NotFittedError):
         AdaBoostSAMME().predict(Xte)
     m = AdaBoostSAMME(n_estimators=2).fit(Xtr, ytr)
     assert m.n_estimators_ == 2

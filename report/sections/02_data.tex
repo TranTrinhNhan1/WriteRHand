@@ -1,0 +1,16 @@
+\section{Dữ liệu và tiền xử lý}
+\label{sec:data}
+MNIST gồm $60\,000$ ảnh huấn luyện và $10\,000$ ảnh kiểm thử chính thức, mỗi ảnh $28\times28$ điểm ảnh 8 bit (0 = nền đen, 255 = nét trắng), chữ số đã được chuẩn hóa kích thước về hộp $20\times20$ và căn giữa theo trọng tâm \citep{lecun1998}. Dữ liệu được tải bằng \texttt{torchvision.datasets.MNIST}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{../results/figures/eda_overview.pdf}
+\caption{Khảo sát dữ liệu (tập huấn luyện chính thức): hai hàng mẫu ngẫu nhiên cho mỗi chữ số, ảnh trung bình của lớp 3 và 8, bản đồ pixel không đổi, ảnh trung bình toàn tập.}
+\label{fig:eda}
+\end{figure}
+
+\textbf{Phân bố lớp.} Các lớp gần cân bằng: lớp 1 chiếm nhiều nhất (khoảng 11,2\%) và lớp 5 ít nhất (khoảng 9,0\%), nên accuracy là chỉ số hợp lý, nhưng vẫn báo cáo macro precision/recall/F1 để lớp ít mẫu không bị che khuất.
+
+\textbf{Pixel không mang thông tin.} Khoảng $81\%$ giá trị điểm ảnh là nền (0). Trên 50\,000 ảnh huấn luyện có $71$ vị trí \emph{luôn} là nền (phương sai bằng 0), tập trung ở viền ảnh. Chúng làm Naïve Bayes có phương sai 0 (cần smoothing, Mục~\ref{sec:methods}) và không bao giờ được cây quyết định chọn để tách.
+
+\textbf{Chia tập và chuẩn hóa.} Như trong Mục~\ref{sec:protocol}: chia phân tầng $50\,000/10\,000$ (seed 42, mã băm \texttt{52cc8206ff96f56d}), chuẩn hóa vô hướng với $\bar x=0{,}13063$ và $s=0{,}30808$ (tính trên phần train). Dùng một cặp $(\bar x,s)$ chung cho cả ảnh (thay vì chuẩn hóa từng pixel) giữ nguyên hình dạng của dữ liệu, tránh chia cho phương sai gần 0 của các pixel ở viền và cho phép bản demo trên trình duyệt áp dụng đúng cùng phép biến đổi. Ảnh được làm phẳng thành vector 784 chiều.

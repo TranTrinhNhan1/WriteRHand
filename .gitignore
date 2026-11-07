@@ -29,3 +29,33 @@ data/
 
 # Bí mật
 .env
+
+# Hugging Face / W&B / local artifacts
+artifacts/
+wandb/
+.ruff_cache/
+.pytest_cache/
+
+# Node / web
+node_modules/
+web/dist/
+web/.vite/
+
+# LaTeX build files
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.nav
+*.snm
+*.vrb
+*.bbl
+*.blg
+.env.*
+
+
+# notebook scratch runs
+results/_notebook_*/

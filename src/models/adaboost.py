@@ -60,7 +60,7 @@ class WeightedTree:
             right_c = tot - left_c
             Wl, Wr = left_c.sum(-1), right_c.sum(-1)
             with np.errstate(divide="ignore", invalid="ignore"):
-                cost = (Wl - (left_c ** 2).sum(-1) / Wl) + (Wr - (right_c ** 2).sum(-1) / Wr)
+                cost = (Wl - (left_c**2).sum(-1) / Wl) + (Wr - (right_c**2).sum(-1) / Wr)
             cost[(Wl <= 1e-15) | (Wr <= 1e-15)] = np.inf  # one side empty -> invalid split
             parent_w = tot[0, 0].sum(-1)  # (M,)
             parent_cost = parent_w - (tot[0, 0] ** 2).sum(-1) / np.maximum(parent_w, 1e-300)
@@ -130,11 +130,26 @@ class AdaBoostSAMME(BaseClassifier):
     max_features : fraction (0, 1] of features examined by each tree (random subspace), 1 = all.
     """
 
-    _state_arrays = ("classes", "tree_feature", "tree_threshold", "tree_left", "tree_right",
-                     "tree_leaf", "alphas")
+    _state_arrays = (
+        "classes",
+        "tree_feature",
+        "tree_threshold",
+        "tree_left",
+        "tree_right",
+        "tree_leaf",
+        "alphas",
+    )
 
-    def __init__(self, n_estimators=100, max_depth=3, learning_rate=1.0, n_bins=32,
-                 max_features=1.0, seed=42, verbose=False):
+    def __init__(
+        self,
+        n_estimators=100,
+        max_depth=3,
+        learning_rate=1.0,
+        n_bins=32,
+        max_features=1.0,
+        seed=42,
+        verbose=False,
+    ):
         super().__init__()
         if n_estimators < 1:
             raise ValueError("n_estimators must be >= 1.")
@@ -158,8 +173,8 @@ class AdaBoostSAMME(BaseClassifier):
     def _bin(self, X, lo, step):
         Xb = np.empty(X.shape, dtype=np.uint8, order="F")
         for s in range(0, len(X), 8192):
-            q = np.floor((X[s:s + 8192] - lo) / step)
-            Xb[s:s + 8192] = np.clip(q, 0, self.n_bins - 1)
+            q = np.floor((X[s : s + 8192] - lo) / step)
+            Xb[s : s + 8192] = np.clip(q, 0, self.n_bins - 1)
         return Xb
 
     def fit(self, X, y, X_val=None, y_val=None):
@@ -188,10 +203,14 @@ class AdaBoostSAMME(BaseClassifier):
         self.history = {"train_err_weighted": [], "alpha": [], "train_acc": [], "val_acc": []}
 
         for t in range(self.n_estimators):
-            fids = (np.sort(rng.choice(usable, n_feat, replace=False))
-                    if n_feat < len(usable) else usable)
+            fids = (
+                np.sort(rng.choice(usable, n_feat, replace=False))
+                if n_feat < len(usable)
+                else usable
+            )
             tree = WeightedTree(self.max_depth, self.n_bins).fit_binned(
-                Xb, y_idx, w, K, fids, lo, step)
+                Xb, y_idx, w, K, fids, lo, step
+            )
             pred = tree.predict_idx(X)
             miss = pred != y_idx
             err = float(w[miss].sum() / w.sum())
@@ -212,8 +231,10 @@ class AdaBoostSAMME(BaseClassifier):
                 score_val[np.arange(len(X_val)), tree.predict_idx(X_val)] += alpha
                 self.history["val_acc"].append(float(np.mean(score_val.argmax(1) == yv_idx)))
             if self.verbose and (t + 1) % 10 == 0:
-                print(f"round {t + 1}/{self.n_estimators} err={err:.4f} "
-                      f"train_acc={self.history['train_acc'][-1]:.4f}")
+                print(
+                    f"round {t + 1}/{self.n_estimators} err={err:.4f} "
+                    f"train_acc={self.history['train_acc'][-1]:.4f}"
+                )
             if err <= 1e-12:  # perfect weak learner: nothing left to boost
                 break
             w = w * np.exp(alpha * miss)
@@ -273,7 +294,8 @@ class AdaBoostSAMME(BaseClassifier):
         return out
 
     def predict(self, X):
-        return self.classes[self.decision_scores(X).argmax(axis=1)]
+        idx = self.decision_scores(X).argmax(axis=1)
+        return self.classes[idx]
 
     def predict_proba(self, X):
         """Normalised weighted vote shares (sum to 1). Not calibrated probabilities."""

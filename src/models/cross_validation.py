@@ -1,27 +1,29 @@
-'''
+"""
 Dùng tập train để train K-fold tìm bộ siêu tham số tốt nhất
 Cần preprocess lại từ đầu vì tập train đã chuẩn hóa theo mean/std, nếu dùng thì sẽ gây data leakage trên các fold.
-'''
+"""
+
+from itertools import product
 
 import numpy as np
 import torch
-from itertools import product
+
 from src.evaluation.classification_metrics import get_metrics
-from src.preprocessing.preprocess import prepare_mnist, load_mnist
+from src.preprocessing.preprocess import load_mnist, prepare_mnist
 
 SEED = 42
 
 
 def create_folds(n_samples, k=4, seed=SEED, y=None):
-    ''' tra ve cac chi so cua tap train va cua tap val.
-    Neu truyen nhan ``y`` thi chia phan tang (moi fold giu ti le cac lop).'''
+    """tra ve cac chi so cua tap train va cua tap val.
+    Neu truyen nhan ``y`` thi chia phan tang (moi fold giu ti le cac lop)."""
     if k < 2 or k > n_samples:
         raise ValueError("k phải nằm trong khoảng [2, n_samples].")
 
     if y is None:
         generator = torch.Generator().manual_seed(seed)
         shuffled_indices = torch.randperm(n_samples, generator=generator)
-        folds = torch.tensor_split(shuffled_indices, k) # chia thanh k phan bang nhau
+        folds = torch.tensor_split(shuffled_indices, k)  # chia thanh k phan bang nhau
     else:
         y = np.asarray(y)
         rng = np.random.default_rng(seed)
@@ -37,26 +39,20 @@ def create_folds(n_samples, k=4, seed=SEED, y=None):
         # moi lan lap lay 1 fold lam val va cac fold con lai lam train
         val_indices = folds[i]
 
-        train_indices = torch.cat([
-            folds[j] for j in range(k) if j != i
-        ])
+        train_indices = torch.cat([folds[j] for j in range(k) if j != i])
 
         splits.append((train_indices, val_indices))
 
     return splits
 
-def run_kfold(model_factory, X, y, K=4, seed=SEED, labels=None): 
-    '''    labels la range(10)
+
+def run_kfold(model_factory, X, y, K=4, seed=SEED, labels=None):
+    """labels la range(10)
     model_factory la ham tao model moi
     X, y la data chua preprocess
-    '''
+    """
     splits = create_folds(len(X), K, seed, y=y)
-    metric_names = [
-        "accuracy",
-        "precision_macro",
-        "recall_macro",
-        "f1_macro"
-    ]
+    metric_names = ["accuracy", "precision_macro", "recall_macro", "f1_macro"]
 
     fold_scores = []
     for fold_no, (idx_train, idx_val) in enumerate(splits, start=1):
@@ -67,7 +63,9 @@ def run_kfold(model_factory, X, y, K=4, seed=SEED, labels=None):
         y_val = y[idx_val]
 
         # preprocess de thanh du lieu chuan
-        X_tr, y_tr, X_val, y_val, _, _ = prepare_mnist(X_tr, y_tr, X_val, y_val, has_validation=False)
+        X_tr, y_tr, X_val, y_val, _, _ = prepare_mnist(
+            X_tr, y_tr, X_val, y_val, has_validation=False
+        )
         model = model_factory()
         model.fit(X_tr, y_tr)
         y_pred = model.predict(X_val)
@@ -87,16 +85,13 @@ def run_kfold(model_factory, X, y, K=4, seed=SEED, labels=None):
 
     return mean_scores, std_scores, fold_scores
 
-def find_grid(
-    model_class, param_grid, X, y,
-    K=4, seed=SEED, scoring="accuracy", labels=None
-):
-    '''
+
+def find_grid(model_class, param_grid, X, y, K=4, seed=SEED, scoring="accuracy", labels=None):
+    """
     tra ve du lieu de chon cau hinh sieu tham so
     co the ve bieu do
-    '''
-    if not param_grid or \
-        any(len(values) == 0 for values in param_grid.values()):
+    """
+    if not param_grid or any(len(values) == 0 for values in param_grid.values()):
         raise ValueError("Luoi sieu tham so bi rong!")
     param_names = list(param_grid.keys())
     param_values = list(param_grid.values())
@@ -104,24 +99,24 @@ def find_grid(
     best_params = None
     best_score = float("-inf")
 
-    for values in product(*param_values): # duyet tat ca to hop param
-        cur_params = dict(zip(param_names, values))
-        # ham tao model moi cho moi bo param
-        model_factory = lambda : model_class(**cur_params)
+    for values in product(*param_values):  # duyet tat ca to hop param
+        cur_params = dict(zip(param_names, values, strict=True))
 
-        mean_scores, std_scores, fold_scores = run_kfold(
-            model_factory, X, y, K, seed, labels
-        )
+        # ham tao model moi cho moi bo param
+        def model_factory(params=cur_params):
+            return model_class(**params)
+
+        mean_scores, std_scores, fold_scores = run_kfold(model_factory, X, y, K, seed, labels)
         cur_res = {
             "params": cur_params.copy(),
             "mean_scores": mean_scores,
             "std_scores": std_scores,
-            "fold_scores": fold_scores
+            "fold_scores": fold_scores,
         }
         results.append(cur_res)
 
         # tim diem cao nhat
-        score = mean_scores[scoring] # lay metric chinh de so
+        score = mean_scores[scoring]  # lay metric chinh de so
         if score > best_score:
             best_score = score
             best_params = cur_params.copy()
@@ -130,19 +125,14 @@ def find_grid(
 
 
 if __name__ == "__main__":
-
     from sklearn.linear_model import LogisticRegression
-    
-    
+
     Xtr_raw, ytr_raw, _, _ = load_mnist()
 
     X_train, y_train = Xtr_raw[:10000], ytr_raw[:10000]
 
     # Khai báo lưới siêu tham số
-    param_grid = {
-        "C": [0.01, 0.1, 1.0],
-        "max_iter": [300]
-    }
+    param_grid = {"C": [0.01, 0.1, 1.0], "max_iter": [300]}
 
     # Tìm cấu hình tốt nhất bằng K-fold
     best_params, results = find_grid(
@@ -153,7 +143,7 @@ if __name__ == "__main__":
         K=5,
         seed=SEED,
         scoring="accuracy",
-        labels=range(10)
+        labels=range(10),
     )
 
     # In kết quả

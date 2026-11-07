@@ -1,5 +1,7 @@
 import numpy as np
+
 from src.models.base import BaseClassifier
+
 
 class GaussianNB(BaseClassifier):
     """Gaussian Naive Bayes: per-class, per-pixel normal likelihoods + class priors (MLE).
@@ -21,11 +23,11 @@ class GaussianNB(BaseClassifier):
         self.n_classes, self.n_features = self.mean.shape
 
     def _check_X(self, X):
-        ''' check input shape and values '''
+        """check input shape and values"""
         try:
             X = np.asarray(X, dtype=np.float64)
-        except (TypeError, ValueError):
-            raise ValueError("X must contain numeric values.")
+        except (TypeError, ValueError) as e:
+            raise ValueError("X must contain numeric values.") from e
 
         if X.ndim != 2:
             raise ValueError("X must be a 2D array with shape (N, D).")
@@ -52,10 +54,10 @@ class GaussianNB(BaseClassifier):
         self.mean = np.zeros((self.n_classes, self.n_features))
         self.var = np.zeros((self.n_classes, self.n_features))
         self.prior = np.zeros(self.n_classes)
-        eps = self.var_smoothing * X.var(axis=0).max() # avoid var = 0
+        eps = self.var_smoothing * X.var(axis=0).max()  # avoid var = 0
 
         for idx, c in enumerate(self.classes):
-            X_c = X[y==c]
+            X_c = X[y == c]
             self.mean[idx] = X_c.mean(axis=0)
             self.var[idx] = X_c.var(axis=0) + eps
             self.prior[idx] = X_c.shape[0] / self.n_samples
@@ -76,11 +78,7 @@ class GaussianNB(BaseClassifier):
         n_classes = len(self.classes)
 
         # Calculate class constants once: shape (K,)
-        constants = (
-            np.log(self.prior) - 0.5 * np.sum(
-                np.log(2 * np.pi * self.var), axis=1
-            )
-        )
+        constants = np.log(self.prior) - 0.5 * np.sum(np.log(2 * np.pi * self.var), axis=1)
         # Store scores: shape (N, K)
         scores = np.empty((n_samples, n_classes), dtype=np.float64)
         batch_size = 4096
@@ -95,18 +93,18 @@ class GaussianNB(BaseClassifier):
                 d /= self.var[k]
 
                 # Calculate scores for class k
-                scores[start:end, k] = (constants[k] - 0.5 * np.sum(d, axis=1))
+                scores[start:end, k] = constants[k] - 0.5 * np.sum(d, axis=1)
 
         return scores
 
     def predict(self, X):
-        ''' pred class label '''
+        """pred class label"""
         joint_log_likelihood = self._joint_log_likelihood(X)
         best_class_indices = np.argmax(joint_log_likelihood, axis=1)
         return self.classes[best_class_indices]
 
     def predict_log_proba(self, X):
-        ''' calc normalized log probabilities '''
+        """calc normalized log probabilities"""
         joint_log_likelihood = self._joint_log_likelihood(X)
         max_log = np.max(joint_log_likelihood, axis=1, keepdims=True)
         log_sum_exp = max_log + np.log(
@@ -121,17 +119,14 @@ class GaussianNB(BaseClassifier):
 
 
 if __name__ == "__main__":
-    
+    from src.models.cross_validation import SEED, find_grid
     from src.preprocessing.preprocess import load_mnist
-    from src.models.cross_validation import *
 
     Xtr_raw, ytr_raw, _, _ = load_mnist()
     X_train, y_train = Xtr_raw[:5000], ytr_raw[:5000]
 
     # Khai báo lưới siêu tham số
-    param_grid = {
-        "var_smoothing": [1e-9, 1e-7, 1e-5, 1e-3, 1e-1, 1.0]
-    }
+    param_grid = {"var_smoothing": [1e-9, 1e-7, 1e-5, 1e-3, 1e-1, 1.0]}
     best_params, results = find_grid(
         model_class=GaussianNB,
         param_grid=param_grid,
@@ -140,7 +135,7 @@ if __name__ == "__main__":
         K=4,
         seed=SEED,
         scoring="accuracy",
-        labels=range(10)
+        labels=range(10),
     )
 
     # In kết quả
