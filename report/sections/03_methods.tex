@@ -33,11 +33,11 @@ Cập nhật bằng SGD có momentum \citep{sutskever2013}, viết tường minh
 
 \subsection{AdaBoost đa lớp (SAMME) với cây quyết định có trọng số}
 Chúng tôi chọn boosting vì nó là thuật toán ensemble thật sự (các bộ học yếu được huấn luyện tuần tự và có trọng số), không phải lấy trung bình các mô hình khác. SAMME \citep{zhu2009} mở rộng AdaBoost \citep{freund1997} cho $K$ lớp: khởi tạo $w_i=1/N$; ở vòng $t$, huấn luyện cây $h_t$ với trọng số mẫu $w$, tính sai số có trọng số $\mathrm{err}_t=\sum_i w_i\indic{h_t(\bm x_i)\ne y_i}$ (với $w$ đã chuẩn hóa) và
-\begin{equation}
-\alpha_t=\eta\Big(\ln\frac{1-\mathrm{err}_t}{\mathrm{err}_t}+\ln(K-1)\Big),\qquad
-w_i\leftarrow w_i\exp\big(\alpha_t\indic{h_t(\bm x_i)\ne y_i}\big),\ \text{rồi chuẩn hóa};\qquad
-H(\bm x)=\argmax_k\sum_{t}\alpha_t\indic{h_t(\bm x)=k}.
-\end{equation}
+\begin{align}
+\alpha_t&=\eta\Big(\ln\frac{1-\mathrm{err}_t}{\mathrm{err}_t}+\ln(K-1)\Big),\\
+w_i&\leftarrow w_i\exp\big(\alpha_t\indic{h_t(\bm x_i)\ne y_i}\big)\ \text{rồi chuẩn hóa},\\
+H(\bm x)&=\argmax_k\sum_{t}\alpha_t\indic{h_t(\bm x)=k}.
+\end{align}
 Số hạng $\ln(K-1)$ khiến bộ học chỉ cần tốt hơn đoán ngẫu nhiên ($\mathrm{err}<1-1/K$) thay vì $<1/2$; vòng lặp dừng khi điều kiện này bị vi phạm. $\eta$ là hệ số co (\texttt{learning\_rate}).
 
 \emph{Bộ học yếu}: cây CART độ sâu $\le d_{\max}$ giảm thiểu tạp chất Gini có trọng số $G(S)=W_S-\sum_k W_{S,k}^2/W_S$ \citep{breiman1984}, với $W_S=\sum_{i\in S}w_i$, $W_{S,k}=\sum_{i\in S,\,y_i=k}w_i$. Để huấn luyện nhanh trên 50\,000$\times$784, mỗi đặc trưng được lượng tử hóa \emph{một lần} thành $n_{\text{bins}}$ khoảng đều nhau; ở mỗi tầng của cây, trọng số theo (nút, đặc trưng, bin, lớp) được cộng dồn bằng histogram, tổng tích lũy cho phép đánh giá mọi ngưỡng của mọi đặc trưng trong $O(ND)$ mỗi tầng. Ngưỡng thực được lưu cho dự đoán nên suy luận không cần lượng tử hóa. Tuỳ chọn \texttt{max\_features} chọn ngẫu nhiên một tập con đặc trưng cho mỗi cây.

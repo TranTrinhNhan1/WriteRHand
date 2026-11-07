@@ -1,0 +1,19 @@
+\begin{tabular}{llrrrl}
+\toprule
+Mô hình & Siêu tham số & Số giá trị & Val thấp nhất & Val cao nhất & Giá trị tốt nhất \\
+\midrule
+Gaussian NB & \texttt{var\_smoothing} & 12 & 56.05 & 79.67 & \texttt{0.1} \\
+Softmax regression & \texttt{learning\_rate} & 6 & 88.03 & 91.72 & \texttt{0.03} \\
+Softmax regression & \texttt{batch\_size} & 6 & 90.23 & 91.72 & \texttt{128} \\
+Softmax regression & \texttt{l2} & 5 & 91.20 & 91.76 & \texttt{0.0} \\
+MLP & \texttt{hidden\_sizes} & 8 & 95.65 & 98.18 & \texttt{(512, 256)} \\
+MLP & \texttt{learning\_rate} & 5 & 96.41 & 98.18 & \texttt{0.05} \\
+MLP & \texttt{momentum} & 4 & 97.49 & 98.18 & \texttt{0.9} \\
+MLP & \texttt{batch\_size} & 4 & 95.57 & 98.18 & \texttt{128} \\
+MLP & \texttt{p\_drop} & 5 & 97.79 & 98.18 & \texttt{0.0} \\
+AdaBoost-SAMME & \texttt{max\_depth} & 5 & 77.23 & 95.98 & \texttt{10} \\
+AdaBoost-SAMME & \texttt{max\_features} & 3 & 95.98 & 96.29 & \texttt{0.5} \\
+AdaBoost-SAMME & \texttt{learning\_rate} & 4 & 96.29 & 97.02 & \texttt{0.1} \\
+AdaBoost-SAMME & \texttt{n\_bins} & 4 & 96.73 & 97.02 & \texttt{32} \\
+\bottomrule
+\end{tabular}

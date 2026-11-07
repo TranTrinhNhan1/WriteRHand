@@ -8,43 +8,66 @@
 \usepackage{microtype}
 
 % ---- layout -------------------------------------------------------------------------------
-\usepackage[a4paper,margin=2.4cm]{geometry}
+\usepackage[a4paper,margin=2.4cm,headheight=24pt,headsep=14pt]{geometry}
 \usepackage{setspace}
 \setstretch{1.08}
 \usepackage{parskip}
 \setlength{\parskip}{4pt}
+\usepackage[dvipsnames,table]{xcolor}
 \usepackage{titlesec}
-\titleformat{\section}{\large\bfseries}{\thesection.}{0.6em}{}
-\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
+\titleformat{\section}{\sffamily\Large\bfseries\color{moss}}{\thesection}{0.7em}{}[{\color{moss!40}\titlerule[0.6pt]}]
+\titleformat{\subsection}{\sffamily\large\bfseries\color{ink}}{\thesubsection}{0.6em}{}
 \titlespacing*{\section}{0pt}{14pt}{5pt}
 \titlespacing*{\subsection}{0pt}{9pt}{3pt}
 \usepackage{fancyhdr}
+\usepackage{lastpage}
+\definecolor{ink}{HTML}{1F2A24}
+\definecolor{moss}{HTML}{2F5F3C}
+\definecolor{mist}{HTML}{EEF2EC}
 \pagestyle{fancy}
 \fancyhf{}
-\fancyfoot[C]{\small\thepage}
-\renewcommand{\headrulewidth}{0pt}
+\fancyhead[L]{\sffamily\small\color{black!60}Nhận dạng chữ số MNIST}
+\fancyhead[R]{\sffamily\small\color{black!60}Nhận dạng mẫu -- Đồ án giữa kỳ}
+\fancyfoot[C]{\small\color{black!60}\thepage\,/\,\pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.3pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{black!25}\leaders\hrule height \headrulewidth\hfill}}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\small\color{black!60}\thepage\,/\,\pageref{LastPage}}\renewcommand{\headrulewidth}{0pt}}
 
 % ---- math / tables / figures ----------------------------------------------------------------
 \usepackage{amsmath,amssymb,mathtools,bm}
 \usepackage{booktabs,multirow,array}
 \usepackage{graphicx}
 \usepackage{caption,subcaption}
-\captionsetup{font=small,labelfont=bf}
+\captionsetup{font=small,labelfont={sf,bf,color=moss},labelsep=period,margin=8pt}
 \usepackage{float}
 \usepackage{enumitem}
 \setlist{nosep,leftmargin=1.4em}
-\usepackage[dvipsnames]{xcolor}
 \usepackage{tcolorbox}
 \tcbuselibrary{breakable,skins}
 \usepackage{listings}
 \usepackage[numbers,sort&compress]{natbib}
-\usepackage[colorlinks=true,linkcolor=NavyBlue,citecolor=NavyBlue,urlcolor=NavyBlue]{hyperref}
+\usepackage{xurl}
+\usepackage[colorlinks=true,linkcolor=moss,citecolor=moss,urlcolor=moss,pdftitle={Nhận dạng chữ số viết tay MNIST},pdfauthor={Trần Trinh Nhân; Lâm Nhật Tiến}]{hyperref}
+\usepackage[nameinlink]{cleveref}
+\usepackage{tikz}
 
 % Vietnamese names for generated labels (no babel-vietnamese on this system)
 \renewcommand{\figurename}{Hình}
 \renewcommand{\tablename}{Bảng}
 \renewcommand{\refname}{Tài liệu tham khảo}
 \renewcommand{\contentsname}{Mục lục}
+\renewcommand{\abstractname}{Tóm tắt}
+\crefname{table}{bảng}{bảng}\Crefname{table}{Bảng}{Bảng}
+\crefname{figure}{hình}{hình}\Crefname{figure}{Hình}{Hình}
+\crefname{section}{Mục}{Mục}\Crefname{section}{Mục}{Mục}
+\crefname{subsection}{Mục}{Mục}\Crefname{subsection}{Mục}{Mục}
+\crefname{appendix}{Phụ lục}{Phụ lục}\Crefname{appendix}{Phụ lục}{Phụ lục}
+\crefname{equation}{công thức}{công thức}\Crefname{equation}{Công thức}{Công thức}
+\providecommand{\crefpairconjunction}{}\providecommand{\crefmiddleconjunction}{}\providecommand{\creflastconjunction}{}
+\renewcommand{\crefpairconjunction}{ và }\renewcommand{\crefmiddleconjunction}{, }\renewcommand{\creflastconjunction}{ và }
+
+\renewcommand{\arraystretch}{1.15}
+\setlength{\heavyrulewidth}{0.9pt}
 
 % ---- helpers ------------------------------------------------------------------------------------
 \DeclareMathOperator*{\argmax}{arg\,max}
@@ -58,15 +81,45 @@
     coltitle=black,colbacktitle=black!8,fonttitle=\small]\small\begin{enumerate}[label=\arabic*.,itemsep=1pt]}%
   {\end{enumerate}\end{tcolorbox}}
 
-\title{\textbf{Nhận dạng chữ số viết tay MNIST\\ bằng các bộ phân lớp tự cài đặt}\\[4pt]
-\large Naïve Bayes, Softmax Regression, MLP và AdaBoost-SAMME}
-\author{Môn Nhận dạng mẫu (Pattern Recognition) -- Đồ án giữa kỳ\\[2pt]
-Nhóm: Trần Trinh Nhân (24280088) \quad Lâm Nhật Tiến (24280029)}
-\date{\today}
+\input{generated/numbers}
+\input{generated/mcnemar}
 
 \begin{document}
-\maketitle
+\begin{titlepage}
+\thispagestyle{empty}
+\begin{tikzpicture}[remember picture,overlay]
+  \fill[moss] (current page.north west) rectangle ([yshift=-6.2cm]current page.north east);
+  \node[anchor=north west,text=white,font=\sffamily\small\bfseries,xshift=2.4cm,yshift=-1.6cm] at (current page.north west)
+    {MÔN NHẬN DẠNG MẪU (PATTERN RECOGNITION)};
+  \node[anchor=south west,text=white,font=\sffamily\Huge\bfseries,align=left,xshift=2.4cm,yshift=1.2cm]
+    at ([yshift=-6.2cm]current page.north west)
+    {Nhận dạng chữ số\\viết tay MNIST};
+\end{tikzpicture}
+\vspace*{6.4cm}
 
+{\sffamily\Large\color{ink} Bốn bộ phân lớp tự cài đặt: Gaussian Naïve Bayes, hồi quy softmax, MLP và AdaBoost-SAMME}
+
+\vspace{1.2cm}
+{\sffamily\large\bfseries\color{moss} Đồ án giữa kỳ}
+
+\medskip
+So sánh trên cùng một giao thức không rò rỉ dữ liệu, có đối chiếu với scikit-learn, demo ONNX chạy trong trình duyệt.
+
+\vfill
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{@{}p{4.6cm}p{3.4cm}p{3cm}@{}}
+\textbf{Thành viên} & \textbf{MSSV} & \textbf{Đóng góp}\\
+\midrule
+Trần Trinh Nhân & 24280088 & 50\%\\
+Lâm Nhật Tiến  & 24280029 & 50\%\\
+\end{tabular}
+
+\bigskip
+{\small\color{black!60} Mã nguồn: \url{https://github.com/TranTrinhNhan1/WriteRHand}\\
+Ngày biên dịch: \number\day/\number\month/\number\year}
+\end{titlepage}
+
+\pagenumbering{arabic}
 \input{sections/00_abstract}
 \tableofcontents
 \newpage
@@ -83,4 +136,7 @@ Nhóm: Trần Trinh Nhân (24280088) \quad Lâm Nhật Tiến (24280029)}
 
 \bibliographystyle{plainnat}
 \bibliography{references}
+
+\appendix
+\input{sections/11_appendix}
 \end{document}

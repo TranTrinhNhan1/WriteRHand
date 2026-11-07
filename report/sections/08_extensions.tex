@@ -2,7 +2,9 @@
 \label{sec:extensions}
 
 \subsection{Tăng cường dữ liệu cho MLP}
+Câu hỏi: tăng cường dữ liệu có giúp MLP không? Chúng tôi giữ nguyên cấu hình đã chọn và chỉ đổi tập huấn luyện: gốc ($50\,000$ ảnh) so với gốc cộng hai bản sao biến đổi ngẫu nhiên của mỗi ảnh ($150\,000$ ảnh). Biến đổi chỉ áp dụng cho tập train; validation và test không bị đụng tới. Mỗi điều kiện chạy với ba seed.
 \input{generated/augmentation}
+Trung bình test tăng nhẹ khi có tăng cường, và độ lệch chuẩn giữa các seed nhỏ hơn. Nhưng với ba seed, mức tăng này cùng bậc với độ lệch chuẩn của điều kiện gốc, nên chúng tôi chỉ kết luận là \emph{có xu hướng cải thiện}, chưa đủ bằng chứng để khẳng định. Thời gian huấn luyện tăng theo cỡ tập dữ liệu. Mô hình dùng trong bản demo và các bảng chính vẫn là MLP huấn luyện trên dữ liệu gốc.
 
 \subsection{Bản demo web và quy trình triển khai}
 \label{sec:demo}

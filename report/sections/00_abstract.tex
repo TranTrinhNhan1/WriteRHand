@@ -1,0 +1,7 @@
+\begin{abstract}
+\noindent Chúng tôi tự cài đặt bốn bộ phân lớp cho MNIST: Gaussian Naïve Bayes, hồi quy softmax huấn luyện bằng Gradient Descent, MLP với lan truyền ngược viết tay và AdaBoost-SAMME trên cây quyết định có trọng số. Phần tính toán lõi dùng NumPy; scikit-learn chỉ để đối chiếu, PyTorch chỉ làm thư viện tensor cho MLP. Cả bốn mô hình dùng chung một giao thức không rò rỉ dữ liệu: $50\,000$ ảnh train, $10\,000$ ảnh validation tách phân tầng từ tập huấn luyện chính thức, và $10\,000$ ảnh test chỉ dùng để báo cáo. Siêu tham số được chọn trên validation bằng các lượt quét từng tham số, toàn bộ nhật ký được giữ lại.
+
+Trên tập test, độ chính xác lần lượt là \accTestNB\% (Naïve Bayes), \accTestSM\% (softmax), \accTestMLP\% (MLP) và \accTestADA\% (AdaBoost). MLP đứng đầu, và hơn AdaBoost có ý nghĩa thống kê trên cùng $10\,000$ ảnh (McNemar chính xác, $p=$ \mcP). AdaBoost mất \fitADA\,s để huấn luyện, hơn bảy mươi lần so với MLP (\fitMLP\,s), và chậm nhất khi dự đoán từng ảnh (\latADA\,ms). Kết quả của bản tự cài đặt lệch scikit-learn tối đa \diffSkSM{} điểm phần trăm trên cùng cấu hình. Mô hình được xuất sang ONNX, đối chiếu số học với bản Python và chạy trực tiếp trong trình duyệt. Chúng tôi cũng nêu những giới hạn của kết quả: một seed cho mô hình chính, quét tuần tự chưa xét tương tác giữa các siêu tham số, và thời gian đo trên một máy.
+
+\medskip\noindent\textbf{Từ khóa:} MNIST, Naïve Bayes, hồi quy softmax, MLP, AdaBoost, SAMME, ONNX.
+\end{abstract}
