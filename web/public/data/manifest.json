@@ -1,7 +1,7 @@
 {
   "name": "WriteRHand-MNIST",
   "version": "1.0.0",
-  "created": "2026-11-07T19:33:12+00:00",
+  "created": "2026-11-08T02:39:26+00:00",
   "preprocessing": {
     "version": "mnist-global-standardize-v2-stratified",
     "image": "28x28 grayscale, white digit on black",

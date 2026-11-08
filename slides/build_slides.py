@@ -54,7 +54,23 @@ def e(s):
 
 
 def deck(d, aug, pages_url, n_tests):
-    mlp, ada, sm, nb = d["mlp"], d["adaboost"], d["softmax"], d["naive_bayes"]
+    mlp, sm = d["mlp"], d["softmax"]
+    time_rows = "".join(
+        "<tr class='{}'><td>{}</td><td>{:.2f}%</td><td>{}</td><td>{:.3f} ms</td></tr>".format(
+            "hl" if k == "mlp" else "",
+            e(d[k]["title"]),
+            d[k]["test"],
+            fmt_time(d[k]["fit"]),
+            d[k]["lat"],
+        )
+        for k, _, _ in MODELS
+    )
+    sk_rows = "".join(
+        "<tr><td>{}</td><td>{:.2f}%</td><td>{:.2f}%</td><td>{:.2f}</td></tr>".format(
+            e(d[k]["title"]), d[k]["test"], d[k]["sk_test"], abs(d[k]["test"] - d[k]["sk_test"])
+        )
+        for k, _, _ in MODELS
+    )
     base, augd = aug["conditions"]["baseline"], aug["conditions"]["augmented_x3"]
     slides = []
 
@@ -63,7 +79,7 @@ def deck(d, aug, pages_url, n_tests):
 
     # 1 title
     slide(
-        f"""
+        """
 <div class="title-band"></div>
 <p class="kicker">Nhận dạng mẫu · Đồ án giữa kỳ</p>
 <h1>Nhận dạng chữ số<br>viết tay MNIST</h1>
@@ -195,7 +211,7 @@ def deck(d, aug, pages_url, n_tests):
 <h2>Độ chính xác không đi cùng thời gian</h2>
 <table class="tbl">
 <tr><th>Mô hình</th><th>Test</th><th>Huấn luyện</th><th>Một ảnh</th></tr>
-{"".join(f'<tr class="{"hl" if k == "mlp" else ""}"><td>{e(d[k]["title"])}</td><td>{d[k]["test"]:.2f}%</td><td>{fmt_time(d[k]["fit"])}</td><td>{d[k]["lat"]:.3f} ms</td></tr>' for k, _, _ in MODELS)}
+{time_rows}
 </table>
 <p class="small foot">CPU i7-13620H, không dùng GPU. AdaBoost duyệt {393} cây cho mỗi ảnh nên chậm nhất, và tệp mô hình nặng hơn 15 MiB.</p>
 """,
@@ -218,7 +234,7 @@ def deck(d, aug, pages_url, n_tests):
 <h2>Cùng siêu tham số, kết quả sát scikit-learn</h2>
 <table class="tbl">
 <tr><th>Mô hình</th><th>Bản của nhóm</th><th>scikit-learn</th><th>Chênh</th></tr>
-{"".join(f'<tr><td>{e(d[k]["title"])}</td><td>{d[k]["test"]:.2f}%</td><td>{d[k]["sk_test"]:.2f}%</td><td>{abs(d[k]["test"] - d[k]["sk_test"]):.2f}</td></tr>' for k, _, _ in MODELS)}
+{sk_rows}
 </table>
 <p class="small foot">Softmax chênh {abs(sm["test"] - sm["sk_test"]):.2f} điểm vì L-BFGS của scikit-learn chạm giới hạn 1000 vòng, không dừng sớm như bản của nhóm. AdaBoost của hai bên dùng cách chia ngưỡng khác nhau nên thời gian không so được trực tiếp.</p>
 """,
@@ -277,7 +293,7 @@ def deck(d, aug, pages_url, n_tests):
 
     # 14 limits + conclusion
     slide(
-        f"""
+        """
 <p class="kicker">Kết luận</p>
 <h2>Chọn cấu hình có kỷ luật quan trọng ngang chọn thuật toán</h2>
 <div class="cols c-1-1 bignote">
