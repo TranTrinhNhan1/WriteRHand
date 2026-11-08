@@ -26,10 +26,12 @@ export function modelBaseUrl(lock: ModelLock | null = MODEL_LOCK): string {
   return `${import.meta.env.BASE_URL}bundle`
 }
 
-async function getBuf(url: string): Promise<ArrayBuffer> {
+/** `fresh`: same-origin site data is revalidated on every load (GitHub Pages caches for 10 min, which
+ * would otherwise let a browser pair a new script with the previous deploy's manifest). */
+async function getBuf(url: string, fresh = false): Promise<ArrayBuffer> {
   let res: Response
   try {
-    res = await fetch(url)
+    res = await fetch(url, fresh ? { cache: 'no-cache' } : undefined)
   } catch {
     throw new CodedError('fatal.reach')
   }
@@ -48,7 +50,7 @@ export async function loadBundle(): Promise<Booted> {
   // production: the manifest committed with the site (checked against the lock below);
   // development: the local bundle itself, so a stale committed file can never be mixed with new models
   const fromBundle = !import.meta.env.PROD
-  const buf = await getBuf(fromBundle ? `${baseUrl}/manifest.json` : `${dataBase}/manifest.json`)
+  const buf = await getBuf(fromBundle ? `${baseUrl}/manifest.json` : `${dataBase}/manifest.json`, true)
   if (lock && import.meta.env.PROD && (await sha256Hex(buf)) !== lock.manifest_sha256) {
     throw new CodedError('fatal.pin', { file: 'manifest.json' })
   }
@@ -62,14 +64,14 @@ export async function loadBundle(): Promise<Booted> {
   const results: Record<string, Results> = {}
   await Promise.all(
     Object.entries(manifest.datasets).map(async ([id, ds]) => {
-      const b = await getBuf(`${fromBundle ? baseUrl : dataBase}/${ds.results}`)
+      const b = await getBuf(`${fromBundle ? baseUrl : dataBase}/${ds.results}`, true)
       results[id] = JSON.parse(new TextDecoder().decode(b)) as Results
     }),
   )
   // committed with the site next to the manifest; it never changes which models run in the browser
   let extra: Record<string, ExtraResults> = {}
   try {
-    extra = parseExtraModels(JSON.parse(new TextDecoder().decode(await getBuf(`${dataBase}/extra_models.json`))))
+    extra = parseExtraModels(JSON.parse(new TextDecoder().decode(await getBuf(`${dataBase}/extra_models.json`, true))))
   } catch {
     extra = {}
   }
