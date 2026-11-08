@@ -24,6 +24,7 @@ from src.models.cnn import CNN
 from src.models.logistic_regression import SoftmaxRegression
 from src.models.mlp import MLP
 from src.models.naive_bayes import GaussianNB
+from src.models.svm import LinearSVM
 from src.utils.paths import RESULTS_DIR
 
 SEED = 42
@@ -43,6 +44,24 @@ SPECS = {
             ("learning_rate", [0.003, 0.01, 0.03, 0.1, 0.3, 1.0]),
             ("batch_size", [16, 32, 64, 128, 256, 1024]),
             ("l2", [0.0, 1e-5, 1e-4, 1e-3, 1e-2]),
+        ],
+        "epoch_curve": {"param": "epochs", "max": 100},
+    },
+    "svm": {
+        "cls": LinearSVM,
+        "base": {
+            "learning_rate": 0.01,
+            "l2": 1e-4,
+            "loss": "hinge",
+            "epochs": 30,
+            "batch_size": 128,
+            "seed": SEED,
+        },
+        "sweeps": [
+            ("loss", ["hinge", "squared_hinge"]),
+            ("learning_rate", [0.0003, 0.001, 0.003, 0.01, 0.03]),
+            ("l2", [0.0, 1e-5, 1e-4, 1e-3, 1e-2]),
+            ("batch_size", [32, 128, 512]),
         ],
         "epoch_curve": {"param": "epochs", "max": 100},
     },
@@ -121,17 +140,19 @@ SMOKE = {
     "sweeps": {
         "naive_bayes": [("var_smoothing", [1e-9, 0.1])],
         "softmax": [("learning_rate", [0.03, 0.1])],
+        "svm": [("learning_rate", [0.003, 0.01])],
         "mlp": [("hidden_sizes", [(16,), (32,)])],
         "adaboost": [("max_depth", [1, 2])],
         "cnn": [("channels", [(2, 4), (4, 8)])],
     },
     "base_override": {
         "softmax": {"epochs": 3},
+        "svm": {"epochs": 3},
         "mlp": {"epochs": 3},
         "adaboost": {"n_estimators": 5},
         "cnn": {"epochs": 2},
     },
-    "curve_max": {"softmax": 6, "adaboost": 10},
+    "curve_max": {"softmax": 6, "svm": 6, "adaboost": 10},
 }
 
 
@@ -141,6 +162,7 @@ SMOKE = {
 LIGHT = {
     "naive_bayes": [("var_smoothing", [1e-9, 1e-6, 1e-3, 1e-2, 0.1, 1.0])],
     "softmax": [("learning_rate", [0.03, 0.1, 0.3]), ("l2", [0.0, 1e-4, 1e-3])],
+    "svm": [("learning_rate", [0.003, 0.01, 0.03]), ("l2", [1e-5, 1e-4, 1e-3])],
     "mlp": [
         ("hidden_sizes", [(128,), (256,), (512,), (512, 256)]),
         ("learning_rate", [0.02, 0.05, 0.1]),
@@ -149,7 +171,7 @@ LIGHT = {
     "adaboost": [("max_depth", [4, 6, 8])],
     "cnn": [("learning_rate", [0.01, 0.03, 0.1]), ("channels", [(8, 16), (16, 32)])],
 }
-LIGHT_CURVE = {"adaboost": 200, "softmax": 60}
+LIGHT_CURVE = {"adaboost": 200, "softmax": 60, "svm": 60}
 
 
 def _jsonable(v):

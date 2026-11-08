@@ -33,10 +33,16 @@ def test_tune_needs_no_test_data_and_logs_every_trial(model_key, tiny, tmp_path,
     sweeps = {
         "naive_bayes": [("var_smoothing", [1e-9, 0.1])],
         "softmax": [("learning_rate", [0.05, 0.2])],
+        "svm": [("learning_rate", [0.003, 0.01])],
         "mlp": [("hidden_sizes", [(8,), (16,)])],
         "adaboost": [("max_depth", [1, 2])],
     }
-    base = {"softmax": {"epochs": 3}, "mlp": {"epochs": 3}, "adaboost": {"n_estimators": 4}}
+    base = {
+        "softmax": {"epochs": 3},
+        "svm": {"epochs": 3},
+        "mlp": {"epochs": 3},
+        "adaboost": {"n_estimators": 4},
+    }
     spec = dict(search.SPECS[model_key])
     spec["sweeps"] = sweeps[model_key]
     spec["base"] = {**spec["base"], **base.get(model_key, {})}
@@ -107,6 +113,17 @@ def test_results_are_reproducible(tiny, tmp_path):
     [
         ("naive_bayes", {"var_smoothing": 0.1}),
         ("softmax", {"learning_rate": 0.1, "l2": 1e-3, "epochs": 5, "batch_size": 32, "seed": 1}),
+        (
+            "svm",
+            {
+                "learning_rate": 0.01,
+                "l2": 1e-3,
+                "loss": "squared_hinge",
+                "epochs": 5,
+                "batch_size": 32,
+                "seed": 1,
+            },
+        ),
         (
             "adaboost",
             {

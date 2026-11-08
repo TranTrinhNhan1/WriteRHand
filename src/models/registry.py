@@ -5,6 +5,7 @@ from src.models.cnn import CNN
 from src.models.logistic_regression import SoftmaxRegression
 from src.models.mlp import MLP
 from src.models.naive_bayes import GaussianNB
+from src.models.svm import LinearSVM
 
 MODELS = {
     "GaussianNB": GaussianNB,
@@ -12,4 +13,5 @@ MODELS = {
     "MLP": MLP,
     "AdaBoostSAMME": AdaBoostSAMME,
     "CNN": CNN,
+    "LinearSVM": LinearSVM,
 }

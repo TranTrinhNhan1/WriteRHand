@@ -8,6 +8,7 @@ from sklearn.ensemble import AdaBoostClassifier
 from sklearn.linear_model import LogisticRegression as SkLogisticRegression
 from sklearn.naive_bayes import GaussianNB as SkGaussianNB
 from sklearn.neural_network import MLPClassifier
+from sklearn.svm import LinearSVC
 from sklearn.tree import DecisionTreeClassifier
 
 from src.evaluation.evaluator import Evaluator
@@ -38,6 +39,14 @@ def sklearn_counterpart(model_key, params, n_train):
         # sklearn: C * sum CE + 0.5 ||W||^2   <=>   mean CE + 1/(2 C n) ||W||^2  =>  C = 1/(l2 n)
         kw = {"penalty": None} if p["l2"] == 0 else {"C": 1.0 / (p["l2"] * n_train)}
         return SkLogisticRegression(solver="lbfgs", max_iter=1000, tol=1e-6, **kw)
+    if model_key == "svm":
+        # sklearn: 0.5 ||w||^2 + C sum_i phi_i   <=>   mean phi + l2/2 ||w||^2   with   C = 1 / (l2 n)
+        # (liblinear also penalises the intercept; ours does not)
+        c = 1e3 if p["l2"] == 0 else 1.0 / (p["l2"] * n_train)
+        hinge = p["loss"] == "hinge"
+        return LinearSVC(
+            loss=p["loss"], C=c, dual=hinge, tol=1e-4, max_iter=2000, random_state=p["seed"]
+        )
     if model_key == "mlp":
         return MLPClassifier(
             hidden_layer_sizes=tuple(p["hidden_sizes"]),

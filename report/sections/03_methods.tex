@@ -11,9 +11,11 @@ Thành phần & Nhóm tự viết (NumPy) & Thư viện \\
 Tiền xử lý, chỉ số & Chia phân tầng, chuẩn hóa, ma trận nhầm lẫn, precision/recall/F1 macro & \texttt{sklearn.metrics} chỉ trong kiểm thử \\
 Naïve Bayes & Ước lượng tham số, log-likelihood, log-sum-exp & \texttt{GaussianNB} để đối chiếu \\
 Softmax & Hàm mất mát, gradient giải tích, mini-batch GD & \texttt{LogisticRegression} để đối chiếu \\
+SVM tuyến tính & Hàm mất mát hinge, đạo hàm dưới, mini-batch GD & \texttt{LinearSVC} để đối chiếu \\
 MLP & Lan truyền tiến và ngược, khởi tạo He, dropout, SGD có momentum, dừng sớm & Tensor, \texttt{matmul}, bộ sinh số ngẫu nhiên của PyTorch; \texttt{autograd} và \texttt{optim} chỉ trong kiểm thử \\
 AdaBoost-SAMME & Cập nhật SAMME, cây CART có trọng số dựng bằng histogram & \texttt{AdaBoostClassifier} để đối chiếu \\
 CNN & im2col/col2im, tích chập, gộp cực đại, gradient của từng lớp & Như MLP; \texttt{F.conv2d}, \texttt{F.max\_pool2d} chỉ trong kiểm thử \\
+Stacking & Đặc trưng cấp 1, meta-learner softmax, chọn $\lambda$ bằng kiểm định chéo & -- \\
 \bottomrule
 \end{tabular}
 \caption{Phạm vi tự cài đặt.}
@@ -30,6 +32,7 @@ Mô hình sinh giả thiết các pixel độc lập có điều kiện theo l�
 Ước lượng hợp lý cực đại cho $\pi_k=N_k/N$, $\mu_{kj}$ và $\sigma^2_{kj}$ là trung bình và phương sai mẫu của pixel $j$ trong lớp $k$. Pixel luôn bằng 0 có phương sai 0 làm $\log\sigma^2\to-\infty$, nên mọi phương sai được cộng $\varepsilon=\texttt{var\_smoothing}\cdot\max_j\mathrm{Var}(x_j)$, cùng quy ước với scikit-learn. Phép tính thực hiện trong không gian log và chuẩn hóa hậu nghiệm bằng log-sum-exp để tránh underflow khi nhân 784 thừa số. Huấn luyện cần một lượt qua dữ liệu, $O(ND)$; dự đoán một ảnh $O(KD)$. Siêu tham số duy nhất là \texttt{var\_smoothing}. Giả thiết độc lập thường được dùng dù không đúng \citep{domingos1997}, nhưng ở đây nó sai rõ rệt (mục~\ref{sec:data}).
 
 \subsection{Hồi quy softmax (logistic đa lớp)}
+\label{sec:softmax}
 Với $\bm z=W^{\top}\bm x+\bm b$ và $p_k=e^{z_k}/\sum_m e^{z_m}$, hàm mất mát trên mini-batch $\mathcal B$ gồm cross-entropy và phạt $\ell_2$ (không phạt bias):
 \begin{equation}
 L(W,\bm b)=-\frac1{|\mathcal B|}\sum_{i\in\mathcal B}\log p_{y_i}(\bm x_i)+\frac{\lambda}{2}\lVert W\rVert_F^2 .
@@ -40,6 +43,15 @@ Vì $\partial L/\partial z_k=p_k-\indic{y=k}$, với $X\in\R^{B\times D}$, ma tr
 \label{eq:softmax-grad}
 \end{equation}
 Softmax và cross-entropy được tính ở dạng ổn định số (trừ $\max_k z_k$, dùng $\log\sum\exp$). Cập nhật $\theta\leftarrow\theta-\eta\nabla_\theta L$ theo mini-batch có xáo trộn mỗi epoch; hàm mục tiêu lồi nên khởi tạo bằng 0. Mô hình tuyến tính nên biên quyết định giữa hai lớp là một siêu phẳng trong không gian pixel.
+
+\subsection{SVM tuyến tính}
+\label{sec:svm}
+Bộ phân lớp tuyến tính thứ hai dùng hàm mất mát hinge của SVM \citep{bishop2006}. Với mỗi lớp $k$ có một điểm số $z_k=\bm w_k^{\top}\bm x+b_k$ (một bộ phân lớp một-chống-còn-lại) và nhãn $t_{ik}=+1$ nếu $y_i=k$, ngược lại $t_{ik}=-1$. Trên mini-batch $\mathcal B$:
+\begin{equation}
+L(W,\bm b)=\frac1{|\mathcal B|}\sum_{i\in\mathcal B}\sum_{k=1}^{K}\max\big(0,\,1-t_{ik}z_{ik}\big)+\frac{\lambda}{2}\lVert W\rVert_F^2 .
+\label{eq:svm}
+\end{equation}
+Hàm hinge không khả vi tại biên, nên dùng đạo hàm dưới: $\partial L/\partial z_{ik}=-t_{ik}\,\indic{t_{ik}z_{ik}<1}/B$, rồi $\nabla_W L=X^{\top}(\partial L/\partial Z)+\lambda W$ và $\nabla_{\bm b}L=\bm 1^{\top}(\partial L/\partial Z)$, cập nhật $\theta\leftarrow\theta-\eta\nabla_\theta L$ như softmax. Dự đoán là $\argmax_k z_k$. Biến thể hinge bình phương $\max(0,1-tz)^2$ (khả vi) cũng được cài đặt và được thử trong lượt quét. Hệ số $\lambda$ tương ứng với $1/(Cn)$ trong ký hiệu thường dùng của SVM. SVM chỉ cho điểm số chứ không cho xác suất.
 
 \subsection{Perceptron nhiều lớp và lan truyền ngược}
 Các lớp ẩn tính $\bm z_l=\bm a_{l-1}W_l+\bm b_l$, $\bm a_l=\mathrm{ReLU}(\bm z_l)\odot\bm m_l$ với $\bm a_0=\bm x$; lớp cuối cho logits và softmax; mất mát là cross-entropy trung bình. Trọng số khởi tạo theo He \citep{he2015}, $W_l\sim\mathcal N(0,2/\mathrm{fan\_in})$. Dropout dạng \emph{inverted} \citep{srivastava2014} dùng mặt nạ $m_{l,j}\in\{0,1/(1-p)\}$, chỉ bật khi huấn luyện. Lan truyền ngược \citep{rumelhart1986} được viết tay:
@@ -88,3 +100,14 @@ CNN \citep{lecun1998} khác MLP ở chỗ mỗi đơn vị chỉ nhìn một c�
 1{\times}28{\times}28\to16{\times}26{\times}26\to16{\times}13{\times}13\to32{\times}11{\times}11\to32{\times}5{\times}5\to800\to64\to10 .
 \end{equation*}
 Các kích thước này được đọc từ \texttt{CNN.describe()} của mô hình đã huấn luyện, tổng cộng $56\,714$ tham số (MLP: $535\,818$). Tích chập được cài bằng \emph{im2col}: mỗi cửa sổ $k\times k\times C_{\text{in}}$ được trải thành một hàng nên đầu ra là tích ma trận $\text{patches}\cdot W$; gradient của kernel là $\text{patches}^{\top}\,\partial L/\partial\text{out}$ và gradient theo đầu vào được cộng dồn bằng \emph{col2im}. Gộp cực đại ghi lại vị trí cực đại để chuyển gradient về đúng ô. Huấn luyện dùng cùng SGD momentum, khởi tạo He, dropout và dừng sớm như MLP.
+
+\subsection{Stacking}
+\label{sec:stack}
+Stacking \citep{wolpert1992} là ensemble học cách kết hợp các mô hình đã huấn luyện thay vì dùng một quy tắc cố định. Mô hình cấp 0 là sáu mô hình ở trên (Naïve Bayes, softmax, SVM, MLP, AdaBoost, CNN), mỗi mô hình đã được huấn luyện trên tập train. Với mỗi ảnh, đặc trưng cấp 1 là $\log\max(p_k,10^{-4})$ của từng mô hình có xác suất, hoặc điểm số $z_k$ của SVM; ghép lại được $K\times6=60$ đặc trưng, chuẩn hóa theo trung bình và độ lệch chuẩn. Mô hình cấp 1 (meta-learner) là hồi quy softmax của mục~\ref{sec:softmax}. Meta-learner được huấn luyện trên \emph{tập validation} (hold-out đối với các mô hình cơ sở), không phải trên tập train: đầu ra của mô hình trên chính dữ liệu huấn luyện quá tự tin (AdaBoost đạt $100\%$), nên meta-learner học ở đó sẽ chỉ tin vào mô hình khớp dữ liệu nhất. Hệ số $\ell_2$ của meta-learner chọn bằng kiểm định chéo 5 phần \emph{bên trong} tập validation. Thuật toán~\ref{alg:stack} tóm tắt quy trình.
+
+\begin{algo}{Stacking với hold-out (\texttt{src/experiments/stacking.py})}{alg:stack}
+\item Nạp các mô hình cơ sở đã huấn luyện trên tập train; tính đặc trưng cấp 1 $F$ của tập validation.
+\item Với mỗi $\lambda$ trong lưới, đo accuracy kiểm định chéo 5 phần của meta-learner trên $(F,y_{\text{val}})$; chọn $\lambda$ cao nhất.
+\item Huấn luyện meta-learner trên toàn bộ $(F,y_{\text{val}})$ với $\lambda$ đã chọn.
+\item Dự đoán ảnh mới: chạy cả sáu mô hình cơ sở, ghép đặc trưng, đưa vào meta-learner.
+\end{algo}

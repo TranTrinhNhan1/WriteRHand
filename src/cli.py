@@ -4,6 +4,7 @@
     tune        sequential hyper-parameter sweeps (train/validation only)
     train       train the selected configuration, evaluate train/val/test, save the model
     baselines   train the scikit-learn counterparts under the same protocol
+    stack       stacking ensemble over the trained base models (hold-out = validation split)
     export      ONNX / JSON export + validation against the Python model
     augment     optional study: MLP with vs without data augmentation (3 seeds)
     replay      record training replays (real checkpoints + metrics) for the explorer
@@ -177,6 +178,15 @@ def cmd_replay(args):
         )
 
 
+def cmd_stack(args):
+    """Stacking ensemble over the trained base models (meta-learner fitted on the validation split)."""
+    from src.experiments.stacking import run_stacking
+
+    data, meta = _load(args.smoke, _dataset(args))
+    rd, ad = _dirs(args)
+    run_stacking(data, meta, art_root=ad, out_dir=rd / "final", repeats=2 if args.smoke else 5)
+
+
 def cmd_compare(args):
     """CNN vs MLP table (robustness, size, speed) and the cross-dataset evaluation."""
     from src.experiments.compare import cnn_vs_mlp, cross_eval
@@ -295,6 +305,7 @@ def build_parser():
     aug.add_argument("--seeds", type=int, default=3, help="number of training seeds per condition")
     aug.add_argument("--copies", type=int, default=1, help="augmented copies per training image")
     add("replay", cmd_replay, model=True)
+    add("stack", cmd_stack, smoke=True)
     add("compare", cmd_compare)
     add("report", cmd_report)
     ex = add("export", cmd_export, dataset=False)

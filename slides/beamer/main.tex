@@ -32,6 +32,7 @@
 \input{../../report/generated/mcnemar}
 \input{../../report/generated/cross_eval_numbers}
 \input{../../report/generated/eda_stats}
+\input{../../report/generated/stacking_numbers}
 \newcommand{\fig}[2][\linewidth]{\includegraphics[width=#1]{#2}}
 
 \title{So sánh các bộ phân lớp tự cài đặt trên MNIST}
@@ -46,7 +47,7 @@
 \begin{frame}[plain]
   \vfill\centering
   {\Large\bfseries\color{navy} So sánh các bộ phân lớp tự cài đặt\\ trên bài toán nhận dạng chữ số viết tay MNIST}\par\medskip
-  {\normalsize Gaussian Naïve Bayes, hồi quy softmax, MLP, AdaBoost-SAMME; CNN là phần nâng cao}\par\bigskip
+  {\normalsize Gaussian Naïve Bayes, softmax, SVM tuyến tính, MLP, AdaBoost-SAMME và stacking; CNN là phần nâng cao}\par\bigskip
   {\color{navy}\hrule height 0.5pt}\bigskip
   Trần Trinh Nhân (24280088) \quad Lâm Nhật Tiến (24280027)\par\smallskip
   {\small Môn Nhận dạng, Khoa Toán -- Tin học, Trường Đại học Khoa học Tự nhiên, ĐHQG-HCM\\ Đồ án giữa kỳ}
@@ -62,7 +63,7 @@
     \textbf{Yêu cầu bắt buộc (đã làm)}
     \bul
       \item Tiền xử lý và khảo sát dữ liệu.
-      \item Bốn bộ phân lớp tự cài đặt: Naïve Bayes, softmax, MLP, AdaBoost.
+      \item Bộ phân lớp tự cài đặt: Naïve Bayes, softmax, SVM, MLP, AdaBoost; ensemble stacking.
       \item Accuracy, precision, recall, F1 macro, ma trận nhầm lẫn trên train, validation, test.
       \item Thí nghiệm siêu tham số có biểu đồ.
       \item So sánh ưu/nhược điểm.
@@ -99,7 +100,7 @@
 \end{frame}
 
 % 4
-\begin{frame}{Naïve Bayes và hồi quy softmax}
+\begin{frame}{Naïve Bayes, hồi quy softmax và SVM tuyến tính}
   \small
   \textbf{Gaussian Naïve Bayes} (các pixel độc lập có điều kiện theo lớp)
   \[
@@ -118,6 +119,15 @@
   \vspace{-4pt}
   \bul
     \item Accuracy trên chính tập train chỉ đạt $93.62\%$: bị giới hạn bởi biên tuyến tính.
+  \eul
+  \medskip
+  \textbf{SVM tuyến tính} (hinge một-chống-còn-lại, đạo hàm dưới)
+  \[
+    L=\tfrac1B\sum_{i,k}\max(0,1-t_{ik}z_{ik})+\tfrac{\lambda}2\lVert W\rVert_F^2,\qquad t_{ik}=\pm1
+  \]
+  \vspace{-4pt}
+  \bul
+    \item Test \svmAccTest\% (\texttt{LinearSVC}: $92.02\%$); cùng giới hạn tuyến tính như softmax.
   \eul
 \end{frame}
 
@@ -149,7 +159,7 @@
 \end{frame}
 
 % 6
-\begin{frame}{AdaBoost-SAMME với cây quyết định có trọng số}
+\begin{frame}{AdaBoost-SAMME và ensemble stacking}
   \small
   \[
     \alpha_t=\nu\Big(\ln\frac{1-\mathrm{err}_t}{\mathrm{err}_t}+\ln(K-1)\Big),\quad
@@ -162,6 +172,12 @@
     \item Cấu hình: $393$ cây, độ sâu $10$, $\nu=0.1$, mỗi cây xét một nửa số đặc trưng.
     \item Chi phí: \fitADA\,s huấn luyện, \latADA\,ms mỗi ảnh, tệp xuất $9.2$\,MiB.
     \item Điểm số là tỉ lệ phiếu có trọng số, chưa hiệu chỉnh thành xác suất.
+  \eul
+  \medskip
+  \textbf{Stacking}: meta-learner softmax trên $\log p$ (hoặc điểm SVM) của sáu mô hình, $\stackFeatures$ đặc trưng
+  \bul
+    \item Meta-learner học trên tập \emph{validation} (hold-out), $\lambda=\stackL$ chọn bằng kiểm định chéo 5 phần trong validation: \stackCV\%.
+    \item Test \stackAccTest\%, hơn CNN $0.25$ điểm; bỏ phiếu mềm không học chỉ \stackVote\%.
   \eul
 \end{frame}
 
@@ -179,9 +195,12 @@
       MLP & \accTrainMLP & \accValMLP & \accTestMLP & \foneMLP \\
       AdaBoost & \accTrainADA & \accValADA & \accTestADA & \foneADA \\
       CNN & \accTrainCNN & \accValCNN & \accTestCNN & \foneCNN \\
+      \midrule
+      SVM & \svmAccTrain & \svmAccVal & \svmAccTest & \svmFOne \\
+      Stacking$^{*}$ & \stackAccTrain & \stackAccVal & \stackAccTest & \stackFOne \\
       \bottomrule
     \end{tabular}\par\smallskip
-    {\footnotesize Accuracy (\%), một seed (42). Precision, recall và F1 macro trên cả ba tập: báo cáo, Bảng 2.}
+    {\footnotesize Accuracy (\%), một seed (42). Precision, recall, F1 macro trên cả ba tập: báo cáo, Bảng 2. $^{*}$Validation là dữ liệu huấn luyện của meta-learner.}
     \column{0.42\linewidth}
     \small
     \begin{tabular}{@{}lrrr@{}}
@@ -192,6 +211,7 @@
       Softmax & \accTestSM & \accTestSkSM & \diffSkSM \\
       MLP & \accTestMLP & \accTestSkMLP & \diffSkMLP \\
       AdaBoost & \accTestADA & \accTestSkADA & \diffSkADA \\
+      SVM & \svmAccTest & 92.02 & $-0.07$ \\
       \bottomrule
     \end{tabular}\par\smallskip
     {\footnotesize Cùng siêu tham số. Softmax chênh vì L-BFGS của scikit-learn chưa hội tụ.}
@@ -206,7 +226,7 @@
     \includegraphics[width=0.31\linewidth]{confusion_mlp.png} &
     \includegraphics[width=0.31\linewidth]{confusion_cnn.png}
   \end{tabular}\par\smallskip
-  {\footnotesize Naïve Bayes, MLP, CNN. Lỗi trên test: Naïve Bayes \errorsNB{}, softmax \errorsSM{}, MLP \errorsMLP{}, AdaBoost \errorsADA{}, CNN \errorsCNN{}. Các mô hình nhầm nhiều nhất ở cặp có nét chung: $4\to9$, $7\to9$, $5\to3$.}
+  {\footnotesize Naïve Bayes, MLP, CNN. Lỗi trên test: Naïve Bayes \errorsNB{}, softmax \errorsSM{}, SVM \svmErrors{}, MLP \errorsMLP{}, AdaBoost \errorsADA{}, CNN \errorsCNN{}, stacking \stackErrors{}. Các mô hình nhầm nhiều nhất ở cặp có nét chung: $4\to9$, $7\to9$, $5\to3$.}
 \end{frame}
 
 % 9
@@ -228,7 +248,9 @@
     Naïve Bayes & thấp nhất, \accTestNB\% & \fitNB\,s; \latNB\,ms & $\mu,\sigma$ theo lớp đọc được \\
     Softmax & \accTestSM\%, giới hạn bởi biên tuyến tính & \fitSM\,s; \latSM\,ms & trọng số vẽ thành ảnh \\
     MLP & \accTestMLP\% & \fitMLP\,s; \latMLP\,ms & đơn vị ẩn khó đọc \\
+    SVM & \svmAccTest\%, như softmax & \svmFit\,s; $0.008$\,ms & trọng số vẽ thành ảnh; không có xác suất \\
     AdaBoost & \accTestADA\% & \fitADA\,s; \latADA\,ms & tần suất pixel; điểm là tỉ lệ phiếu \\
+    Stacking & cao nhất, \stackAccTest\% & tổng 6 mô hình; \stackLat\,ms & khó: chỉ biết trọng số từng mô hình \\
     \bottomrule
   \end{tabular}\par\smallskip
   {\tiny CPU, một máy; thời gian có thể chênh tới gấp đôi giữa các lần chạy.}
@@ -294,7 +316,7 @@
     \small
     \textbf{Kết luận}
     \bul
-      \item MNIST: CNN \accTestCNN\%, MLP \accTestMLP\%, AdaBoost \accTestADA\%, softmax \accTestSM\%, Naïve Bayes \accTestNB\%.
+      \item MNIST: stacking \stackAccTest\%, CNN \accTestCNN\%, MLP \accTestMLP\%, AdaBoost \accTestADA\%, SVM \svmAccTest\%, softmax \accTestSM\%, Naïve Bayes \accTestNB\%.
       \item AdaBoost gần MLP về độ chính xác nhưng đắt hơn nhiều về thời gian.
       \item Tăng cường dữ liệu chủ yếu cải thiện độ bền với đúng loại biến đổi.
     \eul

@@ -9,9 +9,11 @@
 | 2 | Hồi quy logistic đa lớp (softmax) | mini-batch Gradient Descent, L2 | `src/models/logistic_regression.py` |
 | 3 | MLP (ReLU, dropout, momentum) | lan truyền ngược viết tay, early stopping | `src/models/mlp.py` |
 | 4 | AdaBoost-SAMME (cây Gini có trọng số) | boosting tuần tự | `src/models/adaboost.py` |
-| 5 | CNN nhỏ (conv-ReLU-max-pool ×2, dense) | im2col/col2im, backprop và SGD momentum viết tay | `src/models/cnn.py` |
+| 5 | SVM tuyến tính (hinge, một-chống-còn-lại) | mini-batch Gradient Descent trên đạo hàm dưới, L2 | `src/models/svm.py` |
+| 6 | Stacking (meta-learner softmax trên sáu mô hình) | hold-out: học trên tập validation, chọn λ bằng CV 5 phần | `src/models/stacking.py`, `src/experiments/stacking.py` |
+| 7 | CNN nhỏ (conv-ReLU-max-pool ×2, dense) | im2col/col2im, backprop và SGD momentum viết tay | `src/models/cnn.py` |
 
-**English summary.** Handwritten digit classification on MNIST with four classifiers (plus a small CNN) implemented from scratch,
+**English summary.** Handwritten digit classification on MNIST with five classifiers (Gaussian NB, softmax, linear SVM, MLP, AdaBoost), a hold-out stacking ensemble of them (plus a small CNN) implemented from scratch,
 a leak-free reproducible protocol (stratified 50k/10k train/validation split, official 10k test), validation-only
 hyper-parameter search, scikit-learn parity tests, W&B tracking (offline fallback), ONNX export to Hugging Face,
 extensions (Fashion-MNIST, EMNIST Digits, five augmentation transforms with a controlled ablation, CNN vs MLP), an in-browser demo
@@ -32,7 +34,11 @@ test chỉ để báo cáo. Bảng này được sinh tự động từ `results
 | MLP | 99.87 | 98.18 | 98.24 | 98.23 | 98.23 | 98.23 | 11.0 | 0.051 | 0.042 |
 | AdaBoost-SAMME | 100.00 | 97.59 | 97.60 | 97.58 | 97.58 | 97.58 | 817.9 | 0.751 | 18.705 |
 | CNN | 99.40 | 98.65 | 98.80 | 98.79 | 98.79 | 98.79 | 143.0 | 1.163 | 0.315 |
+| Linear SVM | 92.53 | 91.38 | 91.95 | 91.85 | 91.84 | 91.82 | 11.5 | 0.023 | 0.008 |
+| Stacking (6 models) | 99.83 | 99.12 | 99.05 | 99.05 | 99.04 | 99.04 | 1.0 | 2.204 | 23.789 |
 <!-- BENCHMARK:END -->
+
+Stacking: cột Fit chỉ tính meta-learner (1.0 s); tổng thời gian huấn luyện gồm cả sáu mô hình cơ sở. Meta-learner học trên tập validation nên accuracy validation của stacking không phải ước lượng sạch (kiểm định chéo 5 phần trên validation: 98.69%). SVM và stacking chưa xuất sang web.
 
 Chi tiết: báo cáo `report/main.pdf`, slide `slides/WriteRHand-slides.pdf`, notebook `notebooks/`, nhật ký thí nghiệm `results/`.
 
@@ -53,6 +59,7 @@ uv run python -m src prepare                  # tải MNIST, chia phân tầng 5
 uv run python -m src tune --model all         # quét siêu tham số (chỉ train/val)  -> results/tuning/
 uv run python -m src train --model all        # huấn luyện cấu hình đã chọn, đánh giá train/val/test -> results/final/
 uv run python -m src baselines --model all    # đối chứng scikit-learn cùng giao thức -> results/baselines/
+uv run python -m src stack                    # stacking: meta-learner trên validation -> results/final/StackingEnsemble.json
 uv run python -m src augment --model mlp --seeds 3   # đối chứng tăng cường dữ liệu (mlp | cnn) -> results/augmentation_<model>.json
 uv run python -m src compare                  # CNN so với MLP (McNemar, độ bền) -> results/cnn_vs_mlp.json
 uv run python -m src replay --model mlp       # ghi lại điểm kiểm tra huấn luyện thật cho trình khám phá -> artifacts/replay/

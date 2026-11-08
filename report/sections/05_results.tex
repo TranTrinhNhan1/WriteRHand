@@ -5,11 +5,11 @@
 \centering\scriptsize
 \setlength{\tabcolsep}{3.5pt}
 \input{generated/prf_splits}
-\caption{Accuracy, precision, recall và F1 macro (\%) trên train, validation và test (MNIST, seed 42).}
+\caption{Accuracy, precision, recall và F1 macro (\%) trên train, validation và test (MNIST, seed 42). Hai hàng cuối là SVM tuyến tính và stacking; với stacking, validation là dữ liệu huấn luyện của meta-learner nên không phải ước lượng sạch.}
 \label{tab:accuracy}
 \end{table}
 
-\Cref{tab:accuracy} cho thứ tự trên tập test: MLP (\accTestMLP\%) và AdaBoost (\accTestADA\%) vượt xa softmax (\accTestSM\%) và Naïve Bayes (\accTestNB\%). F1 macro lệch accuracy không quá $0.16$ điểm vì các lớp gần cân bằng. AdaBoost đạt $100\%$ trên train còn MLP đạt $99.87\%$, nên hai mô hình này khớp rất sát dữ liệu huấn luyện (chênh train--test $2.40$ và $1.63$ điểm). Softmax chỉ đạt $93.62\%$ trên train, tức bị giới hạn bởi biên tuyến tính. Naïve Bayes có test cao hơn train ($-1.19$ điểm). Mỗi mô hình chỉ được huấn luyện một lần nên khoảng cách giữa MLP và AdaBoost ($0.64$ điểm) chưa đủ để kết luận mô hình nào tốt hơn.
+\Cref{tab:accuracy} cho thứ tự trên tập test: MLP (\accTestMLP\%) và AdaBoost (\accTestADA\%) vượt xa softmax (\accTestSM\%) và Naïve Bayes (\accTestNB\%). F1 macro lệch accuracy không quá $0.16$ điểm vì các lớp gần cân bằng. AdaBoost đạt $100\%$ trên train còn MLP đạt $99.87\%$, nên hai mô hình này khớp rất sát dữ liệu huấn luyện (chênh train--test $2.40$ và $1.63$ điểm). Softmax chỉ đạt $93.62\%$ trên train, tức bị giới hạn bởi biên tuyến tính. Naïve Bayes có test cao hơn train ($-1.19$ điểm). SVM tuyến tính (\svmTest\%) gần softmax, cũng bị giới hạn bởi biên tuyến tính (train $92.53\%$). Stacking đạt \stackCV\% (kiểm định chéo trên validation) và $99.05\%$ trên test, cao hơn CNN, mô hình đơn tốt nhất, $0.25$ điểm (mục~\ref{sec:stack-results}). Mỗi mô hình chỉ được huấn luyện một lần nên khoảng cách giữa MLP và AdaBoost ($0.64$ điểm) chưa đủ để kết luận mô hình nào tốt hơn.
 
 \begin{figure}[tbp]
 \centering
@@ -22,7 +22,14 @@
 \label{fig:confusion}
 \end{figure}
 
-Cả năm mô hình đều nhầm nhiều nhất ở những cặp có nét chung (\cref{fig:confusion}): $4\to9$ là cặp lớn nhất của Naïve Bayes (284 trong \errorsNB{} lỗi), softmax, AdaBoost và CNN; MLP nhầm nhiều nhất $7\to9$. Các cặp $5\to3$ và $7\to9$ cũng nằm trong ba cặp đầu của nhiều mô hình.
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.62\textwidth]{../results/figures/confusion_extra.pdf}
+\caption{Ma trận nhầm lẫn trên tập test của SVM tuyến tính (a) và stacking (b).}
+\label{fig:confusion-extra}
+\end{figure}
+
+Cả năm mô hình đều nhầm nhiều nhất ở những cặp có nét chung (\cref{fig:confusion}): $4\to9$ là cặp lớn nhất của Naïve Bayes (284 trong \errorsNB{} lỗi), softmax, AdaBoost và CNN; MLP nhầm nhiều nhất $7\to9$. Các cặp $5\to3$ và $7\to9$ cũng nằm trong ba cặp đầu của nhiều mô hình. SVM nhầm nhiều nhất $4\to9$ (48 ảnh), $2\to8$ và $5\to3$; stacking chỉ còn 95 ảnh sai (\cref{fig:confusion-extra}), nhiều nhất là $2\to7$ (7 ảnh).
 
 \subsection{Ảnh hưởng của siêu tham số}
 \begin{figure}[tbp]
@@ -32,17 +39,17 @@ Cả năm mô hình đều nhầm nhiều nhất ở những cặp có nét chun
 \label{fig:sweeps}
 \end{figure}
 
-\Cref{fig:sweeps} cho thấy: (a) Naïve Bayes: \texttt{var\_smoothing} tăng từ $10^{-9}$ lên $0.1$ làm validation tăng từ $56.05\%$ lên $79.67\%$, train và validation gần trùng nhau nên mô hình bị giới hạn bởi giả thiết độc lập chứ không do overfitting; (b) softmax: tốc độ học $0.03$ tốt nhất, giá trị lớn hơn làm cả train lẫn validation giảm; (c) MLP: hai lớp ẩn $(512,256)$ đạt $98.18\%$, hơn một lớp ẩn $(97.94\%)$ và ba lớp ẩn $(97.15\%)$; (d) AdaBoost: validation tăng đơn điệu theo độ sâu cây; (e) CNN: $(16,32)$ kênh cho validation cao nhất. Với AdaBoost (độ sâu 10) và CNN, giá trị tốt nhất nằm ở mép khoảng đã quét nên có thể chưa tối ưu. Số epoch của MLP do dừng sớm quyết định (dừng ở epoch 14, khôi phục epoch 9), số vòng boosting là 393.
+\Cref{fig:sweeps} cho thấy: (a) Naïve Bayes: \texttt{var\_smoothing} tăng từ $10^{-9}$ lên $0.1$ làm validation tăng từ $56.05\%$ lên $79.67\%$, train và validation gần trùng nhau nên mô hình bị giới hạn bởi giả thiết độc lập chứ không do overfitting; (b) softmax: tốc độ học $0.03$ tốt nhất, giá trị lớn hơn làm cả train lẫn validation giảm; (c) MLP: hai lớp ẩn $(512,256)$ đạt $98.18\%$, hơn một lớp ẩn $(97.94\%)$ và ba lớp ẩn $(97.15\%)$; (d) AdaBoost: validation tăng đơn điệu theo độ sâu cây; (e) CNN: $(16,32)$ kênh cho validation cao nhất; (f) SVM: tốc độ học $0.01$ tốt nhất và hàm hinge ($91.16\%$) cao hơn hinge bình phương ($89.24\%$). Với AdaBoost (độ sâu 10) và CNN, giá trị tốt nhất nằm ở mép khoảng đã quét nên có thể chưa tối ưu. Số epoch của SVM (75) lấy từ đường cong validation. Số epoch của MLP do dừng sớm quyết định (dừng ở epoch 14, khôi phục epoch 9), số vòng boosting là 393.
 
 \subsection{Thời gian huấn luyện, thời gian dự đoán và đối chiếu scikit-learn}
 \begin{table}[tbp]
 \centering\small
 \input{generated/cost}
-\caption{Chi phí trên CPU: huấn luyện trên $50\,000$ ảnh, dự đoán $10\,000$ ảnh test, thời gian một ảnh và kích thước tệp mô hình xuất ra.}
+\caption{Chi phí trên CPU: huấn luyện trên $50\,000$ ảnh, dự đoán $10\,000$ ảnh test, thời gian một ảnh và kích thước tệp mô hình xuất ra (SVM và stacking chưa xuất sang web).}
 \label{tab:cost}
 \end{table}
 
-AdaBoost đắt nhất (\cref{tab:cost}): \fitADA\,s huấn luyện và \latADA\,ms cho một ảnh, vì phải duyệt $393$ cây (một phần do vòng lặp Python trong cài đặt). Naïve Bayes và softmax rẻ nhất. CNN chậm hơn MLP khoảng $13$ lần khi huấn luyện và $7$ lần khi dự đoán.
+AdaBoost đắt nhất (\cref{tab:cost}): \fitADA\,s huấn luyện và \latADA\,ms cho một ảnh, vì phải duyệt $393$ cây (một phần do vòng lặp Python trong cài đặt). Naïve Bayes, softmax và SVM rẻ nhất (SVM: \svmFit\,s huấn luyện). Với stacking, thời gian huấn luyện là tổng thời gian huấn luyện sáu mô hình cơ sở cộng \stackMetaFit\,s của meta-learner, và mỗi ảnh phải chạy qua cả sáu mô hình nên chậm hơn AdaBoost một chút. CNN chậm hơn MLP khoảng $13$ lần khi huấn luyện và $7$ lần khi dự đoán.
 
 \begin{table}[tbp]
 \centering\small
@@ -51,7 +58,19 @@ AdaBoost đắt nhất (\cref{tab:cost}): \fitADA\,s huấn luyện và \latADA\
 \label{tab:sklearn}
 \end{table}
 
-Naïve Bayes trùng khớp với scikit-learn (\cref{tab:sklearn}). Ba mô hình còn lại lệch từ $0.10$ đến $0.66$ điểm: softmax của nhóm cao hơn vì scikit-learn (L-BFGS) chạm giới hạn vòng lặp mà chưa hội tụ, còn nhóm dừng ở epoch chọn bằng validation; MLP chênh $0.22$ điểm; AdaBoost chênh $0.10$ điểm, hai bản dùng cách chia nút khác nhau (histogram so với ngưỡng chính xác) nên thời gian không so sánh trực tiếp được.
+Naïve Bayes trùng khớp với scikit-learn (\cref{tab:sklearn}). SVM (hinge) của nhóm đạt $91.95\%$ so với $92.02\%$ của \texttt{LinearSVC} cùng hàm mất mát ($C=0.2$), chênh $0.07$ điểm; \texttt{LinearSVC} cần $99.0$\,s và dừng ở giới hạn vòng lặp mà chưa hội tụ. Ba mô hình còn lại lệch từ $0.10$ đến $0.66$ điểm: softmax của nhóm cao hơn vì scikit-learn (L-BFGS) chạm giới hạn vòng lặp mà chưa hội tụ, còn nhóm dừng ở epoch chọn bằng validation; MLP chênh $0.22$ điểm; AdaBoost chênh $0.10$ điểm, hai bản dùng cách chia nút khác nhau (histogram so với ngưỡng chính xác) nên thời gian không so sánh trực tiếp được.
+
+
+\subsection{Stacking}
+\label{sec:stack-results}
+\begin{table}[H]
+\centering\small
+\input{generated/stacking}
+\caption{Accuracy test của các mô hình cơ sở, của bỏ phiếu mềm và của stacking; cột cuối là trị tuyệt đối trung bình (TB) của trọng số meta-learner ứng với từng mô hình cơ sở (đặc trưng đã chuẩn hóa). Bỏ phiếu mềm lấy trung bình xác suất của các mô hình có xác suất, không học gì thêm.}
+\label{tab:stacking}
+\end{table}
+
+Meta-learner chọn $\lambda=\stackL$ bằng kiểm định chéo 5 phần trên validation, cho accuracy kiểm định chéo \stackCV\%. Trên test, stacking đạt $99.05\%$ (\cref{tab:stacking}), cao hơn CNN $0.25$ điểm và cao hơn rõ rệt phép bỏ phiếu mềm không học (\stackVote\%, thấp hơn cả CNN). Số lỗi giảm từ $120$ (CNN) xuống $95$ ảnh. Meta-learner đặt trọng số lớn nhất cho CNN, MLP và AdaBoost. Các lưu ý: (1) mức tăng $0.25$ điểm trên $10\,000$ ảnh test là một lần chạy một seed, chưa đo biến thiên; (2) meta-learner được huấn luyện trên chỉ $10\,000$ ảnh validation; (3) accuracy train ($99.83\%$) và validation ($99.12\%$) của stacking không phải ước lượng sạch vì validation là dữ liệu của meta-learner; (4) chi phí suy luận là tổng của sáu mô hình.
 
 \subsection{So sánh ưu và nhược điểm}
 \begin{table}[H]
@@ -64,11 +83,13 @@ Mô hình & Độ chính xác & Thời gian huấn luyện và dự đoán & Kh�
 \midrule
 Naïve Bayes & Thấp nhất (\accTestNB\%): giả thiết độc lập bị mâu thuẫn bởi tương quan giữa các pixel kề nhau. & Rẻ: \fitNB\,s huấn luyện, \latNB\,ms mỗi ảnh. & Tham số $\mu_{kj},\sigma_{kj}$ là ảnh trung bình và phương sai theo lớp, đọc trực tiếp. \\
 Softmax & \accTestSM\%; train chỉ $93.62\%$, bị giới hạn bởi biên tuyến tính. & Dự đoán nhanh (\latSM\,ms mỗi ảnh); huấn luyện \fitSM\,s. & Trọng số theo lớp vẽ được thành ảnh; $x_iW_{ik}$ phân rã chính xác điểm số. \\
+SVM tuyến tính & \svmTest\%; gần softmax, cùng giới hạn của biên tuyến tính. & Rẻ: \svmFit\,s huấn luyện, $0.008$\,ms mỗi ảnh. & Như softmax: trọng số theo lớp vẽ được thành ảnh; điểm số không phải xác suất. \\
 MLP & \accTestMLP\%; chênh train--test $1.63$ điểm. & \fitMLP\,s huấn luyện, \latMLP\,ms mỗi ảnh. & Khó: đơn vị ẩn gần như không đọc được bằng mắt. \\
 AdaBoost-SAMME & \accTestADA\%, gần MLP; train $100\%$. & Đắt nhất: \fitADA\,s huấn luyện, \latADA\,ms mỗi ảnh. & Bản đồ tần suất pixel được cây dùng; điểm là tỉ lệ phiếu, chưa phải xác suất. \\
+Stacking & Cao nhất ($99.05\%$), hơn CNN $0.25$ điểm. & Đắt: huấn luyện sáu mô hình cơ sở, $23.8$\,ms mỗi ảnh. & Khó nhất: kết hợp sáu mô hình; chỉ biết mô hình nào được trọng số lớn (CNN, MLP). \\
 \bottomrule
 \end{tabular}
-\caption{Ưu và nhược điểm của bốn mô hình theo bốn tiêu chí của đề bài (số liệu từ \cref{tab:accuracy,tab:cost}; nhận xét về khả năng giải thích là định tính, \cref{fig:interp}).}
+\caption{Ưu và nhược điểm của các mô hình theo bốn tiêu chí của đề bài (số liệu từ \cref{tab:accuracy,tab:cost}; nhận xét về khả năng giải thích là định tính, \cref{fig:interp}).}
 \label{tab:summary}
 \end{table}
 

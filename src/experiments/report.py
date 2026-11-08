@@ -188,9 +188,36 @@ def benchmark_rows(data):
     return rows
 
 
+def extra_rows(results_dir):
+    """Rows of the models added after the first five (linear SVM, stacking), if their results exist."""
+    rows = []
+    for title, cname in (("Linear SVM", "LinearSVM"), ("Stacking (6 models)", "StackingEnsemble")):
+        f = _read(Path(results_dir) / "final" / f"{cname}.json")
+        if not f:
+            continue
+        s = f["splits"]
+        rows.append(
+            {
+                "model": title,
+                "id": cname,
+                "acc_train": s["train"]["accuracy"],
+                "acc_val": s["val"]["accuracy"],
+                "acc_test": s["test"]["accuracy"],
+                "prec_test": s["test"]["precision_macro"],
+                "rec_test": s["test"]["recall_macro"],
+                "f1_test": s["test"]["f1_macro"],
+                "train_time": f["train_time_sec"],
+                "predict_time_test": s["test"]["predict_time_sec"],
+                "latency_ms": f["latency_ms_single_sample"],
+            }
+        )
+    return rows
+
+
 def write_tables(data, out_dir):
     out_dir.mkdir(parents=True, exist_ok=True)
     rows = benchmark_rows(data)
+    md_rows = rows + extra_rows(out_dir.parent)
     head = [
         "model",
         "acc_train",
@@ -217,7 +244,7 @@ def write_tables(data, out_dir):
         "Predict 10k (s) | 1-sample (ms) |",
         "|" + "---|" * 10,
     ]
-    for r in rows:
+    for r in md_rows:
         md.append(
             f"| {r['model']} | {100 * r['acc_train']:.2f} | {100 * r['acc_val']:.2f} | "
             f"{100 * r['acc_test']:.2f} | {100 * r['prec_test']:.2f} | {100 * r['rec_test']:.2f} | "
