@@ -1,6 +1,7 @@
 import { CodedError, asCoded } from './errors'
 import type { Key, Params } from '../i18n'
 import { adaboostPredict, argmax, parseAdaBoostSpec } from './adaboost'
+import { TRACE_OUTPUTS, adaboostTrace, type Trace } from './trace'
 import { createOnnxPredictor } from './onnx'
 import { loadOrt } from './ortLoader'
 import type { Manifest, ModelId, Prediction } from './types'
@@ -16,6 +17,7 @@ export type StatusMap = Partial<Record<ModelId, ModelStatus>>
 
 interface Runner {
   run(pixels: Float32Array): Promise<Float64Array>
+  trace(pixels: Float32Array): Promise<Trace | null>
 }
 
 const FETCH_TIMEOUT_MS = 60_000
@@ -99,12 +101,22 @@ export class ModelStore {
         } catch {
           throw new CodedError('err.format', { file: label })
         }
-        runner = { run: async (pixels) => adaboostPredict(spec, pixels) }
+        runner = { run: async (pixels) => adaboostPredict(spec, pixels), trace: async (pixels) => adaboostTrace(spec, pixels) }
       } else {
         const [res, ort] = await Promise.all([fetchResponse(url, label), loadOrt()])
         const bytes = new Uint8Array(await res.arrayBuffer())
         const predictor = await createOnnxPredictor(ort, bytes, entry.input ?? 'pixels', entry.output ?? 'probabilities')
-        runner = { run: (pixels) => predictor.run(pixels, 1) }
+        runner = {
+          run: (pixels) => predictor.run(pixels, 1),
+          trace: async (pixels) => {
+            const names = TRACE_OUTPUTS[id]
+            const o = names ? await predictor.trace(pixels, names) : null
+            if (!o) return null
+            if (id === 'mlp') return { kind: 'mlp', hidden: [o.a0, o.a1], logits: o.logits }
+            if (id === 'softmax') return { kind: 'softmax', x: o.x, weights: o.weights, bias: o.bias, logits: o.logits }
+            return { kind: 'naive_bayes', x: o.x, mean: o.class_mean, variance: o.class_var, logPrior: o.log_prior, logits: o.logits }
+          },
+        }
       }
       this.runners.set(id, runner)
       this.set(id, { state: 'ready', loadMs: performance.now() - t0 })
@@ -112,6 +124,15 @@ export class ModelStore {
       const coded = asCoded(err)
       this.set(id, { state: 'error', key: coded.key, params: coded.params })
     }
+  }
+
+  /** Intermediate values for the "look inside" panel; null when the loaded file has no trace outputs. */
+  trace(id: ModelId, pixels: Float32Array): Promise<Trace | null> {
+    const runner = this.runners.get(id)
+    if (!runner) return Promise.reject(new CodedError('err.notLoaded'))
+    const job = this.queue.then(() => runner.trace(pixels))
+    this.queue = job.catch(() => undefined)
+    return job
   }
 
   predict(id: ModelId, pixels: Float32Array): Promise<Prediction> {

@@ -95,11 +95,12 @@
 .bullets li::before {
   content: '';
   position: absolute;
-  left: 2px;
-  top: 0.72em;
-  width: 6px;
-  height: 1px;
-  background: var(--ink-2);
+  left: 1px;
+  top: 0.66em;
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+  background: var(--line-2);
 }
 
 .equations {
@@ -119,7 +120,7 @@
 
 .equation .caption {
   color: var(--ink-3);
-  font-size: 0.8125rem;
+  font: 400 0.75rem/1.5 var(--mono);
 }
 
 .tex--block {

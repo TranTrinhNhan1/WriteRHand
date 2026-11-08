@@ -1,8 +1,10 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import '@fontsource-variable/bricolage-grotesque/wght.css'
+import '@fontsource-variable/geist-mono/wght.css'
 import '@fontsource-variable/geist/wght.css'
 import './styles/global.css'
+import './styles/recognise.css'
+import './styles/inside.css'
 import App from './App'
 import { LangProvider } from './i18n'
 

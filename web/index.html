@@ -3,7 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="color-scheme" content="dark light" />
+    <script>
+      (function () {
+        var t
+        try {
+          t = localStorage.getItem('writerhand-theme')
+        } catch (e) {}
+        if (t !== 'dark' && t !== 'light') t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+        document.documentElement.dataset.theme = t
+      })()
+    </script>
     <meta name="description" content="Bốn bộ phân loại chữ số viết tay tự cài đặt cho môn Nhận dạng mẫu. Vẽ một chữ số và xem chúng đọc ngay trong trình duyệt của bạn." />
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
     <title>WriteRHand</title>

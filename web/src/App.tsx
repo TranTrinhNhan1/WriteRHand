@@ -6,6 +6,8 @@ import { loadSiteData } from './lib/data'
 import { CodedError } from './lib/errors'
 import { date } from './lib/format'
 import { useDocumentTitle } from './lib/hooks'
+import { useTheme } from './lib/theme'
+import { Moon, Sun } from '@phosphor-icons/react'
 import { ModelStore } from './lib/modelStore'
 import { ROUTES, useRoute, type Route } from './lib/route'
 import type { SiteData } from './lib/types'
@@ -48,6 +50,17 @@ function LangSwitch() {
   )
 }
 
+function ThemeToggle() {
+  const { t } = useI18n()
+  const [theme, toggle] = useTheme()
+  const label = theme === 'dark' ? t('nav.toLight') : t('nav.toDark')
+  return (
+    <button type="button" className="theme-toggle" onClick={toggle} aria-label={label} title={label}>
+      {theme === 'dark' ? <Sun size={18} weight="regular" aria-hidden="true" /> : <Moon size={18} weight="regular" aria-hidden="true" />}
+    </button>
+  )
+}
+
 function Header({ route }: { route: Route }) {
   const { t } = useI18n()
   return (
@@ -68,7 +81,10 @@ function Header({ route }: { route: Route }) {
             ))}
           </ul>
         </nav>
-        <LangSwitch />
+        <div className="header-tools">
+          <LangSwitch />
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   )

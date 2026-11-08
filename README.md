@@ -67,7 +67,7 @@ mã băm phép chia dữ liệu, loss/accuracy theo epoch, ma trận nhầm lẫ
 ### Mô hình và website
 Trọng số **không** được commit. Bundle (ONNX + JSON + model card) nằm trên Hugging Face:
 <https://huggingface.co/TranTrinhNhan1111/WriteRHand-MNIST>. Website tĩnh (React + TypeScript + Vite + ONNX Runtime Web) nằm trong `web/`
-(xem `web/README.md`); CI build và triển khai lên GitHub Pages bằng `.github/workflows/pages.yml`.
+(xem `web/README.md`), có giao diện sáng/tối và mục "Nhìn vào bên trong" minh hoạ từng bước tính của bốn thuật toán trên chính nét vẽ của bạn; CI build và triển khai lên GitHub Pages bằng `.github/workflows/pages.yml`.
 
 ## Giao thức thực nghiệm (tóm tắt)
 - 60 000 ảnh huấn luyện chính thức → **50 000 train / 10 000 validation** (phân tầng, seed 42); 10 000 ảnh test chính thức.
@@ -85,7 +85,7 @@ Các con số trong báo cáo và slide được đọc từ `results/` (xem `sr
 ## Cấu trúc thư mục
 ```
 src/                 models/ (4 bộ phân lớp), preprocessing/, evaluation/, experiments/ (tune, train, report, augment), export/ (ONNX, Hugging Face), cli.py
-tests/               kiểm thử đơn vị + đối chiếu scikit-learn (72 kiểm thử, chạy offline)
+tests/               kiểm thử đơn vị + đối chiếu scikit-learn (73 kiểm thử, chạy offline)
 notebooks/           EDA, reproduce_results (chính), fine-tuning, final_eval_with_test_set, eval_for_ensemble (khám phá)
 results/             tuning/ final/ baselines/ tables/ figures/ (sinh ra bởi chương trình)
 report/              báo cáo LaTeX (main.tex → main.pdf, các đoạn sinh tự động ở generated/)

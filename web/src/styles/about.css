@@ -40,7 +40,8 @@
 }
 
 .kv dt {
-  color: var(--ink-2);
+  font: 400 0.8125rem/1.6 var(--mono);
+  color: var(--ink-3);
 }
 
 .kv dd {
@@ -49,8 +50,9 @@
 }
 
 .formula {
-  font: 500 1.0625rem/1.5 var(--display);
+  font: 500 0.9375rem/1.5 var(--mono);
   background: var(--sunken);
+  border: 1px solid var(--line);
   border-radius: var(--r-sm);
   padding: 12px 16px;
   overflow-x: auto;

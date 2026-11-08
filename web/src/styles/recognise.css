@@ -1,0 +1,959 @@
+/*
+  Recognise: the instrument console.
+  Two panels on one deck: the input screen (01) and the readout (02). The drawing screen and the 28 x 28 preview
+  stay dark in both themes, so the colours on them come from the fixed --scr-* set below, never the page tokens.
+*/
+
+.console {
+  --pp: clamp(16px, 1.6vw, 22px); /* panel padding */
+
+  /* the screen: fixed, theme independent */
+  --scr-bg: var(--pad-paper);
+  --scr-ink: var(--pad-ink);
+  --scr-mark: #5c6862;
+  --scr-text: #8d988f;
+  --scr-rule: rgba(241, 245, 236, 0.13);
+  --scr-dot: rgba(241, 245, 236, 0.11);
+  --scr-accent: #c6f135;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* intro ------------------------------------------------------------------ */
+
+.intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  padding-block: clamp(32px, 6vw, 76px) clamp(28px, 4vw, 44px);
+}
+
+.intro .display {
+  max-width: 17ch;
+}
+
+.intro .lede {
+  font-size: clamp(1rem, 0.95rem + 0.25vw, 1.0625rem);
+  max-width: 58ch;
+}
+
+@media (min-width: 980px) {
+  .intro {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    column-gap: clamp(40px, 6vw, 96px);
+    align-items: end;
+  }
+  .intro .lede {
+    padding-bottom: 6px;
+  }
+  .intro .form-facts {
+    grid-column: 1 / -1;
+  }
+}
+
+/* the spec strip: a label plate of mono key/value cells */
+.form-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: clamp(10px, 2vw, 22px);
+  border-block: 1px solid var(--line);
+}
+
+.form-facts > div {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  padding: 12px 14px 13px 0;
+  min-width: 0;
+}
+
+.form-facts dt {
+  font: 500 0.6875rem/1.3 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.form-facts dd {
+  margin: 0;
+  font: 500 0.9375rem/1.3 var(--mono);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+@media (max-width: 639px) {
+  .form-facts > div:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
+  }
+  .form-facts > div:nth-child(even) {
+    padding-left: 14px;
+    border-left: 1px solid var(--line);
+  }
+  .form-facts > div:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 640px) {
+  .form-facts {
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  }
+  .form-facts > div {
+    padding: 14px 18px 15px;
+  }
+  .form-facts > div:first-child {
+    padding-left: 0;
+  }
+  .form-facts > div + div {
+    border-left: 1px solid var(--line);
+  }
+}
+
+/* deck: the two panels --------------------------------------------------- */
+
+.deck {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(14px, 1.6vw, 20px);
+  align-items: start;
+}
+
+@media (min-width: 980px) {
+  .deck {
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1200px) {
+  .deck {
+    grid-template-columns: minmax(0, 540px) minmax(0, 1fr);
+  }
+}
+
+.screen,
+.readout {
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--lift);
+}
+
+.screen {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  padding: 0 var(--pp) var(--pp);
+}
+
+.readout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  container: readout / inline-size;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 10px var(--pp);
+  border-bottom: 1px solid var(--line);
+}
+
+.screen > .panel-head {
+  margin-inline: calc(-1 * var(--pp));
+}
+
+.panel-head__title {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font: 600 0.9375rem/1.3 var(--sans);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.panel-head__no {
+  font: 500 0.75rem/1 var(--mono);
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+/* the drawing screen ------------------------------------------------------ */
+
+.pad {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  min-width: 0;
+}
+
+.pad__frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  background: var(--scr-bg);
+  transition: border-color 0.25s var(--ease);
+}
+
+.pad__frame:hover,
+.pad__frame:focus-within {
+  border-color: var(--ink-3);
+}
+
+.pad__frame.is-dragging {
+  border-color: var(--accent);
+}
+
+/* graticule: one faint dot per MNIST pixel (28 x 28) */
+.pad__frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, var(--scr-dot) 0.75px, transparent 1.25px);
+  background-size: calc(100% / 28) calc(100% / 28);
+  pointer-events: none;
+  transition: opacity 0.4s var(--ease);
+}
+
+.pad__frame.has-ink::before {
+  opacity: 0.55;
+}
+
+/* the 20 x 20 zone MNIST digits fill, shown until the first stroke */
+.pad__frame::after {
+  content: '';
+  position: absolute;
+  inset: calc(100% * 4 / 28);
+  border: 1px dashed var(--scr-rule);
+  border-radius: var(--r-xs);
+  pointer-events: none;
+  transition: opacity 0.4s var(--ease);
+}
+
+.pad__frame.has-ink::after {
+  opacity: 0;
+}
+
+/* corner brackets */
+.pad__mark {
+  position: absolute;
+  z-index: 1;
+  width: 12px;
+  height: 12px;
+  border: 0 solid var(--scr-mark);
+  pointer-events: none;
+  transition: border-color 0.25s var(--ease);
+}
+
+.pad__frame:hover .pad__mark {
+  border-color: var(--scr-text);
+}
+
+.pad__frame.is-dragging .pad__mark {
+  border-color: var(--scr-accent);
+}
+
+.pad__mark--tl {
+  top: 10px;
+  left: 10px;
+  border-width: 1px 0 0 1px;
+}
+
+.pad__mark--tr {
+  top: 10px;
+  right: 10px;
+  border-width: 1px 1px 0 0;
+}
+
+.pad__mark--bl {
+  bottom: 10px;
+  left: 10px;
+  border-width: 0 0 1px 1px;
+}
+
+.pad__mark--br {
+  bottom: 10px;
+  right: 10px;
+  border-width: 0 1px 1px 0;
+}
+
+/* a tiny mono readout of the input grid, tucked against the bottom-right bracket */
+.pad__mark--br::after {
+  content: '28\00D7 28';
+  position: absolute;
+  right: 18px;
+  bottom: -3px;
+  font: 500 10px/1 var(--mono);
+  letter-spacing: 0.08em;
+  color: var(--scr-text);
+  white-space: nowrap;
+}
+
+.pad__canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pad__canvas {
+    cursor: none;
+  }
+}
+
+.pad__crop {
+  position: absolute;
+  border: 1px dashed var(--scr-accent);
+  border-radius: var(--r-xs);
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+.pad__brush {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--scr-accent);
+  background: color-mix(in srgb, var(--scr-accent) 12%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s var(--ease);
+}
+
+.pad__hint,
+.pad__drop {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  pointer-events: none;
+  text-align: center;
+}
+
+.pad__hint {
+  font: 500 0.875rem/1.4 var(--mono);
+  letter-spacing: 0.01em;
+  color: var(--scr-text);
+}
+
+.pad__drop {
+  z-index: 2;
+  margin: 0;
+  background: color-mix(in srgb, var(--scr-bg) 86%, transparent);
+  font: 500 1rem/1.4 var(--mono);
+  color: var(--scr-ink);
+  outline: 1px dashed var(--scr-accent);
+  outline-offset: -12px;
+}
+
+.pad__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pad__tools .btn {
+  flex: 1 1 auto;
+  padding-inline: 14px;
+  font-size: 0.875rem;
+}
+
+.pad__messages:empty,
+.pad__messages:not(:has(*)) {
+  display: none;
+}
+
+.pad__messages .msg {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+}
+
+/* predict + live */
+.screen__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 20px;
+}
+
+.screen__actions .btn--primary {
+  min-width: 132px;
+}
+
+.check {
+  font-size: 0.875rem;
+}
+
+/* samples */
+.samples {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.samples__label {
+  font: 400 0.8125rem/1.4 var(--mono);
+  color: var(--ink-3);
+}
+
+.samples__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: transparent;
+  font: 500 1rem/1 var(--mono);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    transform 0.35s var(--spring),
+    border-color 0.2s var(--ease),
+    background-color 0.2s var(--ease),
+    color 0.2s var(--ease);
+}
+
+.chip:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+.chip:active {
+  transform: scale(0.94);
+  transition-duration: 0.1s;
+}
+
+/* stacked on a tablet: pad on the left, controls on the right, so the readout stays near */
+@media (min-width: 700px) and (max-width: 979px) {
+  .screen {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    grid-template-areas:
+      'head head'
+      'pad  actions'
+      'pad  samples';
+    grid-template-rows: auto auto 1fr;
+    column-gap: var(--pp);
+  }
+  .screen > .panel-head {
+    grid-area: head;
+  }
+  .screen > .pad {
+    grid-area: pad;
+  }
+  .screen > .screen__actions {
+    grid-area: actions;
+    align-self: start;
+  }
+  .screen > .samples {
+    grid-area: samples;
+    align-self: start;
+  }
+}
+
+/* the readout: verdict --------------------------------------------------------- */
+
+.verdict {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    'eye  main'
+    'text text';
+  gap: 18px clamp(18px, 3vw, 28px);
+  padding: var(--pp);
+}
+
+@container readout (min-width: 540px) {
+  .verdict {
+    grid-template-columns: auto minmax(5.5rem, auto) minmax(0, 1fr);
+    grid-template-areas: 'eye main text';
+    align-items: stretch;
+  }
+  .verdict__text {
+    padding-left: clamp(18px, 3vw, 28px);
+    border-left: 1px solid var(--line);
+  }
+}
+
+.verdict__eye {
+  grid-area: eye;
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  align-content: start;
+}
+
+/* the exact 28 x 28 input, drawn on a little display of its own */
+.mnist28 {
+  --eye: 112px;
+  width: var(--eye);
+  height: var(--eye);
+  margin: 6px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  border-radius: 1px;
+  background: #000;
+  box-shadow:
+    0 0 0 6px var(--scr-bg),
+    0 0 0 7px var(--line-2);
+}
+
+@container readout (min-width: 440px) {
+  .mnist28 {
+    --eye: 128px;
+  }
+}
+
+.verdict__eyelabel {
+  max-width: calc(128px + 12px);
+  font: 400 0.6875rem/1.35 var(--mono);
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+}
+
+.verdict__main {
+  grid-area: main;
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-width: 0;
+  padding-left: clamp(18px, 3vw, 28px);
+  border-left: 1px solid var(--line);
+}
+
+.verdict__title {
+  font: 500 0.6875rem/1.3 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.verdict__digit {
+  font: 500 clamp(6.25rem, 4rem + 7vw, 9.5rem) / 0.86 var(--mono);
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.06em;
+  margin-top: 8px;
+  color: var(--ink);
+  transform-origin: 30% 80%;
+  transition:
+    color 0.3s var(--ease),
+    opacity 0.3s var(--ease);
+}
+
+.verdict.has-result .verdict__digit {
+  color: var(--accent);
+}
+
+.verdict.is-stale .verdict__digit {
+  color: var(--ink-3);
+  opacity: 0.6;
+}
+
+.verdict__digit.is-none {
+  color: var(--line-2);
+}
+
+.verdict__text {
+  grid-area: text;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  min-width: 0;
+}
+
+.verdict__say {
+  font: 600 1.0625rem/1.35 var(--sans);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.verdict__text .caption {
+  max-width: 54ch;
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.verdict.is-stale .verdict__text .caption {
+  color: var(--warn);
+}
+
+/* the four models: one rack of cells divided by hairlines ------------------------ */
+
+.readout .models {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  border-top: 1px solid var(--line);
+}
+
+@container readout (min-width: 440px) {
+  .readout .models {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .readout .mcard:nth-child(odd) {
+    border-right: 1px solid var(--line);
+  }
+  .readout .mcard:nth-child(2) {
+    border-top: 0;
+  }
+}
+
+.mcard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  align-content: start;
+  min-width: 0;
+  padding: 16px var(--pp) 6px;
+  border-top: 1px solid var(--line);
+}
+
+.mcard:first-child {
+  border-top: 0;
+}
+
+/* one column (phones): the readout and its histogram share a row to keep the rack short */
+@container readout (max-width: 439px) {
+  .mcard {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    gap: 12px 16px;
+    align-items: end;
+  }
+  .mcard__head,
+  .mcard__about {
+    grid-column: 1 / -1;
+  }
+  .mcard__read {
+    align-self: center;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+    gap: 10px;
+  }
+  .mcard__digit {
+    font-size: 2.5rem;
+  }
+  .hist__bar {
+    height: 48px;
+  }
+}
+
+.mcard__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  flex-wrap: wrap;
+}
+
+.mcard__name {
+  font: 600 0.875rem/1.3 var(--sans);
+  letter-spacing: -0.005em;
+  color: var(--ink);
+}
+
+.mcard__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: 400 0.6875rem/1.3 var(--mono);
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.mcard__read {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  min-height: 56px;
+}
+
+.mcard__digit {
+  min-width: 0.7em;
+  font: 500 3rem/0.9 var(--mono);
+  letter-spacing: -0.05em;
+  color: var(--ink);
+  transition: color 0.3s var(--ease);
+}
+
+.mcard:not(.has-pred) .mcard__digit {
+  color: var(--line-2);
+}
+
+.mcard__meta {
+  display: grid;
+  gap: 1px;
+  justify-items: start;
+  min-width: 0;
+}
+
+.mcard__conf {
+  font: 500 1rem/1.25 var(--mono);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.mcard__label {
+  font: 400 0.6875rem/1.4 var(--mono);
+  letter-spacing: 0.01em;
+  color: var(--ink-3);
+}
+
+/* a model that disagrees with the consensus: colour and a text tag */
+.mcard.is-dissent .mcard__digit,
+.mcard__tag {
+  color: var(--warn);
+}
+
+.mcard__tag {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mcard__tag::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin: 0 5px 1px 0;
+  border-radius: 1px;
+  background: currentColor;
+}
+
+/* status dots: small square LEDs */
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--line-2);
+  flex: none;
+}
+
+.dot--ready {
+  background: var(--ok);
+}
+
+.dot--loading {
+  background: var(--accent);
+}
+
+.dot--error {
+  background: var(--danger);
+}
+
+.btn--small {
+  min-height: 36px;
+  padding: 6px 12px;
+  font: 500 0.75rem/1.2 var(--mono);
+  letter-spacing: 0.01em;
+  /* keep the hit area at 44 px on touch: the box is padded out with a transparent outline zone */
+  position: relative;
+}
+
+.btn--small::after {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+}
+
+@media (pointer: coarse) {
+  .btn--small {
+    min-height: 44px;
+  }
+}
+
+/* histogram ------------------------------------------------------------------- */
+
+.hist {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 3px;
+  transition: opacity 0.3s var(--ease);
+}
+
+.hist.is-stale {
+  opacity: 0.4;
+}
+
+.hist__col {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+}
+
+.hist__bar {
+  position: relative;
+  display: block;
+  height: 60px;
+  overflow: hidden;
+  border-radius: var(--r-xs) var(--r-xs) 0 0;
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+  box-shadow: inset 0 -1px 0 var(--line-2);
+}
+
+.hist__fill {
+  position: absolute;
+  inset: 0;
+  display: block;
+  border-radius: var(--r-xs) var(--r-xs) 0 0;
+  background: color-mix(in srgb, var(--ink-3) 72%, var(--surface));
+  transform-origin: 50% 100%;
+  transition: transform 0.7s var(--spring) var(--d, 0ms);
+}
+
+.hist__col.is-top .hist__fill {
+  background: var(--accent);
+}
+
+.mcard.is-dissent .hist__col.is-top .hist__fill {
+  background: var(--warn);
+}
+
+.hist__digit {
+  font: 400 0.6875rem/1 var(--mono);
+  text-align: center;
+  color: var(--ink-3);
+}
+
+.hist__col.is-top .hist__digit {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* about this model */
+.mcard__about {
+  border-top: 1px dashed var(--line);
+  margin-inline: calc(-1 * var(--pp));
+  padding-inline: var(--pp);
+}
+
+.mcard__about > summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  font: 400 0.75rem/1.3 var(--mono);
+  letter-spacing: 0.01em;
+  color: var(--ink-2);
+  cursor: pointer;
+  list-style: none;
+  transition: color 0.2s var(--ease);
+}
+
+.mcard__about > summary::-webkit-details-marker {
+  display: none;
+}
+
+.mcard__about > summary::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  margin-left: 1px;
+  border: solid currentColor;
+  border-width: 0 1px 1px 0;
+  transform: rotate(-45deg);
+  transition: transform 0.3s var(--spring);
+}
+
+.mcard__about[open] > summary::before {
+  transform: translate(0, -2px) rotate(45deg);
+}
+
+.mcard__about > summary:hover {
+  color: var(--ink);
+}
+
+.mcard__about .note {
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  padding-bottom: 12px;
+}
+
+.mcard__about .note + .note {
+  margin-top: -4px;
+  font: 400 0.6875rem/1.5 var(--mono);
+}
+
+/* layout below the deck breakpoint --------------------------------------------- */
+
+@media (max-width: 479px) {
+  .screen__actions .btn--primary {
+    flex: 1 1 auto;
+  }
+}
+
+/* motion --------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  .intro > *,
+  .deck > *,
+  .readout .mcard {
+    animation: enter 0.7s var(--ease) both;
+  }
+
+  .intro > :nth-child(2) {
+    animation-delay: 70ms;
+  }
+  .intro > :nth-child(3) {
+    animation-delay: 140ms;
+  }
+  .deck > :nth-child(1) {
+    animation-delay: 180ms;
+  }
+  .deck > :nth-child(2) {
+    animation-delay: 260ms;
+  }
+  .readout .mcard:nth-child(1) {
+    animation-delay: 340ms;
+  }
+  .readout .mcard:nth-child(2) {
+    animation-delay: 390ms;
+  }
+  .readout .mcard:nth-child(3) {
+    animation-delay: 440ms;
+  }
+  .readout .mcard:nth-child(4) {
+    animation-delay: 490ms;
+  }
+
+  .verdict__digit {
+    animation: rise 0.65s var(--spring) both;
+  }
+
+  .verdict__digit.is-none {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hist__fill,
+  .chip,
+  .verdict__digit {
+    transition: none;
+  }
+}

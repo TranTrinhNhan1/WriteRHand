@@ -1,0 +1,531 @@
+/* "Look inside": what each algorithm does with the drawing ------------------------------------ */
+
+.inside {
+  margin-top: clamp(40px, 6vw, 72px);
+  display: grid;
+  gap: 18px;
+}
+
+.inside__lede {
+  margin-top: -6px;
+}
+
+.inside__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.inside__tab {
+  position: relative;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+  background: none;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition:
+    color 0.2s var(--ease),
+    background-color 0.2s var(--ease);
+}
+
+.inside__tab:hover {
+  color: var(--ink);
+  background: var(--raised);
+}
+
+.inside__tab[aria-selected='true'] {
+  color: var(--ink);
+}
+
+.inside__tab[aria-selected='true']::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 2px;
+  background: var(--accent);
+}
+
+.inside__panel {
+  display: grid;
+  gap: 22px;
+  padding: clamp(16px, 3vw, 28px);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--lift);
+}
+
+.inside__intro {
+  max-width: 70ch;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.inside__msg {
+  display: grid;
+  gap: 14px;
+  justify-items: start;
+  padding-block: 28px;
+  color: var(--ink-2);
+}
+
+/* a cell matrix on the dark instrument screen */
+
+.heat {
+  position: relative;
+  width: 100%;
+  background: #070908;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-xs);
+  overflow: hidden;
+}
+
+.heat canvas {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.heat--input {
+  max-width: 124px;
+}
+
+.heat--narrow {
+  max-width: 240px;
+}
+
+.heat--small {
+  max-width: 132px;
+}
+
+.heat__mark {
+  position: absolute;
+  outline: 1.5px solid var(--accent);
+  outline-offset: -1px;
+  pointer-events: none;
+}
+
+.heat__mark b {
+  position: absolute;
+  left: 100%;
+  bottom: 100%;
+  min-width: 13px;
+  padding: 0 3px;
+  transform: translate(-30%, 40%);
+  background: var(--accent);
+  color: var(--on-accent);
+  font: 600 0.625rem/13px var(--mono);
+  text-align: center;
+  border-radius: 2px;
+}
+
+/* Naive Bayes and softmax: templates and evidence for the ten classes */
+
+.xray {
+  display: grid;
+  gap: 22px;
+}
+
+.xray__steps {
+  display: grid;
+  gap: 12px 28px;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  counter-reset: none;
+}
+
+.xray__steps li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.xray__steps b {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-xs);
+  font: 500 0.75rem/1 var(--mono);
+  color: var(--ink);
+}
+
+.xray__row {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 900px) {
+  .xray__row {
+    grid-template-columns: 132px minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.xray__input {
+  display: grid;
+  gap: 8px;
+  max-width: 132px;
+}
+
+.xray__input figcaption {
+  font: 500 0.75rem/1.3 var(--mono);
+  color: var(--ink-3);
+}
+
+.xray__classes {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 560px) {
+  .xray__classes {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.xcls {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--sunken);
+  transition: border-color 0.25s var(--ease);
+}
+
+.xcls.is-win {
+  border-color: var(--accent);
+}
+
+.xcls__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--mono);
+}
+
+.xcls__digit {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.xcls__score {
+  font-size: 0.6875rem;
+  color: var(--ink-3);
+}
+
+.xcls.is-win .xcls__score {
+  color: var(--accent);
+}
+
+.xcls__prob {
+  font: 500 0.75rem/1 var(--mono);
+  color: var(--ink-2);
+  text-align: right;
+}
+
+.xray__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  font: 400 0.75rem/1.4 var(--mono);
+  color: var(--ink-3);
+}
+
+.xray__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.swatch--pos {
+  background: #c6f135;
+}
+
+.swatch--neg {
+  background: #ff7a59;
+}
+
+/* MLP: the stages one under another */
+
+.flow {
+  display: grid;
+  gap: 0;
+}
+
+.flow__stage {
+  display: grid;
+}
+
+.flow__op {
+  position: relative;
+  padding: 10px 0 10px 22px;
+  margin-left: 14px;
+  border-left: 1px dashed var(--line-2);
+  font: 400 0.75rem/1.4 var(--mono);
+  color: var(--ink-3);
+}
+
+.flow__card {
+  display: grid;
+  gap: 14px 28px;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--sunken);
+}
+
+@media (min-width: 760px) {
+  .flow__card {
+    grid-template-columns: minmax(200px, 300px) minmax(0, 1fr);
+  }
+}
+
+.flow__title {
+  font: 600 0.9375rem/1.3 var(--sans);
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+
+.flow__viz {
+  min-width: 0;
+}
+
+.flow__viz .heat:not(.heat--input):not(.heat--narrow) {
+  max-width: 480px;
+}
+
+.flatten {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.flatten canvas {
+  width: 100%;
+  aspect-ratio: 1568 / 124;
+  background: #070908;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-xs);
+}
+
+.btn--small {
+  min-height: 36px;
+  padding: 4px 12px;
+  font-size: 0.8125rem;
+}
+
+/* AdaBoost */
+
+.ada {
+  display: grid;
+  gap: 22px;
+}
+
+.ada__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 22px;
+}
+
+.ada__range {
+  display: grid;
+  gap: 4px;
+  flex: 1 1 260px;
+  max-width: 560px;
+}
+
+.ada__rangelabel {
+  font: 500 0.8125rem/1 var(--mono);
+  color: var(--ink-2);
+}
+
+.ada__range input {
+  width: 100%;
+  min-height: 28px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.ada__grid {
+  display: grid;
+  gap: 28px 40px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 900px) {
+  .ada__grid {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.ada__treebody {
+  display: grid;
+  gap: 16px 22px;
+  grid-template-columns: minmax(0, 1fr);
+  margin-top: 8px;
+}
+
+@media (min-width: 560px) {
+  .ada__treebody {
+    grid-template-columns: 148px minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.ada__pic {
+  display: grid;
+  gap: 8px;
+  max-width: 148px;
+}
+
+.ada__path {
+  display: grid;
+  gap: 0;
+}
+
+.ada__node,
+.ada__leaf {
+  position: relative;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 10px;
+  padding: 0 0 12px calc(var(--depth, 0) * 6px);
+}
+
+.ada__node::before,
+.ada__leaf::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--depth, 0) * 6px + 11px);
+  top: 24px;
+  bottom: 0;
+  width: 1px;
+  background: var(--line-2);
+}
+
+.ada__leaf::before {
+  display: none;
+}
+
+.ada__no {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-xs);
+  background: var(--accent);
+  color: var(--on-accent);
+  font: 600 0.75rem/1 var(--mono);
+}
+
+.ada__no--leaf {
+  background: var(--sunken);
+  border: 1.5px solid var(--accent);
+  color: var(--ink);
+}
+
+.ada__q {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.ada__a {
+  font: 400 0.8125rem/1.4 var(--mono);
+  color: var(--ink-2);
+}
+
+.ada__skip {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--ink-3);
+}
+
+.vbars {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.vbars__row {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+}
+
+.vbars__track {
+  height: 10px;
+  border-radius: 2px;
+  background: var(--sunken);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.vbars__fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  transform-origin: left;
+  background: var(--ink-3);
+}
+
+.vbars__row.is-lead .vbars__fill {
+  background: var(--accent);
+}
+
+.vbars__value {
+  text-align: right;
+  color: var(--ink-2);
+}
+
+.ada__lead {
+  margin-top: 14px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.ada__attn {
+  display: grid;
+  gap: 8px;
+  margin-top: 22px;
+  max-width: 300px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .vbars__fill {
+    transition: transform 0.12s linear;
+  }
+  .flow__card {
+    animation: enter 0.6s var(--ease) both;
+    animation-delay: calc(var(--i, 0) * 90ms);
+  }
+}

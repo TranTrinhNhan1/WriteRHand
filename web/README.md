@@ -15,8 +15,12 @@ KaTeX (MathML output) for the equations. No backend.
   `src/i18n/index.tsx` and no i18n library. Both are written by hand, not machine-translated. `tests/i18n.test.ts` fails
   if the two files differ in keys, list lengths or `{placeholders}`. Numbers use "." for decimals and a narrow
   no-break space for thousands (`60 000`) in both languages.
-* **Fonts.** Sans-serif only, self-hosted through Fontsource (no CDN): Bricolage Grotesque Variable for headings, big
-  digits and numbers, Geist Variable for text. Both ship a Vietnamese subset and tabular numerals.
+* **Look.** "Ink Lab": a dark, instrument-like interface with one lime accent, hairline rules and small radii, plus a
+  light theme. The theme follows the system setting until you use the sun/moon button (the choice is kept in
+  `localStorage`, inside try/catch). The drawing screen and the model maps stay dark in both themes, like a real
+  instrument display.
+* **Fonts.** Sans-serif and monospace only, self-hosted through Fontsource (no CDN): Geist Variable for text and
+  headings, Geist Mono Variable for numbers, labels and readouts. Both ship a Vietnamese subset.
 * **Equations.** KaTeX parses the TeX and emits MathML; the browser draws it with a subset of Noto Sans Math
   (`src/assets/fonts/NotoSansMath-subset.woff2`, about 41 KB, SIL Open Font License 1.1), so equations are sans-serif
   too and no KaTeX CSS or fonts are shipped.
@@ -60,6 +64,10 @@ npm run preview      # serves dist/ under /WriteRHand/
   `.wasm` file is emitted by Vite as a hashed asset, so it is served from the site itself under the configured base
   path (no CDN). `ort.env.wasm.numThreads = 1` because GitHub Pages cannot send COOP/COEP headers.
 * AdaBoost is exported as JSON and evaluated by `src/lib/adaboost.ts`.
+* "Look inside" (`src/components/inside/`): the ONNX files carry extra, optional outputs next to `probabilities`
+  (MLP hidden activations, softmax weights, Naive Bayes class means and variances; see `src/export/onnx_export.py`),
+  and `src/lib/trace.ts` walks every AdaBoost tree for the drawing. The views only draw these numbers; they never
+  change a prediction. If a model file has no trace outputs the panel says so and everything else still works.
 * Input to every model: 784 pixels in [0, 1], white digit on black. The (p - mean) / (std + eps) standardisation is part
   of the ONNX graphs / the AdaBoost evaluator.
 * Preprocessing (`src/lib/preprocess.ts`, pure functions on a grayscale buffer): ink bounding box, area-averaged

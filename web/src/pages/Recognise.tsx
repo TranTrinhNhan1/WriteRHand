@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DigitPad, cropOf, type CropRect, type DigitPadHandle, type PadChange } from '../components/DigitPad'
+import { Histogram } from '../components/Histogram'
+import { Inside } from '../components/inside/Inside'
 import { Mnist28 } from '../components/Mnist28'
-import { ModelPicker } from '../components/ModelPicker'
-import { ProbBars } from '../components/ProbBars'
-import { Segmented } from '../components/Segmented'
 import { useI18n } from '../i18n'
 import { SAMPLE_DIGITS } from '../lib/samples'
 import { useModelStatuses, useModelStore, useSiteData } from '../lib/context'
@@ -13,7 +12,28 @@ import type { ModelId, Prediction } from '../lib/types'
 
 type Phase = 'blank' | 'empty' | 'ready'
 
-const DEFAULT_MODEL: ModelId = 'mlp'
+/** The three small models load as soon as someone reaches for the pen. AdaBoost is 16 MB, so it waits for a click. */
+const EAGER: ModelId[] = ['naive_bayes', 'softmax', 'mlp']
+
+interface Verdict {
+  digit: number
+  votes: number
+  of: number
+}
+
+/** Majority vote. A tie is broken by the mean probability the tied digits received. */
+function consensusOf(preds: Partial<Record<ModelId, Prediction>>): Verdict | null {
+  const list = Object.values(preds) as Prediction[]
+  if (list.length === 0) return null
+  const tally = new Map<number, { n: number; p: number }>()
+  for (const p of list) {
+    const cur = tally.get(p.top) ?? { n: 0, p: 0 }
+    tally.set(p.top, { n: cur.n + 1, p: cur.p + p.probs[p.top] })
+  }
+  let best: [number, { n: number; p: number }] | null = null
+  for (const e of tally) if (!best || e[1].n > best[1].n || (e[1].n === best[1].n && e[1].p > best[1].p)) best = e
+  return best ? { digit: best[0], votes: best[1].n, of: list.length } : null
+}
 
 export default function Recognise() {
   const { t } = useI18n()
@@ -21,8 +41,6 @@ export default function Recognise() {
   const store = useModelStore()
   const statuses = useModelStatuses(store)
   const ids = store.ids()
-  const [selected, setSelected] = useState<ModelId>(ids.includes(DEFAULT_MODEL) ? DEFAULT_MODEL : ids[0])
-  const [mode, setMode] = useState<'top3' | 'all'>('top3')
   const [live, setLive] = useState(true)
 
   const padRef = useRef<DigitPadHandle>(null)
@@ -36,13 +54,12 @@ export default function Recognise() {
   const [announce, setAnnounce] = useState('')
   const announceTimer = useRef(0)
 
-  const ensureLoaded = useCallback(
-    (id: ModelId) => {
+  const loadEager = useCallback(() => {
+    for (const id of EAGER) {
       const s = store.getSnapshot()[id]
-      if (!s || s.state === 'idle') void store.load(id)
-    },
-    [store],
-  )
+      if (ids.includes(id) && (!s || s.state === 'idle')) void store.load(id)
+    }
+  }, [store, ids])
 
   const onPadChange = useCallback((c: PadChange) => {
     if (!c.image) {
@@ -58,12 +75,6 @@ export default function Recognise() {
     setPhase(out ? 'ready' : 'empty')
     setVersion((v) => v + 1)
   }, [])
-
-  const select = (id: ModelId) => {
-    setSelected(id)
-    const s = store.getSnapshot()[id]
-    if (!s || s.state === 'idle' || s.state === 'error') void store.load(id)
-  }
 
   const readyKey = ids.filter((id) => statuses[id]?.state === 'ready').join(',')
   const armed = live || manualVersion === version
@@ -95,47 +106,33 @@ export default function Recognise() {
     }
   }, [pre, armed, readyKey, version, store])
 
-  const status = statuses[selected]
-  const pred = preds[selected]
-  const stale = !!pre && !!pred && predVersion !== version
-  const top = pred ? manifest.classes[pred.top] : null
+  const stale = !!pre && Object.keys(preds).length > 0 && predVersion !== version
+  const verdict = useMemo(() => consensusOf(preds), [preds])
   const nameOf = (id: ModelId) => t(`model.${id}`)
-  const labelOf = (id: ModelId) => t(`out.label.${id}`)
+
+  const verdictText = !verdict
+    ? null
+    : verdict.of === 1
+      ? t('rec.consensus.single', { name: nameOf(Object.keys(preds)[0] as ModelId) })
+      : verdict.votes === verdict.of
+        ? t('rec.compare.agree', { n: verdict.of, digit: manifest.classes[verdict.digit] })
+        : t('rec.consensus.majority', { k: verdict.votes, n: verdict.of, digit: manifest.classes[verdict.digit] })
 
   // Screen-reader announcement, throttled so that live drawing does not chatter.
   useEffect(() => {
     window.clearTimeout(announceTimer.current)
     announceTimer.current = window.setTimeout(() => {
-      if (pred && !stale) {
-        setAnnounce(
-          t(selected === 'adaboost' ? 'rec.announceUncal' : 'rec.announce', {
-            name: nameOf(selected),
-            digit: top ?? '',
-            value: pct(pred.probs[pred.top], 0),
-            label: labelOf(selected),
-          }),
-        )
-      } else if (phase === 'blank') setAnnounce('')
+      if (verdict && verdictText && !stale) setAnnounce(`${t('rec.consensus.title')}: ${manifest.classes[verdict.digit]}. ${verdictText}`)
+      else if (phase === 'blank') setAnnounce('')
     }, 700)
     return () => window.clearTimeout(announceTimer.current)
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- nameOf and labelOf only depend on t
-  }, [pred, stale, selected, top, phase, t])
+  }, [verdict, verdictText, stale, phase, manifest.classes, t])
 
-  const agreement = useMemo(() => {
-    const entries = Object.entries(preds) as [ModelId, Prediction][]
-    if (entries.length < 2) return null
-    const tops = new Set(entries.map(([, p]) => p.top))
-    return tops.size === 1 ? t('rec.compare.agree', { n: entries.length, digit: manifest.classes[entries[0][1].top] }) : t('rec.compare.disagree')
-  }, [preds, manifest.classes, t])
-
-  const notLoaded = ids.filter((id) => !statuses[id] || statuses[id]!.state === 'idle')
-  const entry = manifest.models[selected]
-  const v = entry?.validation
   const ds = manifest.dataset
   const inputSize = `${MNIST_SIZE} × ${MNIST_SIZE}`
 
   return (
-    <div className="recognise">
+    <div className="console">
       <section className="intro">
         <h1 className="display">{t('rec.title')}</h1>
         <p className="lede">{t('rec.lede')}</p>
@@ -167,203 +164,179 @@ export default function Recognise() {
         </dl>
       </section>
 
-      <div className="slip">
-        <div className="slip__main">
-          <section className="step" aria-labelledby="in-h">
-            <h2 id="in-h" className="step__label">
-              <span className="step__no num">1</span>
+      <div className="deck">
+        <section className="screen" aria-labelledby="in-h">
+          <header className="panel-head">
+            <h2 id="in-h" className="panel-head__title">
+              <span className="panel-head__no" aria-hidden="true">
+                01
+              </span>
               {t('rec.step.draw')}
             </h2>
-            <DigitPad ref={padRef} crop={crop} onChange={onPadChange} onIntent={() => ensureLoaded(selected)} />
-            <div className="slip__actions">
-              <button
-                type="button"
-                className="btn btn--primary"
-                onClick={() => {
-                  ensureLoaded(selected)
-                  setManualVersion(version)
-                }}
-                disabled={phase !== 'ready'}
-              >
-                {t('rec.predict')}
-              </button>
-              <label className="check">
-                <input type="checkbox" checked={live} onChange={(e) => setLive(e.target.checked)} />
-                <span>{t('rec.live')}</span>
-              </label>
-            </div>
-            <div className="samples">
-              <p className="samples__label">{t('rec.samples.label')}</p>
-              <ul className="samples__row">
-                {SAMPLE_DIGITS.map((d) => (
-                  <li key={d}>
-                    <button type="button" className="chip" aria-label={t('rec.samples.draw', { digit: d })} onClick={() => padRef.current?.drawSample(d)}>
-                      <span className="num" aria-hidden="true">
-                        {d}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </section>
-        </div>
+          </header>
+          <DigitPad ref={padRef} crop={crop} onChange={onPadChange} onIntent={loadEager} />
+          <div className="screen__actions">
+            <button
+              type="button"
+              className="btn btn--primary"
+              onClick={() => {
+                loadEager()
+                setManualVersion(version)
+              }}
+              disabled={phase !== 'ready'}
+            >
+              {t('rec.predict')}
+            </button>
+            <label className="check">
+              <input type="checkbox" checked={live} onChange={(e) => setLive(e.target.checked)} />
+              <span>{t('rec.live')}</span>
+            </label>
+          </div>
+          <div className="samples">
+            <p className="samples__label">{t('rec.samples.label')}</p>
+            <ul className="samples__row">
+              {SAMPLE_DIGITS.map((d) => (
+                <li key={d}>
+                  <button type="button" className="chip" aria-label={t('rec.samples.draw', { digit: d })} onClick={() => padRef.current?.drawSample(d)}>
+                    <span className="num" aria-hidden="true">
+                      {d}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
 
-        <div className="slip__perf" aria-hidden="true" />
-
-        <div className="slip__stub">
-          <section className="step step--prep" aria-labelledby="prep-h">
-            <h2 id="prep-h" className="step__label">
-              <span className="step__no num">2</span>
-              {t('rec.step.see')}
-            </h2>
-            <div className="prep">
-              <Mnist28 pixels={pre?.pixels ?? null} />
-              <p className="caption">{pre ? t('rec.prep.done', { x: pre.com.x.toFixed(1), y: pre.com.y.toFixed(1) }) : t('rec.prep.empty')}</p>
-            </div>
-          </section>
-
-          <section className="step" aria-labelledby="out-h">
-            <h2 id="out-h" className="step__label">
-              <span className="step__no num">3</span>
+        <section className="readout" aria-labelledby="out-h">
+          <header className="panel-head">
+            <h2 id="out-h" className="panel-head__title">
+              <span className="panel-head__no" aria-hidden="true">
+                02
+              </span>
               {t('rec.step.answer')}
             </h2>
-            <ModelPicker ids={ids} selected={selected} statuses={statuses} manifest={manifest} onSelect={select} />
+          </header>
 
-            <div className="result" aria-busy={status?.state === 'loading'}>
-              {status?.state === 'error' ? (
-                <div className="result__error" role="alert">
-                  <p className="msg msg--error">{t(status.key, status.params)}</p>
-                  <button type="button" className="btn btn--primary" onClick={() => void store.load(selected)}>
-                    {t('common.retry')}
-                  </button>
-                </div>
-              ) : phase === 'blank' ? (
-                <div className="result__empty">
-                  <p className="result__title">{t('rec.blank.title')}</p>
-                  <p className="caption">{t('rec.blank.text')}</p>
-                </div>
-              ) : phase === 'empty' ? (
-                <div className="result__empty">
-                  <p className="result__title">{t('rec.nothing.title')}</p>
-                  <p className="caption">{t('rec.nothing.text')}</p>
-                </div>
-              ) : !pred && status?.state !== 'ready' ? (
-                <div className="result__loading" aria-label={t('picker.loadingAria')}>
-                  <div className="skeleton skeleton--digit" />
-                  <div className="skeleton skeleton--line" />
-                  <div className="skeleton skeleton--line" />
-                  <p className="caption">{t('rec.loading.text', { name: nameOf(selected), size: bytes(entry?.size_bytes) })}</p>
-                </div>
-              ) : !pred ? (
-                <div className="result__empty">
-                  <p className="result__title">{t('rec.ready.title')}</p>
-                  <p className="caption">{t('rec.ready.text')}</p>
-                </div>
-              ) : (
-                <div className={`result__body${stale ? ' is-stale' : ''}`}>
-                  <div className="result__head">
-                    <div className="result__digit" key={top} aria-hidden="true">
-                      {top}
-                    </div>
-                    <div>
-                      <p className="result__conf">
-                        <span className="num">{pct(pred.probs[pred.top], 1)}</span> {labelOf(selected)}
-                      </p>
-                      {selected === 'adaboost' && <p className="result__qual">{t('out.notCalibrated')}</p>}
-                      <p className="caption">{t('rec.runTime', { name: nameOf(selected), time: latency(pred.ms) })}</p>
-                      {pred.probs[pred.top] < 0.5 && <p className="caption">{t('rec.lowConfidence')}</p>}
-                      {stale && <p className="caption">{t('rec.stale')}</p>}
-                    </div>
-                  </div>
-                  <div className="result__bars">
-                    <Segmented
-                      legend={t('rec.bars.label')}
-                      hideLegend
-                      value={mode}
-                      onChange={setMode}
-                      options={[
-                        { value: 'top3', label: t('rec.bars.top3') },
-                        { value: 'all', label: t('rec.bars.all') },
-                      ]}
-                    />
-                    <ProbBars probs={pred.probs} classes={manifest.classes} mode={mode} stale={stale} />
-                  </div>
-                </div>
-              )}
+          <div className={`verdict${verdict && !stale ? ' has-result' : ''}${stale ? ' is-stale' : ''}`}>
+            <div className="verdict__eye">
+              <Mnist28 pixels={pre?.pixels ?? null} />
+              <span className="verdict__eyelabel">{t('rec.step.see')}</span>
             </div>
-
-            <p className="note">{t(`out.note.${selected}`)}</p>
-            {v?.n_checked ? (
-              <p className="note note--muted">
-                {t('out.checked', {
-                  n: int(v.n_checked),
-                  diff: v.max_abs_prob_diff == null ? t('common.na') : v.max_abs_prob_diff === 0 ? '0' : v.max_abs_prob_diff.toExponential(1),
-                  agree: pct(v.argmax_agreement, 1),
-                })}
+            <div className="verdict__main">
+              <p className="verdict__title">{t('rec.consensus.title')}</p>
+              <p className={`verdict__digit${verdict ? '' : ' is-none'}`} key={verdict?.digit ?? 'none'} aria-hidden="true">
+                {verdict ? manifest.classes[verdict.digit] : '–'}
               </p>
-            ) : null}
-            <p className="visually-hidden" role="status" aria-live="polite">
-              {announce}
-            </p>
-          </section>
-        </div>
+            </div>
+            <div className="verdict__text">
+              <p className="verdict__say">
+                {verdictText ??
+                  (phase === 'empty' ? t('rec.nothing.title') : phase === 'ready' ? t('rec.consensus.waiting') : t('rec.blank.title'))}
+              </p>
+              <p className="caption">
+                {stale
+                  ? t('rec.stale')
+                  : phase === 'empty'
+                    ? t('rec.nothing.text')
+                    : phase === 'blank'
+                      ? t('rec.blank.text')
+                      : pre
+                        ? t('rec.prep.done', { x: pre.com.x.toFixed(1), y: pre.com.y.toFixed(1) })
+                        : ''}
+              </p>
+            </div>
+          </div>
+
+          <ul className="models">
+            {ids.map((id) => {
+              const s = statuses[id]
+              const p = preds[id]
+              const size = bytes(manifest.models[id]?.size_bytes)
+              const dissent = !!(p && verdict && verdict.of > 1 && p.top !== verdict.digit)
+              const entry = manifest.models[id]
+              const v = entry?.validation
+              const state = s?.state ?? 'idle'
+              return (
+                <li key={id} className={`mcard${dissent ? ' is-dissent' : ''}${p ? ' has-pred' : ''}`}>
+                  <div className="mcard__head">
+                    <h3 className="mcard__name">{nameOf(id)}</h3>
+                    <span className="mcard__state">
+                      <span className={`dot dot--${state}`} aria-hidden="true" />
+                      {state === 'ready' ? size : state === 'loading' ? t('rec.compare.loading') : state === 'error' ? t('rec.compare.failed') : size}
+                    </span>
+                  </div>
+
+                  <div className="mcard__read">
+                    <p className="mcard__digit num" aria-hidden="true">
+                      {p && pre ? manifest.classes[p.top] : '–'}
+                    </p>
+                    <div className="mcard__meta">
+                      {p && pre ? (
+                        <>
+                          <p className="mcard__conf num">{pct(p.probs[p.top], 0)}</p>
+                          <p className="mcard__label">
+                            {id === 'adaboost' ? t('out.label.adaboost') : t('out.short.confidence')}
+                            {id === 'adaboost' ? ` · ${t('out.notCalibrated')}` : ''}
+                          </p>
+                          <p className="mcard__label num">
+                            {latency(p.ms)}
+                            {dissent && (
+                              <>
+                                {' · '}
+                                <span className="mcard__tag">{t('rec.card.dissent')}</span>
+                              </>
+                            )}
+                          </p>
+                        </>
+                      ) : state === 'idle' && id === 'adaboost' ? (
+                        <button type="button" className="btn btn--quiet btn--small" onClick={() => void store.load(id)}>
+                          {t('rec.card.load', { size })}
+                        </button>
+                      ) : state === 'error' ? (
+                        <button type="button" className="btn btn--quiet btn--small" onClick={() => void store.load(id)}>
+                          {t('common.retry')}
+                        </button>
+                      ) : (
+                        <p className="mcard__label">
+                          {state === 'loading'
+                            ? t('rec.compare.loading')
+                            : state === 'ready'
+                              ? pre
+                                ? t('rec.compare.waitPredict')
+                                : t('rec.compare.waitDrawing')
+                              : t('rec.compare.notLoaded')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <Histogram probs={p && pre ? p.probs : null} classes={manifest.classes} stale={stale} />
+
+                  <details className="mcard__about">
+                    <summary>{t('rec.card.about')}</summary>
+                    <p className="note">{t(`out.note.${id}`)}</p>
+                    {v?.n_checked ? (
+                      <p className="note note--muted">
+                        {t('out.checked', {
+                          n: int(v.n_checked),
+                          diff: v.max_abs_prob_diff == null ? t('common.na') : v.max_abs_prob_diff === 0 ? '0' : v.max_abs_prob_diff.toExponential(1),
+                          agree: pct(v.argmax_agreement, 1),
+                        })}
+                      </p>
+                    ) : null}
+                  </details>
+                </li>
+              )
+            })}
+          </ul>
+          <p className="visually-hidden" role="status" aria-live="polite">
+            {announce}
+          </p>
+        </section>
       </div>
 
-      <section className="compare" aria-labelledby="cmp-h">
-        <div className="compare__head">
-          <h2 id="cmp-h" className="h3">
-            {t('rec.compare.title')}
-          </h2>
-          {notLoaded.length > 0 && (
-            <button type="button" className="btn btn--quiet" onClick={() => notLoaded.forEach((id) => void store.load(id))}>
-              {t('rec.compare.loadOthers')}
-            </button>
-          )}
-        </div>
-        <ul className="compare__row">
-          {ids.map((id) => {
-            const s = statuses[id]
-            const p = preds[id]
-            return (
-              <li key={id} className={`compare__cell${id === selected ? ' is-selected' : ''}`}>
-                <p className="compare__name">{nameOf(id)}</p>
-                {p && pre ? (
-                  <>
-                    <p className="compare__digit num">{manifest.classes[p.top]}</p>
-                    <p className="caption">
-                      <span className="num">
-                        {id === 'adaboost'
-                          ? t('rec.compare.voteShare', { value: pct(p.probs[p.top], 0) })
-                          : t('rec.compare.confidence', { value: pct(p.probs[p.top], 0) })}
-                      </span>
-                      {id === 'adaboost' ? ` (${t('out.notCalibrated')})` : ''} · <span className="num">{latency(p.ms)}</span>
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className="compare__digit compare__digit--none" aria-hidden="true">
-                      {'\u2013'}
-                    </p>
-                    <p className="caption">
-                      {s?.state === 'error'
-                        ? t('rec.compare.failed')
-                        : s?.state === 'loading'
-                          ? t('rec.compare.loading')
-                          : s?.state === 'ready'
-                            ? pre
-                              ? t('rec.compare.waitPredict')
-                              : t('rec.compare.waitDrawing')
-                            : t('rec.compare.notLoaded')}
-                    </p>
-                  </>
-                )}
-              </li>
-            )
-          })}
-        </ul>
-        {agreement && <p className="caption">{agreement}</p>}
-      </section>
+      <Inside pixels={pre?.pixels ?? null} />
     </div>
   )
 }

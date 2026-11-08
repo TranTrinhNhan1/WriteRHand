@@ -1,7 +1,7 @@
 {
   "name": "WriteRHand-MNIST",
   "version": "1.0.0",
-  "created": "2026-11-08T02:39:26+00:00",
+  "created": "2026-11-08T03:05:31+00:00",
   "preprocessing": {
     "version": "mnist-global-standardize-v2-stratified",
     "image": "28x28 grayscale, white digit on black",
@@ -39,7 +39,7 @@
       "class": "GaussianNB",
       "format": "onnx",
       "file": "models/naive_bayes.onnx",
-      "size_bytes": 63244,
+      "size_bytes": 126310,
       "params": {
         "var_smoothing": 0.1
       },
@@ -57,7 +57,7 @@
       "class": "SoftmaxRegression",
       "format": "onnx",
       "file": "models/softmax.onnx",
-      "size_bytes": 31765,
+      "size_bytes": 31916,
       "params": {
         "learning_rate": 0.03,
         "l2": 0.0,
@@ -83,7 +83,7 @@
       "class": "MLP",
       "format": "onnx",
       "file": "models/mlp.onnx",
-      "size_bytes": 2143806,
+      "size_bytes": 2143893,
       "params": {
         "hidden_sizes": [
           512,
