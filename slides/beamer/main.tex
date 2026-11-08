@@ -310,26 +310,14 @@
 \end{frame}
 
 % 15
-\begin{frame}{Kết luận, giới hạn và phân công}
-  \begin{columns}[T]
-    \column{0.52\linewidth}
-    \small
-    \textbf{Kết luận}
-    \bul
-      \item MNIST: stacking \stackAccTest\%, CNN \accTestCNN\%, MLP \accTestMLP\%, AdaBoost \accTestADA\%, SVM \svmAccTest\%, softmax \accTestSM\%, Naïve Bayes \accTestNB\%.
-      \item AdaBoost gần MLP về độ chính xác nhưng đắt hơn nhiều về thời gian.
-      \item Tăng cường dữ liệu chủ yếu cải thiện độ bền với đúng loại biến đổi.
-    \eul
-    \column{0.44\linewidth}
-    \small
-    \textbf{Giới hạn}
-    \bul
-      \item Một seed cho mô hình chính.
-      \item Quét từng tham số, không xét tương tác.
-      \item Thời gian đo trên một máy CPU.
-      \item Chưa thử chữ số viết tay tiếng Việt.
-    \eul
-  \end{columns}
+\begin{frame}{Kết luận và phân công}
+  \small
+  \textbf{Kết luận}
+  \bul
+    \item MNIST: stacking \stackAccTest\%, CNN \accTestCNN\%, MLP \accTestMLP\%, AdaBoost \accTestADA\%, SVM \svmAccTest\%, softmax \accTestSM\%, Naïve Bayes \accTestNB\%.
+    \item AdaBoost gần MLP về độ chính xác nhưng đắt hơn nhiều về thời gian.
+    \item Tăng cường dữ liệu chủ yếu cải thiện độ bền với đúng loại biến đổi.
+  \eul
   \vfill
   \footnotesize\raggedright
   Phân công: Trần Trinh Nhân 50\%, Lâm Nhật Tiến 50\%. Nhóm có dùng trợ lý AI để hỗ trợ lập trình và điều chỉnh siêu tham số (báo cáo, mục 9).\\[2pt]
