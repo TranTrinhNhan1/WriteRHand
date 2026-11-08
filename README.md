@@ -29,7 +29,7 @@ test chỉ để báo cáo. Bảng này được sinh tự động từ `results
 | AdaBoost-SAMME | 100.00 | 97.59 | 97.60 | 97.58 | 97.58 | 97.58 | 817.9 | 0.751 | 18.705 |
 <!-- BENCHMARK:END -->
 
-Chi tiết: báo cáo `report/main.pdf`, slide `slides/slides.pdf`, notebook `notebooks/`, nhật ký thí nghiệm `results/`.
+Chi tiết: báo cáo `report/main.pdf`, slide `slides/WriteRHand-slides.pdf`, notebook `notebooks/`, nhật ký thí nghiệm `results/`.
 
 ## Cài đặt
 
@@ -73,18 +73,26 @@ Trọng số **không** được commit. Bundle (ONNX + JSON + model card) nằm
 - Chọn siêu tham số bằng quét tuần tự từng tham số, chọn theo validation; mọi cấu hình đã chạy được ghi lại. Hàm tìm kiếm không nhận mảng test.
 - Mô hình cuối huấn luyện trên 50 000 ảnh train; báo cáo train/val/test với accuracy, macro precision/recall/F1, confusion matrix.
 
+## Báo cáo và slide
+```bash
+cd report && pdflatex main.tex && bibtex main && pdflatex main.tex && pdflatex main.tex   # cần TeX Live có T5 + lmodern
+uv run python slides/build_slides.py && node slides/export_pdf.mjs                        # slide (cần playwright-core + Chromium cho PDF)
+```
+Các con số trong báo cáo và slide được đọc từ `results/` (xem `src/experiments/texfrag.py`), không nhập tay.
+
 ## Cấu trúc thư mục
 ```
 src/                 models/ (4 bộ phân lớp), preprocessing/, evaluation/, experiments/ (tune, train, report, augment), export/ (ONNX, Hugging Face), cli.py
-tests/               kiểm thử đơn vị + đối chiếu scikit-learn (63+ kiểm thử, chạy offline)
+tests/               kiểm thử đơn vị + đối chiếu scikit-learn (72 kiểm thử, chạy offline)
 notebooks/           EDA, reproduce_results (chính), fine-tuning, final_eval_with_test_set, eval_for_ensemble (khám phá)
 results/             tuning/ final/ baselines/ tables/ figures/ (sinh ra bởi chương trình)
-report/              báo cáo LaTeX (main.tex → main.pdf)    slides/   slide Beamer
+report/              báo cáo LaTeX (main.tex → main.pdf, các đoạn sinh tự động ở generated/)
+slides/              slide HTML (index.html) + PDF; dựng lại: uv run python slides/build_slides.py
 web/                 website demo      .github/workflows/   CI + GitHub Pages
 ```
 
 ## Thành viên
-Xem mục 10 của báo cáo (đóng góp theo bằng chứng Git; MSSV và tỉ lệ do nhóm tự điền). Phần hoàn thiện đồ án được thực hiện **với sự hỗ trợ của
+Trần Trinh Nhân (24280088) và Lâm Nhật Tiến (24280029), đóng góp 50%/50% (nhóm tự thống nhất); chi tiết ở mục 10 của báo cáo. Phần hoàn thiện đồ án được thực hiện **với sự hỗ trợ của
 trợ lý lập trình AI (Claude Code)** theo đúng công bố trong báo cáo. Quy trình nhóm: [WORKFLOW.md](WORKFLOW.md).
 
 ## Tài liệu / nguồn
