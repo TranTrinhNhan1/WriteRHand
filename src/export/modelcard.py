@@ -69,6 +69,8 @@ Live demo (runs the models in the browser): see the repository README.
 - Pixels / 255, then `x = (p - mean) / (std + eps)` with `mean = {pre["mean"]:.6f}`,
   `std = {pre["std"]:.6f}`, `eps = 1e-8` (computed on the training portion only). The ONNX graphs
   contain this step: feed raw `pixels` in [0, 1], shape `[N, 784]`, read `probabilities` `[N, 10]`.
+  The ONNX files also expose optional extra outputs (hidden activations, weights, class means and
+  variances) that the website draws in its "look inside" panel; they never change `probabilities`.
 
 ## Results (measured, CPU)
 Hyper-parameters were chosen on the validation split only. Time columns: wall-clock fit time on

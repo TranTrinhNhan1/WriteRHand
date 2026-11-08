@@ -75,3 +75,40 @@ def test_adaboost_json_roundtrip_matches_python(pixel_data):
     out = adaboost_predict_json(spec, P)
     np.testing.assert_allclose(out, m.predict_proba(X), atol=1e-12)
     assert np.array_equal(np.array(spec["classes"])[out.argmax(1)], m.predict(X))
+
+
+def _run_all(model_proto, P):
+    sess = ort.InferenceSession(model_proto.SerializeToString(), providers=["CPUExecutionProvider"])
+    names = [o.name for o in sess.get_outputs()]
+    return dict(zip(names, sess.run(names, {"pixels": P.astype(np.float32)}), strict=True))
+
+
+def _softmax(z):
+    e = np.exp(z - z.max(1, keepdims=True))
+    return e / e.sum(1, keepdims=True)
+
+
+def test_trace_outputs_explain_the_prediction(pixel_data):
+    """The extra outputs the website visualises must add up to the probabilities."""
+    P, y = pixel_data
+    X = _norm(P)
+    n = 5
+
+    mlp = MLP((32, 16), epochs=2).fit(X, y)
+    o = _run_all(mlp_to_onnx(mlp, MEAN, STD), P[:n])
+    assert o["a0"].shape == (n, 32) and o["a1"].shape == (n, 16) and (o["a0"] >= 0).all()
+    np.testing.assert_allclose(_softmax(o["logits"]), o["probabilities"], atol=1e-5)
+
+    sm = SoftmaxRegression(epochs=2).fit(X, y)
+    o = _run_all(softmax_regression_to_onnx(sm, MEAN, STD), P[:n])
+    assert o["weights"].shape == (784, 10) and o["x"].shape == (n, 784)
+    np.testing.assert_allclose(o["x"] @ o["weights"] + o["bias"], o["logits"], atol=1e-4)
+    np.testing.assert_allclose(_softmax(o["logits"]), o["probabilities"], atol=1e-5)
+
+    nb = GaussianNB(0.5).fit(X, y)
+    o = _run_all(gaussian_nb_to_onnx(nb, MEAN, STD), P[:n])
+    var, mu, x = o["class_var"], o["class_mean"], o["x"].astype(np.float64)
+    ll = -0.5 * (np.log(2 * np.pi * var)[None] + (x[:, None, :] - mu[None]) ** 2 / var[None])
+    logits = ll.sum(2) + o["log_prior"]
+    np.testing.assert_allclose(logits, o["logits"], atol=1e-2, rtol=1e-4)
+    np.testing.assert_allclose(_softmax(o["logits"]), o["probabilities"], atol=1e-5)

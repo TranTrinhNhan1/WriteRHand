@@ -3,6 +3,10 @@
 Every graph has the same contract:
     input   ``pixels``         float32 [N, 784]  raw pixels scaled to [0, 1] (NOT standardised)
     output  ``probabilities``  float32 [N, 10]
+Extra outputs ("trace") let the website show what happens inside a model; they never change the
+probabilities. MLP: ``a0``, ``a1`` (hidden activations after ReLU), ``logits``. Softmax: ``x``,
+``weights`` [784, 10], ``bias``, ``logits``. Naive Bayes: ``x``, ``class_mean`` and ``class_var``
+[10, 784] (in standardised pixel units), ``log_prior``, ``logits``.
 The preprocessing ``(x - mean) / (std + 1e-8)`` is the first node of the graph, so a browser only
 has to hand over pixel / 255 and the training-time normalisation is applied identically.
 """
@@ -19,12 +23,22 @@ def _init(name, arr):
     return numpy_helper.from_array(np.asarray(arr, dtype=np.float32), name=name)
 
 
-def _wrap(nodes, inits, doc, n_classes, class_names):
+def _const_output(name, src):
+    """Expose an initializer as a graph output (through Identity) without touching the maths."""
+    return helper.make_node("Identity", [src], [name])
+
+
+def _wrap(nodes, inits, doc, n_classes, class_names, trace=()):
+    """``trace``: (output name, shape) pairs for the extra, optional outputs."""
+    outputs = [
+        helper.make_tensor_value_info("probabilities", TensorProto.FLOAT, ["batch", n_classes])
+    ]
+    outputs += [helper.make_tensor_value_info(n, TensorProto.FLOAT, list(sh)) for n, sh in trace]
     graph = helper.make_graph(
         nodes,
         "writerhand",
         [helper.make_tensor_value_info("pixels", TensorProto.FLOAT, ["batch", 784])],
-        [helper.make_tensor_value_info("probabilities", TensorProto.FLOAT, ["batch", n_classes])],
+        outputs,
         initializer=inits,
     )
     model = helper.make_model(
@@ -63,12 +77,15 @@ def mlp_to_onnx(model, mean, std):
             nodes.append(helper.make_node("Relu", [z], [f"a{i}"]))
             a = f"a{i}"
     nodes.append(helper.make_node("Softmax", ["logits"], ["probabilities"], axis=1))
+    trace = [(f"a{i}", ["batch", W.shape[1]]) for i, (W, _) in enumerate(layers[:-1])]
+    trace.append(("logits", ["batch", len(model.classes)]))
     return _wrap(
         nodes,
         inits,
         "MLP (ReLU) trained with hand-written backprop",
         len(model.classes),
         model.classes,
+        trace,
     )
 
 
@@ -79,7 +96,12 @@ def softmax_regression_to_onnx(model, mean, std):
         helper.make_node("Gemm", ["x", "W", "b"], ["logits"]),
         helper.make_node("Softmax", ["logits"], ["probabilities"], axis=1),
     ]
-    return _wrap(nodes, inits, "Multiclass softmax regression", len(model.classes), model.classes)
+    nodes += [_const_output("weights", "W"), _const_output("bias", "b")]
+    k = len(model.classes)
+    trace = [("x", ["batch", 784]), ("weights", [784, k]), ("bias", [k]), ("logits", ["batch", k])]
+    return _wrap(
+        nodes, inits, "Multiclass softmax regression", len(model.classes), model.classes, trace
+    )
 
 
 def gaussian_nb_to_onnx(model, mean, std):
@@ -91,6 +113,7 @@ def gaussian_nb_to_onnx(model, mean, std):
     c = np.log(model.prior) - 0.5 * np.log(2 * np.pi * var).sum(1) - 0.5 * (mu**2 / var).sum(1)
     nodes, inits = _normalise_nodes(mean, std)
     inits += [_init("A", A), _init("B", B), _init("c", c)]
+    inits += [_init("mean_k", mu), _init("var_k", var), _init("logprior_k", np.log(model.prior))]
     nodes += [
         helper.make_node("Mul", ["x", "x"], ["x2"]),
         helper.make_node("MatMul", ["x2", "A"], ["t1"]),
@@ -98,6 +121,17 @@ def gaussian_nb_to_onnx(model, mean, std):
         helper.make_node("Add", ["t1", "t2"], ["t3"]),
         helper.make_node("Add", ["t3", "c"], ["logits"]),
         helper.make_node("Softmax", ["logits"], ["probabilities"], axis=1),
+        _const_output("class_mean", "mean_k"),
+        _const_output("class_var", "var_k"),
+        _const_output("log_prior", "logprior_k"),
+    ]
+    k = len(model.classes)
+    trace = [
+        ("x", ["batch", 784]),
+        ("class_mean", [k, 784]),
+        ("class_var", [k, 784]),
+        ("log_prior", [k]),
+        ("logits", ["batch", k]),
     ]
     return _wrap(
         nodes,
@@ -105,6 +139,7 @@ def gaussian_nb_to_onnx(model, mean, std):
         "Gaussian Naive Bayes (log joint likelihood -> posterior)",
         len(model.classes),
         model.classes,
+        trace,
     )
 
 
