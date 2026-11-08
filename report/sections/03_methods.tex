@@ -8,7 +8,7 @@ Ký hiệu: $\bm x\in\R^{D}$ ($D=784$) là ảnh đã chuẩn hóa và làm ph�
 \toprule
 Thành phần & Nhóm tự viết (NumPy) & Thư viện \\
 \midrule
-Tiền xử lý, chỉ số & Chia phân tầng, chuẩn hóa, ma trận nhầm lẫn, precision/recall/F1 macro, McNemar & \texttt{sklearn.metrics} chỉ trong kiểm thử \\
+Tiền xử lý, chỉ số & Chia phân tầng, chuẩn hóa, ma trận nhầm lẫn, precision/recall/F1 macro & \texttt{sklearn.metrics} chỉ trong kiểm thử \\
 Naïve Bayes & Ước lượng tham số, log-likelihood, log-sum-exp & \texttt{GaussianNB} để đối chiếu \\
 Softmax & Hàm mất mát, gradient giải tích, mini-batch GD & \texttt{LogisticRegression} để đối chiếu \\
 MLP & Lan truyền tiến và ngược, khởi tạo He, dropout, SGD có momentum, dừng sớm & Tensor, \texttt{matmul}, bộ sinh số ngẫu nhiên của PyTorch; \texttt{autograd} và \texttt{optim} chỉ trong kiểm thử \\

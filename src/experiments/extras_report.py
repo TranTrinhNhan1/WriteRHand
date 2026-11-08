@@ -341,7 +341,6 @@ def tex_cnn_vs_mlp(cmp, out_dir):
         ("Độ trễ một ảnh (ms)", lambda x: num(x["latency_ms"], ".3f")),
     ]
     body = [f"{lab} & {fn(r['mlp'])} & {fn(r['cnn'])} \\\\" for lab, fn in rows]
-    m = cmp["mcnemar"]
     tex = [
         r"\begin{table}[tbp]\centering\small",
         r"\begin{tabular}{lrr}",
@@ -351,9 +350,7 @@ def tex_cnn_vs_mlp(cmp, out_dir):
         *body,
         r"\bottomrule",
         r"\end{tabular}",
-        f"\\caption{{CNN và MLP trên MNIST, cùng giao thức; mọi số lấy từ các lần chạy đã ghi. Accuracy khi ảnh test bị biến đổi nằm ở \\cref{{fig:cnn-vs-mlp}}b. "
-        f"Kiểm định McNemar chính xác trên dự đoán test: "
-        f"chỉ MLP đúng {m['only_mlp']} ảnh, chỉ CNN đúng {m['only_cnn']} ảnh, $p={m['p']:.2g}$.}}",
+        r"\caption{CNN và MLP trên MNIST, cùng giao thức. Accuracy khi ảnh test bị biến đổi nằm ở \cref{fig:cnn-vs-mlp}b.}",
         r"\label{tab:cnn-vs-mlp}",
         r"\end{table}",
     ]
@@ -383,7 +380,7 @@ def tex_datasets(per_ds, out_dir):
         *rows,
         r"\bottomrule",
         r"\end{tabular}",
-        r"\caption{Accuracy / macro-F1 trên tập test (\%) của từng bộ dữ liệu; mỗi bộ dữ liệu có phép chia train/validation/test riêng, siêu tham số chọn riêng trên validation của bộ đó (quét rút gọn cho Fashion-MNIST và EMNIST Digits). Không so sánh chéo giữa các bộ dữ liệu.}",
+        r"\caption{Accuracy / macro-F1 trên tập test (\%) của từng bộ dữ liệu; mỗi bộ dữ liệu có phép chia train/validation/test riêng, siêu tham số chọn riêng trên validation của bộ đó (quét rút gọn cho Fashion-MNIST và EMNIST Digits).}",
         r"\label{tab:datasets}",
         r"\end{table}",
     ]
@@ -421,7 +418,7 @@ def tex_cross_eval(rd, out_dir):
         *rows,
         r"\bottomrule",
         r"\end{tabular}",
-        r"\caption{Accuracy (\%) trên $40\,000$ ảnh test của EMNIST Digits. Cột giữa là mô hình huấn luyện trên MNIST (dùng hằng số chuẩn hóa của MNIST) đánh giá trực tiếp; cột phải là mô hình huấn luyện trên EMNIST Digits. Đây là hai mô hình khác nhau.}",
+        r"\caption{Accuracy (\%) trên $40\,000$ ảnh test của EMNIST Digits. Cột giữa: mô hình huấn luyện trên MNIST; cột phải: mô hình huấn luyện trên EMNIST Digits (hai mô hình khác nhau).}",
         r"\label{tab:cross-eval}",
         r"\end{table}",
     ]

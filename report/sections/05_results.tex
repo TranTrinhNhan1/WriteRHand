@@ -1,20 +1,16 @@
-\section{Kết quả chính trên MNIST}
+\section{Kết quả}
 \label{sec:results}
-Mọi số liệu trong mục này được đọc từ các tệp kết quả do chương trình ghi (thư mục \texttt{results/}: \texttt{final}, \texttt{tuning}, \texttt{baselines}).
-
-\subsection{So sánh độ chính xác (RQ1)}
+\subsection{Độ chính xác trên ba tập}
 \begin{table}[tbp]
-\centering\small
-\input{../results/tables/benchmark_accuracy}
-\caption{Accuracy (\%) trên train, validation và test, cùng precision, recall và F1 macro (\%) trên test. Một lần huấn luyện (seed 42) cho mỗi mô hình.}
+\centering\scriptsize
+\setlength{\tabcolsep}{3.5pt}
+\input{generated/prf_splits}
+\caption{Accuracy, precision, recall và F1 macro (\%) trên train, validation và test (MNIST, seed 42).}
 \label{tab:accuracy}
 \end{table}
 
-Thứ tự theo độ chính xác trên test là CNN (\accTestCNN\%), MLP (\accTestMLP\%), AdaBoost (\accTestADA\%), softmax (\accTestSM\%) và Naïve Bayes (\accTestNB\%) (\cref{tab:accuracy}). Macro-F1 lệch accuracy không quá $0.16$ điểm ở cả năm mô hình, phù hợp với việc các lớp gần cân bằng. Với $n=10\,000$, khoảng tin cậy nhị thức $95\%$ của một accuracy gần $98\%$ rộng khoảng $\pm0.3$ điểm, nên các khoảng cách dưới một điểm cần kiểm định ghép cặp. Kiểm định McNemar cho cặp MLP--AdaBoost cho \mcOnlyMLP{} ảnh chỉ MLP đúng và \mcOnlyADA{} ảnh chỉ AdaBoost đúng ($p=$ \mcP), và cho cặp CNN--MLP cho $120$ ảnh chỉ CNN đúng và $64$ ảnh chỉ MLP đúng ($p=4.4\times10^{-5}$). Chúng tôi đã tính lại cả hai giá trị $p$ từ các tệp dự đoán và thu được kết quả trùng khớp.
+\Cref{tab:accuracy} cho thứ tự trên tập test: MLP (\accTestMLP\%) và AdaBoost (\accTestADA\%) vượt xa softmax (\accTestSM\%) và Naïve Bayes (\accTestNB\%). F1 macro lệch accuracy không quá $0.16$ điểm vì các lớp gần cân bằng. AdaBoost đạt $100\%$ trên train còn MLP đạt $99.87\%$, nên hai mô hình này khớp rất sát dữ liệu huấn luyện (chênh train--test $2.40$ và $1.63$ điểm). Softmax chỉ đạt $93.62\%$ trên train, tức bị giới hạn bởi biên tuyến tính. Naïve Bayes có test cao hơn train ($-1.19$ điểm). Mỗi mô hình chỉ được huấn luyện một lần nên khoảng cách giữa MLP và AdaBoost ($0.64$ điểm) chưa đủ để kết luận mô hình nào tốt hơn.
 
-Tuy nhiên McNemar chỉ cho biết các khác biệt này khó xảy ra do sai số lấy mẫu của tập test với đúng hai mô hình đã huấn luyện. Biến thiên giữa các seed được đo ở thí nghiệm tăng cường (mục~\ref{sec:augmentation}), nơi điều kiện không tăng cường dùng đúng cấu hình ở đây: MLP đạt $98.24$, $98.14$ và $97.69\%$ với seed 42, 43, 44 (trung bình $98.02\%$, độ lệch chuẩn mẫu $0.29$), CNN đạt $98.80$ và $98.84\%$ với seed 42 và 43. Do đó CNN cao hơn MLP ở mọi cặp seed đã chạy, còn khoảng cách $0.64$ điểm giữa MLP và AdaBoost ở seed 42 thu còn $0.42$ điểm khi so với trung bình ba seed của MLP. AdaBoost chỉ được chạy một seed và có tính ngẫu nhiên riêng (chọn tập con đặc trưng cho mỗi cây) chưa được đo, nên chúng tôi không kết luận về thứ tự MLP và AdaBoost. Khoảng cách giữa hai mô hình tuyến tính/sinh và ba mô hình còn lại (hơn $5$ điểm) lớn hơn mọi nguồn nhiễu đã quan sát.
-
-\subsection{Các lỗi phân lớp}
 \begin{figure}[tbp]
 \centering
 \begin{subfigure}{0.325\textwidth}\includegraphics[width=\linewidth]{../results/figures/confusion_naive_bayes.pdf}\caption{Naïve Bayes}\end{subfigure}\hfill
@@ -22,48 +18,32 @@ Tuy nhiên McNemar chỉ cho biết các khác biệt này khó xảy ra do sai 
 \begin{subfigure}{0.325\textwidth}\includegraphics[width=\linewidth]{../results/figures/confusion_mlp.pdf}\caption{MLP}\end{subfigure}\\[4pt]
 \begin{subfigure}{0.325\textwidth}\includegraphics[width=\linewidth]{../results/figures/confusion_adaboost.pdf}\caption{AdaBoost}\end{subfigure}\hspace{0.03\textwidth}
 \begin{subfigure}{0.325\textwidth}\includegraphics[width=\linewidth]{../results/figures/confusion_cnn.pdf}\caption{CNN}\end{subfigure}
-\caption{Ma trận nhầm lẫn trên tập test (hàng: chữ số thật; cột: chữ số dự đoán; số trong ô là số ảnh, màu theo tỉ lệ của hàng).}
+\caption{Ma trận nhầm lẫn trên tập test (hàng: chữ số thật; cột: dự đoán). Ma trận của train và validation nằm trong \texttt{results/final/*.json}.}
 \label{fig:confusion}
 \end{figure}
 
-\Cref{fig:confusion} cho thấy cả năm mô hình đều nhầm nhiều nhất những cặp có nét chung. Cặp $4\to9$ là cặp nhầm lớn nhất (hoặc đồng hạng) của Naïve Bayes (284 trong \errorsNB{} lỗi), softmax (39 trong \errorsSM{}), AdaBoost (12 trong \errorsADA{}, đồng hạng với $5\to3$) và CNN (8 trong \errorsCNN{}); với MLP cặp lớn nhất là $7\to9$ (8 trong \errorsMLP{} lỗi). Các cặp $5\to3$ và $7\to9$ cũng nằm trong ba cặp đầu của ít nhất ba mô hình. Với Naïve Bayes, $547$ trong $1\,868$ lỗi ($29\%$) là các ảnh bị dự đoán thành chữ số 9 và $313$ ảnh bị dự đoán thành 8; chúng tôi chưa kiểm tra nguyên nhân của sự lệch về hai lớp này.
+Cả năm mô hình đều nhầm nhiều nhất ở những cặp có nét chung (\cref{fig:confusion}): $4\to9$ là cặp lớn nhất của Naïve Bayes (284 trong \errorsNB{} lỗi), softmax, AdaBoost và CNN; MLP nhầm nhiều nhất $7\to9$. Các cặp $5\to3$ và $7\to9$ cũng nằm trong ba cặp đầu của nhiều mô hình.
 
-\subsection{Siêu tham số và độ phức tạp (RQ2)}
+\subsection{Ảnh hưởng của siêu tham số}
 \begin{figure}[tbp]
 \centering
 \includegraphics[width=\textwidth]{../results/figures/key_sweeps.pdf}
-\caption{Accuracy train và validation theo siêu tham số có ảnh hưởng lớn nhất của từng mô hình (xem thêm \cref{app:sweeps}). Vòng tròn đánh dấu giá trị được chọn. Các lượt quét chạy tuần tự nên phần còn lại của cấu hình ở giá trị tốt nhất tìm được trước đó.}
+\caption{Accuracy train và validation theo siêu tham số quan trọng nhất của từng mô hình; vòng tròn đánh dấu giá trị được chọn. Các lượt quét chạy tuần tự nên phần còn lại của cấu hình ở giá trị tốt nhất tìm được trước đó.}
 \label{fig:sweeps}
 \end{figure}
 
-\Cref{fig:sweeps} cho thấy bốn kiểu phản ứng với dung lượng hoặc mức điều chuẩn. (a) Với Naïve Bayes, validation accuracy tăng từ $56.05\%$ ở $\texttt{var\_smoothing}=10^{-9}$ lên $79.67\%$ ở $0.1$ rồi giảm khi làm trơn quá mức; train và validation gần như trùng nhau, nên mô hình bị giới hạn bởi giả thiết chứ không bởi overfitting. (b) Với softmax, tốc độ học $0.03$ cho validation cao nhất và các giá trị lớn hơn làm giảm cả train lẫn validation, tức là hiện tượng tối ưu hóa chứ không phải overfitting. (c) Với MLP, mạng hai lớp ẩn $(512,256)$ đạt $98.18\%$, cao hơn mạng một lớp ẩn $512$ ($97.94\%$) và mạng ba lớp ẩn $(512,256,128)$ ($97.15\%$); vì số epoch và tốc độ học được giữ cố định trong lượt quét này nên chúng tôi không tách được ảnh hưởng của độ sâu khỏi ảnh hưởng của việc tối ưu. (d) Với AdaBoost, độ sâu cây là tham số mạnh nhất: validation tăng đơn điệu từ $77.23\%$ (độ sâu 2) đến $95.98\%$ (độ sâu 10) ở 50 vòng, trong khi train accuracy đạt $99.99\%$ ở độ sâu 10. (e) Với CNN, thêm một lớp dày đặc nâng validation từ $97.84$ lên $98.57\%$, nhiều hơn việc tăng số kênh ($97.29\to97.84\%$); một giá trị tốc độ học ($0.1$) làm huấn luyện phân kỳ ($11.24\%$, tức đoán ngẫu nhiên).
+\Cref{fig:sweeps} cho thấy: (a) Naïve Bayes: \texttt{var\_smoothing} tăng từ $10^{-9}$ lên $0.1$ làm validation tăng từ $56.05\%$ lên $79.67\%$, train và validation gần trùng nhau nên mô hình bị giới hạn bởi giả thiết độc lập chứ không do overfitting; (b) softmax: tốc độ học $0.03$ tốt nhất, giá trị lớn hơn làm cả train lẫn validation giảm; (c) MLP: hai lớp ẩn $(512,256)$ đạt $98.18\%$, hơn một lớp ẩn $(97.94\%)$ và ba lớp ẩn $(97.15\%)$; (d) AdaBoost: validation tăng đơn điệu theo độ sâu cây; (e) CNN: $(16,32)$ kênh cho validation cao nhất. Với AdaBoost (độ sâu 10) và CNN, giá trị tốt nhất nằm ở mép khoảng đã quét nên có thể chưa tối ưu. Số epoch của MLP do dừng sớm quyết định (dừng ở epoch 14, khôi phục epoch 9), số vòng boosting là 393.
 
-\begin{figure}[tbp]
-\centering
-\includegraphics[width=\textwidth]{../results/figures/learning_curves.pdf}
-\caption{(a) Softmax: loss train và validation theo epoch. (b) MLP: loss train (có dropout nếu bật), loss trên tập dừng sớm và loss validation chỉ để theo dõi; đường chấm đứng đánh dấu epoch được khôi phục. (c) AdaBoost: accuracy theo số vòng boosting.}
-\label{fig:curves}
-\end{figure}
-
-Đường cong học (\cref{fig:curves}) cho thấy softmax có loss validation gần như phẳng sau khoảng 15 epoch (cực tiểu ở epoch 29) trong khi loss train tiếp tục giảm, MLP dừng sớm ở epoch \texttt{14} và khôi phục epoch \texttt{9}, và AdaBoost đạt $100\%$ trên train từ rất sớm trong khi validation tăng chậm tới $97.59\%$ ở \texttt{393} vòng. Điều này nhất quán với việc sai số huấn luyện bằng 0 không đồng nghĩa với hết khả năng tổng quát hóa của boosting. \Cref{fig:tradeoff}(c) cho thấy hiệu số train $-$ test lớn nhất ở AdaBoost ($+2.40$ điểm) và MLP ($+1.63$), nhỏ nhất ở CNN ($+0.60$), còn Naïve Bayes có test cao hơn train ($-1.19$). Số tham số không tăng đơn điệu theo độ chính xác: CNN có $56\,714$ tham số, ít hơn MLP gần mười lần nhưng chính xác hơn, và Naïve Bayes lưu $15\,690$ số nhưng kém xa softmax với $7\,850$ tham số. Điều quyết định là giả thiết cấu trúc của mô hình chứ không chỉ kích thước của nó.
-
-\subsection{Chi phí tính toán}
+\subsection{Thời gian huấn luyện, thời gian dự đoán và đối chiếu scikit-learn}
 \begin{table}[tbp]
 \centering\small
 \input{generated/cost}
-\caption{Chi phí trên CPU (cấu hình ở mục~\ref{sec:protocol}). Huấn luyện trên $50\,000$ ảnh; dự đoán $10\,000$ ảnh test; thời gian một ảnh là trung vị của 200 lần dự đoán. Tệp xuất là ONNX (Naïve Bayes, softmax, MLP, CNN) hoặc tệp nhị phân của các cây (AdaBoost).}
+\caption{Chi phí trên CPU: huấn luyện trên $50\,000$ ảnh, dự đoán $10\,000$ ảnh test, thời gian một ảnh và kích thước tệp mô hình xuất ra.}
 \label{tab:cost}
 \end{table}
-\begin{figure}[tbp]
-\centering
-\includegraphics[width=\textwidth]{../results/figures/tradeoff.pdf}
-\caption{Accuracy test theo thời gian huấn luyện (a) và thời gian dự đoán một ảnh (b), thang log; (c) hiệu số accuracy train và test.}
-\label{fig:tradeoff}
-\end{figure}
 
-AdaBoost đắt nhất ở cả hai trục (\cref{tab:cost}, \cref{fig:tradeoff}): \fitADA\,s huấn luyện, hơn bảy mươi lần MLP, và \latADA\,ms cho một ảnh. Độ trễ này phản ánh cả cách cài đặt: bộ dự đoán duyệt $393$ cây bằng một vòng lặp Python, nên con số không chỉ xuất phát từ độ phức tạp $O(Td)$ của thuật toán. MLP nhanh hơn CNN cả khi huấn luyện (\fitMLP\,s so với \fitCNN\,s) lẫn khi dự đoán (\latMLP\,ms so với \latCNN\,ms); với số epoch tương đương (14 và 13), hiệu số này đến từ chi phí mỗi epoch của tích chập, không phải từ ngân sách huấn luyện khác nhau. Softmax và Naïve Bayes rẻ nhất, nhưng softmax cần \fitSM\,s vì lặp 67 epoch trên toàn bộ dữ liệu trong khi Naïve Bayes chỉ cần một lượt (\fitNB\,s). Kích thước tệp xuất của AdaBoost (9\,457\,KiB) cũng lớn nhất.
+AdaBoost đắt nhất (\cref{tab:cost}): \fitADA\,s huấn luyện và \latADA\,ms cho một ảnh, vì phải duyệt $393$ cây (một phần do vòng lặp Python trong cài đặt). Naïve Bayes và softmax rẻ nhất. CNN chậm hơn MLP khoảng $13$ lần khi huấn luyện và $7$ lần khi dự đoán.
 
-\subsection{Đối chiếu với scikit-learn}
 \begin{table}[tbp]
 \centering\small
 \input{../results/tables/sklearn_comparison}
@@ -71,4 +51,30 @@ AdaBoost đắt nhất ở cả hai trục (\cref{tab:cost}, \cref{fig:tradeoff}
 \label{tab:sklearn}
 \end{table}
 
-Naïve Bayes trùng khớp hoàn toàn với scikit-learn (\cref{tab:sklearn}). Ba mô hình còn lại lệch từ $0.10$ đến $0.66$ điểm: softmax của nhóm cao hơn $0.66$ điểm vì scikit-learn chạy L-BFGS tới giới hạn 1000 vòng không hội tụ và không dừng sớm, còn nhóm dừng ở epoch chọn bằng validation; MLP chênh $0.22$ điểm, nhỏ hơn độ lệch chuẩn giữa các seed ($0.29$); AdaBoost chênh $0.10$ điểm nhưng hai bản không dùng cùng thuật toán chia nút (nhóm dùng histogram $32$ bin và nửa số đặc trưng cho mỗi cây, scikit-learn tìm ngưỡng chính xác trên mọi đặc trưng), nên thời gian không so sánh sạch được. Kết quả cho thấy các cài đặt khớp với thư viện trong phạm vi các khác biệt đã giải thích, không cho thấy ưu thế của bên nào.
+Naïve Bayes trùng khớp với scikit-learn (\cref{tab:sklearn}). Ba mô hình còn lại lệch từ $0.10$ đến $0.66$ điểm: softmax của nhóm cao hơn vì scikit-learn (L-BFGS) chạm giới hạn vòng lặp mà chưa hội tụ, còn nhóm dừng ở epoch chọn bằng validation; MLP chênh $0.22$ điểm; AdaBoost chênh $0.10$ điểm, hai bản dùng cách chia nút khác nhau (histogram so với ngưỡng chính xác) nên thời gian không so sánh trực tiếp được.
+
+\subsection{So sánh ưu và nhược điểm}
+\begin{table}[H]
+\centering\footnotesize
+\renewcommand{\arraystretch}{1.1}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\begin{tabular}{@{}L{2.0cm}L{3.9cm}L{3.9cm}L{4.5cm}@{}}
+\toprule
+Mô hình & Độ chính xác & Thời gian huấn luyện và dự đoán & Khả năng giải thích \\
+\midrule
+Naïve Bayes & Thấp nhất (\accTestNB\%): giả thiết độc lập bị mâu thuẫn bởi tương quan giữa các pixel kề nhau. & Rẻ: \fitNB\,s huấn luyện, \latNB\,ms mỗi ảnh. & Tham số $\mu_{kj},\sigma_{kj}$ là ảnh trung bình và phương sai theo lớp, đọc trực tiếp. \\
+Softmax & \accTestSM\%; train chỉ $93.62\%$, bị giới hạn bởi biên tuyến tính. & Dự đoán nhanh (\latSM\,ms mỗi ảnh); huấn luyện \fitSM\,s. & Trọng số theo lớp vẽ được thành ảnh; $x_iW_{ik}$ phân rã chính xác điểm số. \\
+MLP & \accTestMLP\%; chênh train--test $1.63$ điểm. & \fitMLP\,s huấn luyện, \latMLP\,ms mỗi ảnh. & Khó: đơn vị ẩn gần như không đọc được bằng mắt. \\
+AdaBoost-SAMME & \accTestADA\%, gần MLP; train $100\%$. & Đắt nhất: \fitADA\,s huấn luyện, \latADA\,ms mỗi ảnh. & Bản đồ tần suất pixel được cây dùng; điểm là tỉ lệ phiếu, chưa phải xác suất. \\
+\bottomrule
+\end{tabular}
+\caption{Ưu và nhược điểm của bốn mô hình theo bốn tiêu chí của đề bài (số liệu từ \cref{tab:accuracy,tab:cost}; nhận xét về khả năng giải thích là định tính, \cref{fig:interp}).}
+\label{tab:summary}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.78\textwidth]{../results/figures/interpretability.pdf}
+\caption{Tham số hoặc thống kê của từng mô hình: ảnh trung bình theo lớp (Naïve Bayes), trọng số theo lớp (softmax; đỏ dương, xanh âm), các đơn vị ẩn đầu tiên của MLP và tần suất pixel được dùng để chia nhánh (AdaBoost).}
+\label{fig:interp}
+\end{figure}

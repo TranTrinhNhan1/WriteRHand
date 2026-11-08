@@ -1,58 +1,46 @@
-\section{Các thí nghiệm mở rộng}
+\section{Phần nâng cao}
 \label{sec:extensions}
-Các thí nghiệm dưới đây dùng cùng mã, cùng giao thức và cùng bộ đánh giá như mục~\ref{sec:results}. Cấu hình của MLP và CNN là cấu hình đã chọn trên MNIST; các bảng chính ở mục~\ref{sec:results} không dùng tăng cường dữ liệu.
+Các thí nghiệm dưới đây dùng cùng mã, giao thức và bộ đánh giá như mục~\ref{sec:results}.
 
-\subsection{CNN so với MLP (RQ3)}
+\subsection{CNN so với MLP}
 \label{sec:cnn}
-CNN được tinh chỉnh bằng cùng quy trình quét từng tham số trên validation (\ntrialsCNN{} cấu hình, so với \ntrialsMLP{} của MLP; ngân sách tinh chỉnh vì vậy không bằng nhau). \Cref{tab:cnn-vs-mlp} và \cref{fig:cnn-vs-mlp} so sánh hai mô hình trên cùng $10\,000$ ảnh test.
+CNN gồm hai khối tích chập $3\times3$ ($16$ và $32$ kênh), mỗi khối có ReLU và gộp cực đại $2\times2$, rồi hai lớp dày đặc (mục~\ref{sec:cnn-method}). Siêu tham số được chọn bằng cùng quy trình quét trên validation.
 
 \input{generated/cnn_vs_mlp}
 \begin{figure}[tbp]
 \centering
-\includegraphics[width=\textwidth]{../results/figures/cnn_vs_mlp.pdf}
-\caption{CNN và MLP: số tham số (a), accuracy khi ảnh test bị biến đổi cố định, huấn luyện không tăng cường (b), và validation accuracy theo epoch (c).}
+\includegraphics[width=0.92\textwidth]{../results/figures/cnn_vs_mlp.pdf}
+\caption{CNN và MLP: số tham số (a), accuracy khi ảnh test bị biến đổi cố định, huấn luyện không tăng cường (b) và validation accuracy theo epoch (c).}
 \label{fig:cnn-vs-mlp}
 \end{figure}
 
-Trên ảnh sạch, CNN cao hơn MLP $0.56$ điểm với seed 42 (\accTestCNN\% so với \accTestMLP\%) và $0.8$ điểm khi so với trung bình ba seed của MLP; với số tham số ít hơn $9.4$ lần, hiệu số train $-$ test cũng nhỏ hơn ($0.60$ so với $1.63$ điểm). Khác biệt lớn hơn nhiều khi ảnh test bị biến đổi (\cref{fig:cnn-vs-mlp}b): sau khi dịch $3$ pixel, MLP còn $72.86\%$ còn CNN $88.14\%$; với xoay, co giãn và nhiễu Gauss khoảng cách là $1.5$, $1.8$ và $0.8$ điểm, và với nhiễu muối tiêu gần như không có ($97.71$ so với $97.56\%$). Mẫu hình này nhất quán với việc trọng số dùng chung và gộp cục bộ làm đầu ra ít nhạy với dịch chuyển nhỏ, nhưng chúng tôi không có thí nghiệm tách riêng từng thành phần (ví dụ CNN không gộp), nên đây là giả thuyết chứ không phải kết luận nhân quả. Cái giá là thời gian: huấn luyện lâu hơn khoảng $13$ lần và mỗi ảnh chậm hơn khoảng $7$ lần (\cref{tab:cost}), trong cùng một cài đặt NumPy trên CPU.
+CNN đạt \accTestCNN\% so với \accTestMLP\% của MLP với số tham số ít hơn $9.4$ lần, và chênh train--test nhỏ hơn ($0.60$ so với $1.63$ điểm). Khác biệt rõ nhất khi ảnh test bị dịch $3$ pixel: MLP còn $72.86\%$, CNN còn $88.14\%$ (\cref{fig:cnn-vs-mlp}b). Cái giá là thời gian: huấn luyện lâu hơn khoảng $13$ lần và mỗi ảnh chậm hơn khoảng $7$ lần (\cref{tab:cost}).
 
-\subsection{Tăng cường dữ liệu và độ bền (RQ4)}
+\subsection{Tăng cường dữ liệu}
 \label{sec:augmentation}
-\textbf{Thiết kế.} Năm phép biến đổi chỉ áp dụng cho tập train, nhãn không đổi (\cref{fig:aug-examples}): xoay đều trong $[-15^\circ,15^\circ]$; dịch đều trong $[-2,2]$ pixel theo mỗi trục; co giãn đều trong $[0.9,1.1]$; nhiễu Gauss $\sigma=0.1$ trên thang $[0,1]$; nhiễu muối tiêu trên $2\%$ số pixel. Các phép hình học được gộp thành một phép affine duy nhất cho mỗi ảnh (nội suy song tuyến tính). Mỗi điều kiện giữ nguyên siêu tham số, seed và quy tắc dừng sớm, chỉ đổi tập train: thêm một bản sao biến đổi của mỗi ảnh ($100\,000$ ảnh). Có tám điều kiện (gốc, từng phép riêng lẻ, nhóm hình học, cả năm phép), chạy với 3 seed (MLP) hoặc 2 seed (CNN) và so sánh ghép cặp theo seed. Điều kiện được chọn chỉ theo validation accuracy trung bình. Độ bền được đo trên tập test được biến đổi một lần với seed cố định ở mức mạnh hơn lúc huấn luyện (xoay $20^\circ$, dịch $3$ pixel, co giãn $0.8$--$1.2$, $\sigma=0.2$, $4\%$ muối tiêu) và chỉ dùng để báo cáo. Lưu ý rằng mọi điều kiện tăng cường có dữ liệu gấp đôi điều kiện gốc, nên ảnh hưởng của \emph{loại biến đổi} và của \emph{lượng dữ liệu hay số bước cập nhật} bị lẫn; không có điều kiện đối chứng nào sao chép ảnh gốc không biến đổi.
+Năm phép biến đổi chỉ áp dụng cho tập train, nhãn không đổi (\cref{fig:aug-examples}): xoay trong $[-15^\circ,15^\circ]$, dịch trong $[-2,2]$ pixel, co giãn trong $[0.9,1.1]$, nhiễu Gauss $\sigma=0.1$ và nhiễu muối tiêu $2\%$. Mỗi điều kiện (gốc, từng phép riêng lẻ, nhóm hình học, cả năm phép) giữ nguyên siêu tham số và chỉ thêm một bản sao biến đổi của mỗi ảnh train ($100\,000$ ảnh); chạy 3 seed (MLP) hoặc 2 seed (CNN). Điều kiện được chọn theo validation; để đo độ bền, tập test được biến đổi mạnh hơn lúc huấn luyện. Vì điều kiện tăng cường có dữ liệu gấp đôi điều kiện gốc, ảnh hưởng của loại biến đổi và của lượng dữ liệu bị lẫn.
 
 \begin{figure}[tbp]
 \centering
-\includegraphics[width=0.97\textwidth]{../results/figures/augmentation_examples.pdf}
-\caption{Ảnh gốc và từng phép biến đổi ở mức huấn luyện và mức kiểm tra độ bền (cùng các ảnh nguồn).}
+\includegraphics[width=0.85\textwidth]{../results/figures/augmentation_examples.pdf}
+\caption{Ảnh gốc và từng phép biến đổi ở mức huấn luyện và mức kiểm tra độ bền.}
 \label{fig:aug-examples}
 \end{figure}
 
-\begin{figure}[tbp]
-\centering
-\includegraphics[width=\textwidth]{../results/figures/augmentation_mlp.pdf}\\[4pt]
-\includegraphics[width=\textwidth]{../results/figures/augmentation_cnn.pdf}
-\caption{Tăng cường dữ liệu cho MLP (trên, 3 seed) và CNN (dưới, 2 seed). (a) Hiệu validation accuracy so với điều kiện gốc cùng seed (trung bình $\pm$ độ lệch chuẩn của hiệu ghép cặp). (b) Accuracy test (\%) khi ảnh test bị biến đổi mạnh; hàng là điều kiện huấn luyện, cột là loại biến đổi của tập test. Số liệu đầy đủ ở \cref{tab:augmentation}.}
-\label{fig:aug}
-\end{figure}
+\input{generated/augmentation_summary}
 
-\textbf{MLP.} Mọi điều kiện cho validation accuracy cao hơn điều kiện gốc $0.09$ đến $0.57$ điểm, nhưng độ lệch chuẩn của hiệu ghép cặp ($0.33$--$0.55$ điểm) cùng bậc với chính mức tăng, nên với ba seed chúng tôi không khẳng định phép biến đổi nào cải thiện độ chính xác trên ảnh sạch. Điều kiện ``xoay'' có validation cao nhất và được chọn. Ngược lại, tác dụng đối với đúng loại biến đổi rất rõ (\cref{fig:aug}b): với ảnh bị dịch, accuracy tăng từ $72.1\%$ lên $94.5\%$ khi huấn luyện với phép dịch; xoay, co giãn, nhiễu Gauss và muối tiêu mỗi phép cải thiện cột tương ứng thêm từ $0.6$ đến $1.8$ điểm. Cả năm phép cùng lúc có mức tăng validation nhỏ nhất ($+0.09$), tức hiệu quả không cộng dồn.
+\Cref{tab:augmentation} cho thấy với MLP, mọi điều kiện tăng validation $0.09$--$0.57$ điểm nhưng cùng bậc với độ lệch chuẩn ghép cặp ($0.33$--$0.55$), nên chưa khẳng định được tác dụng trên ảnh sạch; với CNN, test sạch tăng từ $98.82\%$ lên $99.00$--$99.25\%$ (chỉ 2 seed). Tác dụng rõ nhất là độ bền với đúng loại biến đổi: huấn luyện với phép dịch nâng accuracy của MLP trên ảnh bị dịch từ $72.1\%$ lên $94.5\%$. Một phép tăng cường cũng có thể làm giảm độ bền ở loại khác: với CNN, chỉ dùng phép dịch hoặc nhóm hình học làm accuracy trên ảnh nhiễu Gauss mạnh giảm từ $97.2\%$ xuống $95.0\%$ và $93.6\%$.
 
-\textbf{CNN.} Mọi điều kiện đều tăng validation accuracy ($+0.17$ đến $+0.31$ điểm) với độ lệch chuẩn ghép cặp từ $0.01$ đến $0.20$ điểm và accuracy test sạch tăng từ $98.82\%$ lên $99.00$--$99.25\%$; ``cả năm phép'' có validation cao nhất và được chọn (test $99.25\%$). Chỉ có hai seed nên độ lệch chuẩn kém tin cậy, và vẫn có yếu tố dữ liệu gấp đôi, vì vậy đây là bằng chứng gợi ý chứ không phải xác lập. Khác với MLP, có một tác dụng bất lợi: huấn luyện chỉ với phép dịch hoặc chỉ với nhóm hình học làm accuracy trên ảnh bị nhiễu Gauss mạnh giảm từ $97.2\%$ xuống $95.0\%$ và $93.6\%$, và trên ảnh muối tiêu từ $97.5\%$ xuống $96.0\%$ và $95.0\%$; huấn luyện với chính các nhiễu này thì lên $98.3\%$ và $98.7\%$, và với cả năm phép lên $98.9\%$. Một phép tăng cường có thể cải thiện loại biến đổi nó mô phỏng và làm giảm độ bền ở loại khác; ở thí nghiệm này chỉ ba điều kiện có nhiễu điểm ảnh (Gauss, muối tiêu, cả năm phép) không làm giảm cột nào so với điều kiện gốc.
-
-\textbf{Kết luận cho RQ4.} Hiệu quả rõ và lặp lại được của tăng cường là độ bền với đúng loại biến đổi. Tác dụng lên độ chính xác trên ảnh sạch nhỏ hơn nhiễu giữa các seed ở MLP và nhất quán hơn nhưng chưa tách khỏi hiệu ứng lượng dữ liệu ở CNN.
-
-\subsection{Fashion-MNIST và EMNIST Digits (RQ5)}
+\subsection{Fashion-MNIST và EMNIST Digits}
 \label{sec:datasets}
-Fashion-MNIST \citep{xiao2017} gồm ảnh $28\times28$ của $10$ loại quần áo ($60\,000$ train, $10\,000$ test). EMNIST Digits \citep{cohen2017} có $240\,000$ ảnh train và $40\,000$ ảnh test chính thức; chúng tôi lấy một tập con phân tầng $60\,000$ ảnh từ phần train, chia $50\,000/10\,000$ thành train/validation (cùng cỡ với MNIST) và giữ nguyên $40\,000$ ảnh test, đã xoay về chiều đứng như MNIST. Mỗi bộ dữ liệu có phép chia, hằng số chuẩn hóa và siêu tham số riêng, chọn bằng quét \emph{rút gọn} một seed trên validation của bộ đó; kết quả được báo cáo riêng. EMNIST Digits không có baseline scikit-learn.
+Fashion-MNIST \citep{xiao2017} gồm ảnh $28\times28$ của $10$ loại quần áo; EMNIST Digits \citep{cohen2017} gồm chữ số viết tay ($240\,000$ ảnh train, $40\,000$ ảnh test; nhóm lấy $60\,000$ ảnh train chia $50\,000/10\,000$ và giữ nguyên $40\,000$ ảnh test). Mỗi bộ dữ liệu có phép chia, hằng số chuẩn hóa và siêu tham số riêng (quét rút gọn, một seed).
 
 \input{generated/datasets}
 
-Thứ hạng giữa các mô hình khá ổn định ở hai bộ dữ liệu chữ số (\cref{tab:datasets}): Naïve Bayes $<$ softmax $<$ AdaBoost $<$ MLP $\le$ CNN, với CNN cao hơn MLP $0.28$ điểm trên $40\,000$ ảnh test EMNIST (khoảng tin cậy nhị thức $95\%$ của mỗi accuracy rộng khoảng $\pm0.1$ điểm). Trên Fashion-MNIST thứ hạng thay đổi: MLP và CNN ngang nhau ($88.59$ và $88.49\%$, chênh $0.10$ điểm, nhỏ hơn mọi nguồn nhiễu đã đo), AdaBoost chỉ hơn softmax $0.47$ điểm, và Naïve Bayes giảm xuống $67.27\%$. AdaBoost cũng có khoảng cách train $-$ test lớn nhất ($95.74\%$ so với $84.74\%$, tức $11.0$ điểm; MLP $4.85$, CNN $2.66$). Vì siêu tham số của hai bộ này chỉ được chọn bằng quét rút gọn và một seed, chúng tôi không kết luận mô hình nào tốt hơn khi chênh lệch dưới khoảng $0.3$ điểm.
-
-\textbf{Giới hạn của việc tổng quát hóa giữa các bộ dữ liệu.} MNIST và EMNIST Digits cùng gán nhãn $0$--$9$ cho chữ số, còn Fashion-MNIST gán $10$ loại quần áo cho cùng các chỉ số; phép đánh giá một mô hình trên bộ dữ liệu có định nghĩa lớp khác vì vậy không có nghĩa và chương trình từ chối thực hiện. Phép kiểm tra chéo hợp lệ duy nhất là MNIST $\to$ EMNIST Digits (\cref{tab:cross-eval}), và cột giữa là các mô hình huấn luyện trên MNIST, khác với các mô hình huấn luyện trên EMNIST ở cột phải. Mọi mô hình đều giảm: Naïve Bayes từ \ownEmnistNB\% xuống \crossNB\%, softmax từ \ownEmnistSM\% xuống \crossSM\%, MLP từ \ownEmnistMLP\% xuống \crossMLP\%, AdaBoost từ \ownEmnistADA\% xuống \crossADA\%, và CNN từ \ownEmnistCNN\% xuống \crossCNN\%. CNN giảm ít nhất ($6.5$ điểm) và softmax nhiều nhất ($40.2$ điểm). Chúng tôi chưa tách riêng nguyên nhân; kiểu chữ, độ dày nét và cách căn giữa của hai bộ khác nhau có thể đóng vai trò, và thứ hạng này không cho phép suy ra khả năng tổng quát hóa sang chữ viết tay nói chung.
+Thứ hạng ổn định ở hai bộ chữ số (Naïve Bayes $<$ softmax $<$ AdaBoost $<$ MLP $\le$ CNN, \cref{tab:datasets}) nhưng đổi ở Fashion-MNIST: MLP và CNN ngang nhau ($88.59$ và $88.49\%$) và Naïve Bayes giảm còn $67.27\%$. Mô hình huấn luyện trên MNIST rồi đánh giá trên EMNIST Digits (cùng 10 chữ số) đều giảm (\cref{tab:cross-eval}): CNN giảm ít nhất ($6.5$ điểm), softmax nhiều nhất ($40.2$ điểm). Fashion-MNIST dùng nhãn khác nên không có phép kiểm tra chéo hợp lệ với bộ chữ số. Nhóm chưa thử bộ chữ số viết tay tiếng Việt.
 
 \input{generated/cross_eval}
 
-\subsection{Bản chạy thử trên trình duyệt}
+\subsection{Giao diện demo}
 \label{sec:demo}
-Mô hình của cả ba bộ dữ liệu được xuất ra ONNX (Naïve Bayes, softmax, MLP, CNN; bước chuẩn hóa nằm trong đồ thị) và một tệp nhị phân cho các cây của AdaBoost, rồi đối chiếu với mô hình Python: \input{generated/export_check}. Bundle được đẩy lên Hugging Face Hub và \emph{ghim theo mã commit} trong \texttt{web/model-lock.json}; trang web (React, TypeScript, ONNX Runtime Web \citep{onnxruntime}) chỉ tải đúng revision đó và kiểm tra SHA-256 từng tệp. Người dùng có thể vẽ hoặc chọn ảnh test, chọn bộ dữ liệu và một trong năm mô hình, rồi xem kết quả. Phần ``nhìn vào bên trong'' vẽ lại phép tính của \emph{chính mô hình đã triển khai} (tích có trọng số của MLP, cửa sổ tích chập của CNN, log-likelihood của Naïve Bayes, các số hạng $x_iW_{ik}$ của softmax, các cây và phiếu của AdaBoost) từ metadata mà Python sinh ra, và đối chiếu với đầu ra của đồ thị ONNX. Phần này trực quan hóa \emph{phép tính}; một bản đồ kích hoạt không chứng minh rằng pixel hay bộ lọc đó gây ra quyết định, nên nhóm không coi nó là lời giải thích quyết định của mô hình.
+Trang web (React, TypeScript, ONNX Runtime Web \citep{onnxruntime}) cho phép vẽ hoặc chọn ảnh, chọn bộ dữ liệu và một trong năm mô hình rồi xem dự đoán chạy ngay trong trình duyệt. Mô hình được xuất sang ONNX (riêng AdaBoost dùng tệp nhị phân của các cây) và đối chiếu với mô hình Python: \input{generated/export_check}. Mô hình nằm trên Hugging Face Hub, được ghim theo mã commit. Chức năng ``nhìn vào bên trong'' vẽ lại phép tính của chính mô hình đã triển khai; đó là trực quan hóa phép tính, không phải lời giải thích vì sao mô hình quyết định như vậy.

@@ -1,16 +1,5 @@
 \section{Giới thiệu}
 \label{sec:intro}
-MNIST \citep{lecun1998} gồm ảnh xám $28\times28$ của các chữ số viết tay từ 0 đến 9, đã được đưa về cùng kích thước và căn giữa. Bộ dữ liệu đủ nhỏ để huấn luyện lặp lại nhiều lần nhưng các mô hình có giả thiết rất khác nhau về cấu trúc của ảnh cho kết quả chênh nhau hơn 17 điểm phần trăm (\cref{tab:accuracy}), nên phù hợp để so sánh có kiểm soát. Đồ án này cài đặt bốn bộ phân lớp đại diện cho bốn kiểu giả thiết: mô hình sinh với các pixel độc lập có điều kiện theo lớp (Gaussian Naïve Bayes), mô hình phân biệt tuyến tính (hồi quy softmax), mô hình phi tuyến có tham số (MLP) và ensemble tuần tự các cây quyết định (AdaBoost-SAMME). Một mạng tích chập (CNN) được thêm vào như phần mở rộng, vì nó khác MLP ở đúng một điểm: tận dụng quan hệ lân cận giữa các pixel qua trọng số dùng chung.
+MNIST \citep{lecun1998} gồm $70\,000$ ảnh xám $28\times28$ của các chữ số viết tay từ 0 đến 9 ($60\,000$ ảnh huấn luyện và $10\,000$ ảnh kiểm thử). Đồ án cài đặt bốn bộ phân lớp thuộc bốn họ khác nhau: mô hình sinh (Gaussian Naïve Bayes), mô hình tuyến tính (hồi quy softmax), mạng neuron nhiều lớp (MLP) và ensemble (AdaBoost-SAMME), rồi so sánh về độ chính xác, thời gian huấn luyện, thời gian dự đoán và khả năng giải thích. Phần nâng cao gồm CNN, tăng cường dữ liệu, hai bộ dữ liệu khác (Fashion-MNIST, EMNIST Digits) và giao diện demo.
 
-Báo cáo trả lời năm câu hỏi nghiên cứu:
-\begin{enumerate}[label=\textbf{RQ\arabic*.}]
-\item Bốn phương pháp bắt buộc so sánh với nhau thế nào trên MNIST dưới cùng một giao thức đánh giá?
-\item Độ phức tạp của mô hình ảnh hưởng thế nào đến độ chính xác, chi phí tính toán và khả năng tổng quát hóa?
-\item Điều gì thay đổi khi thay MLP bằng một CNN khai thác cấu trúc không gian?
-\item Tăng cường dữ liệu và các nhiễu loạn có kiểm soát ảnh hưởng thế nào đến độ bền của MLP và CNN?
-\item Các phương pháp có nhất quán trên Fashion-MNIST và EMNIST Digits không, và khả năng tổng quát hóa giữa các bộ dữ liệu bị giới hạn ra sao?
-\end{enumerate}
-
-\textbf{Phạm vi tự cài đặt.} Theo đề bài, phần tính toán lõi của mỗi thuật toán do nhóm viết; scikit-learn chỉ dùng để đối chiếu, PyTorch chỉ cung cấp tensor và bộ sinh số ngẫu nhiên cho MLP và CNN (không dùng \texttt{autograd}, \texttt{nn.Module}, \texttt{optim} hay các lớp tích chập có sẵn để huấn luyện). \Cref{tab:scope} liệt kê chi tiết.
-
-Mục~\ref{sec:data} mô tả dữ liệu, mục~\ref{sec:methods} các phương pháp, mục~\ref{sec:protocol} giao thức thực nghiệm. Kết quả chính (RQ1, RQ2) ở mục~\ref{sec:results}, các thí nghiệm mở rộng (RQ3--RQ5) ở mục~\ref{sec:extensions}; mục~\ref{sec:discussion} trả lời từng câu hỏi và mục~\ref{sec:conclusion} nêu các giới hạn.
+Theo đề bài, phần tính toán lõi do nhóm viết bằng NumPy; scikit-learn chỉ dùng để đối chiếu, PyTorch chỉ cung cấp tensor và bộ sinh số ngẫu nhiên cho MLP và CNN (không dùng \texttt{autograd}, \texttt{nn.Module}, \texttt{optim} hay lớp tích chập dựng sẵn để huấn luyện; \cref{tab:scope}). Mục~\ref{sec:data} mô tả dữ liệu, mục~\ref{sec:methods} các phương pháp, mục~\ref{sec:protocol} thí nghiệm, mục~\ref{sec:results} kết quả, mục~\ref{sec:extensions} phần nâng cao, mục~\ref{sec:discussion} thảo luận và mục~\ref{sec:contrib} phân công công việc.
