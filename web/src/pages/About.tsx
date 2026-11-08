@@ -38,7 +38,6 @@ export default function About() {
   return (
     <div className="about sheet">
       <header className="page-head">
-        <p className="eyebrow">{t('nav.about')}</p>
         <h1 className="display">{t('about.title')}</h1>
         <p className="lede">{t('about.lede')}</p>
         <ul className="linkrow">

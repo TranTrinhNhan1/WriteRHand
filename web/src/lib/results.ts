@@ -1,7 +1,7 @@
 import type { Key } from '../i18n'
 import { finite } from './scale'
 import { paramValue } from './format'
-import type { AugCondition, AugStudy, CnnVsMlp, CrossEval, ModelKind, ResultModel, Results, SplitId, SplitMetrics, SweepPoint, TuningEntry } from './types'
+import type { AugCondition, AugStudy, CnnVsMlp, CrossEval, ModelKind, ResultId, ResultModel, Results, SplitId, SplitMetrics, SweepPoint, TuningEntry } from './types'
 
 export function splitOf(m: ResultModel, s: SplitId): SplitMetrics | undefined {
   return m.splits?.[s]
@@ -60,7 +60,7 @@ const LABELS: Record<string, { labelKey: Key; role: SeriesRole; panel: string }>
 }
 
 /** Splits `models[].history` into loss / accuracy / weight panels; tolerates missing or ragged arrays. */
-export function historyPanels(id: ModelKind, history: Record<string, number[]> | null | undefined): HistoryPanel[] {
+export function historyPanels(id: ResultId, history: Record<string, number[]> | null | undefined): HistoryPanel[] {
   if (!history) return []
   const boosting = id === 'adaboost'
   const panels: HistoryPanel[] = [
@@ -264,12 +264,14 @@ export function datasetMatrix(results: Record<string, Results>, datasets: string
   for (const ds of datasets) {
     cells[ds] = {}
     for (const m of results[ds]?.models ?? []) {
+      if (!order.includes(m.id as ModelKind)) continue
+      const id = m.id as ModelKind
       const test = m.splits?.test
       const accuracy = finite(test?.accuracy) ? test!.accuracy! : null
       const f1 = finite(test?.f1_macro) ? test!.f1_macro! : null
       if (accuracy == null && f1 == null) continue
-      cells[ds][m.id] = { accuracy, f1 }
-      present.add(m.id)
+      cells[ds][id] = { accuracy, f1 }
+      present.add(id)
     }
   }
   return { datasets, models: order.filter((m) => present.has(m)), cells }

@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import type { BundleManifest, DatasetEntry, ModelEntry } from '../src/engine/contract'
 import { axisLabel } from '../src/components/charts/ConfusionMatrix'
 import { parameterCount, summarizeLayers } from '../src/lib/architecture'
-import { AUTO_LOAD_MAX_BYTES, consensusOf, datasetIdsOf, isDigitDataset, modelChoices, resolveDataset, resolveModel, shortClassNames } from '../src/lib/selection'
+import { AUTO_LOAD_MAX_BYTES, consensusOf, datasetIdsOf, isDigitDataset, modelChoices, modelPairs, resolveDataset, resolveModel, shortClassNames, variantId } from '../src/lib/selection'
+import { modelsOf } from '../src/engine/contract'
 import { parseTestVectors } from '../src/lib/testImages'
 import { hasBundle, loadManifest } from './bundle'
 
@@ -101,6 +102,24 @@ describe.skipIf(!hasBundle)('architecture summary of the local bundle', () => {
         const conv = e!.trace.layers.find((l) => l.op === 'conv2d')
         if (conv) expect(layers.find((l) => l.id === conv.id)!.detail).toContain(`${conv.kernel_shape![2]}×${conv.kernel_shape![3]}`)
       }
+    }
+  })
+})
+
+describe.skipIf(!hasBundle)('plain / augmented pairs of the local bundle', () => {
+  it('lists one row per architecture, augmented variants never load by themselves', () => {
+    const m = loadManifest()
+    for (const ds of Object.values(m.datasets)) {
+      const choices = modelChoices(ds)
+      const pairs = modelPairs(choices)
+      expect(pairs.map((p) => p.kind)).toEqual(modelsOf(ds))
+      for (const c of choices) if (c.augmented) expect(c.autoLoad).toBe(false)
+      for (const p of pairs) if (p.augmented) expect(p.augmented.id).toBe(`${p.kind}_aug`)
+    }
+    const mnist = m.datasets.mnist
+    if (mnist?.models.mlp_aug) {
+      expect(variantId(mnist, 'mlp', true)).toBe('mlp_aug')
+      expect(resolveModel(mnist, 'mlp_aug')).toBe('mlp_aug')
     }
   })
 })

@@ -1,7 +1,7 @@
-import { ArrowClockwise, CaretDown, ClockCounterClockwise, Lightning, PencilSimpleLine } from '@phosphor-icons/react'
+import { ArrowClockwise, ClockCounterClockwise, Lightning, PencilSimpleLine } from '@phosphor-icons/react'
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { useI18n } from '../../i18n'
-import type { ModelKind } from '../../engine/contract'
+import { isAugmented, kindOf, type ModelId, type ModelKind } from '../../engine/contract'
 import { useBundle, useExecution } from '../../engine/react'
 import type { Execution } from '../../engine/store'
 import { bytes, pct } from '../../lib/format'
@@ -28,7 +28,7 @@ const VIEWS: Record<ModelKind, (p: ExplorerViewProps) => ReactNode> = {
 
 interface Props {
   dataset: string
-  model: ModelKind
+  model: ModelId
   pixels: Float32Array | null
 }
 
@@ -71,12 +71,14 @@ function ExplorerBody({ dataset, model, pixels, onRetry }: Props & { onRetry: ()
     onRetry()
   }
 
-  const tabs: { id: Mode; icon: ReactNode; title: string; sub: string }[] = [
-    { id: 'inference', icon: <Lightning size={18} weight="fill" aria-hidden="true" />, title: t('ex.shell.mode.inference'), sub: t('ex.shell.mode.inferenceSub') },
-    { id: 'replay', icon: <ClockCounterClockwise size={18} aria-hidden="true" />, title: t('ex.shell.mode.replay'), sub: t('ex.shell.mode.replaySub') },
+  const tabs: { id: Mode; icon: ReactNode; title: string }[] = [
+    { id: 'inference', icon: <Lightning size={14} weight="fill" aria-hidden="true" />, title: t('ex.shell.mode.inference') },
+    { id: 'replay', icon: <ClockCounterClockwise size={14} aria-hidden="true" />, title: t('ex.shell.mode.replay') },
   ]
+  // an augmented variant has no recorded training run: no replay tab for it
+  const shownTabs = isAugmented(entry) && !entry.replay ? tabs.filter((x) => x.id !== 'replay') : tabs
   const onTabKey = (e: KeyboardEvent) => {
-    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+    if ((e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || shownTabs.length < 2) return
     e.preventDefault()
     const next: Mode = mode === 'inference' ? 'replay' : 'inference'
     setMode(next)
@@ -84,52 +86,37 @@ function ExplorerBody({ dataset, model, pixels, onRetry }: Props & { onRetry: ()
   }
 
   return (
-    <section className="ex" aria-labelledby={`${uid}-title`} data-mode={mode}>
-      <header className="ex__head">
-        <p className="eyebrow">{t('ex.shell.eyebrow')}</p>
-        <h2 className="h2" id={`${uid}-title`}>
-          {t('ex.shell.title')}
-        </h2>
-        <p className="lede ex__lede">{t('ex.shell.lede')}</p>
-      </header>
-
-      <SpecSheet dataset={dataset} model={model} exec={exec} />
-
-      <div className="ex-modes" role="tablist" aria-label={t('ex.shell.mode.label')}>
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            id={`${uid}-tab-${tab.id}`}
-            type="button"
-            role="tab"
-            className="ex-mode"
-            data-mode={tab.id}
-            aria-selected={mode === tab.id}
-            aria-controls={`${uid}-panel`}
-            tabIndex={mode === tab.id ? 0 : -1}
-            onClick={() => setMode(tab.id)}
-            onKeyDown={onTabKey}
-          >
-            <span className="ex-mode__icon">{tab.icon}</span>
-            <span className="ex-mode__text">
-              <span className="ex-mode__title">{tab.title}</span>
-              <span className="ex-mode__sub">{tab.sub}</span>
-            </span>
-          </button>
-        ))}
+    <section className="ex" aria-label={`${t(`model.${kindOf(entry)}`)}${isAugmented(entry) ? ` · ${t('rec.pair.augmented')}` : ''}`} data-mode={mode}>
+      <div className="ex-top">
+        <div className="ex-modes" role="tablist" aria-label={t('ex.shell.mode.label')}>
+          {shownTabs.map((tab) => (
+            <button
+              key={tab.id}
+              id={`${uid}-tab-${tab.id}`}
+              type="button"
+              role="tab"
+              className="ex-mode"
+              data-mode={tab.id}
+              aria-selected={mode === tab.id}
+              aria-controls={`${uid}-panel`}
+              tabIndex={mode === tab.id ? 0 : -1}
+              onClick={() => setMode(tab.id)}
+              onKeyDown={onTabKey}
+            >
+              {tab.icon}
+              {tab.title}
+            </button>
+          ))}
+        </div>
+        <SpecLine dataset={dataset} model={model} />
       </div>
 
       <div className="ex-panelwrap" id={`${uid}-panel`} role="tabpanel" aria-labelledby={`${uid}-tab-${mode}`} data-mode={mode}>
         {mode === 'inference' ? (
           <PersistContext.Provider value={persist}>
             <ArchLinkContext.Provider value={link}>
-              <LiveBadge exec={exec} pending={state.state === 'running' || state.state === 'loading'} />
-              <HowToRead />
-              <div className="ex-archwrap">
-                <h3 className="ex-sub">{t('ex.arch.title')}</h3>
-                <ArchitectureDiagram trace={trace} reached={exec ? reachedSet : null} selected={archSel} onSelect={(id) => setArchSel(id)} />
-                <p className="ex-hint">{t('ex.arch.note')}</p>
-              </div>
+              <LiveLine exec={exec} pending={state.state === 'running' || state.state === 'loading'} />
+              <ArchitectureDiagram trace={trace} reached={exec ? reachedSet : null} selected={archSel} onSelect={(id) => setArchSel(id)} />
               <Inference dataset={dataset} model={model} state={state} onRetry={retry} />
             </ArchLinkContext.Provider>
           </PersistContext.Provider>
@@ -141,86 +128,67 @@ function ExplorerBody({ dataset, model, pixels, onRetry }: Props & { onRetry: ()
   )
 }
 
-// --------------------------------------------------------------------------- header: what you are looking at
-function SpecSheet({ dataset, model, exec }: { dataset: string; model: ModelKind; exec: Execution | null }) {
+// --------------------------------------------------------------------------- what you are looking at
+function SpecLine({ dataset, model }: { dataset: string; model: ModelId }) {
   const { t } = useI18n()
   const { manifest } = useBundle()
-  const ds = manifest.datasets[dataset]
-  const entry = ds.models[model]!
+  const entry = manifest.datasets[dataset].models[model]!
   const v = entry.validation
   const trace = entry.trace
-  const rows: { k: string; v: ReactNode; title?: string }[] = [
-    { k: t('ex.shell.spec.model'), v: entry.title },
-    { k: t('ex.shell.spec.dataset'), v: ds.title },
-    { k: t('ex.shell.spec.params'), v: trace.n_parameters != null ? int(trace.n_parameters) : t('ex.shell.spec.paramsNone') },
-    {
-      k: t('ex.shell.spec.files'),
-      v: `${entry.format === 'onnx' ? 'ONNX' : t('ex.shell.spec.binary')} ${bytes(entry.size_bytes)}${trace.params ? ` + ${t('ex.shell.spec.paramFile')} ${bytes(trace.params.nbytes)}` : ''}`,
-    },
-    {
-      k: t('ex.shell.spec.validation'),
-      v: t(v.ok ? 'ex.shell.spec.valOk' : 'ex.shell.spec.valBad', { d: diff(v.max_abs_prob_diff), n: int(v.n_checked), agree: pct(v.argmax_agreement, 1) }),
-    },
-    { k: t('ex.shell.spec.sha'), v: <code title={entry.sha256}>{entry.sha256.slice(0, 12)}…</code> },
-    { k: t('ex.shell.spec.bundle'), v: <code title={manifest.bundle_id}>{manifest.bundle_id.slice(0, 8)}</code> },
-    { k: t('ex.shell.spec.schema'), v: <code>{trace.schema}</code> },
-    { k: t('ex.shell.spec.input'), v: exec ? <code>{exec.inputId}</code> : <span className="ex-muted">{t('ex.shell.spec.noInput')}</span> },
-  ]
   return (
     <div className="ex-spec">
       <dl className="ex-spec__grid">
-        {rows.map((r) => (
-          <div key={r.k} className="ex-spec__row">
-            <dt>{r.k}</dt>
-            <dd className="num">{r.v}</dd>
-          </div>
-        ))}
+        <div className="ex-spec__row">
+          <dt>{t('ex.shell.spec.params')}</dt>
+          <dd className="num">{trace.n_parameters != null ? int(trace.n_parameters) : t('ex.shell.spec.paramsNone')}</dd>
+        </div>
+        <div className="ex-spec__row">
+          <dt>{t('ex.shell.spec.files')}</dt>
+          <dd className="num">{`${entry.format === 'onnx' ? 'ONNX' : t('ex.shell.spec.binary')} ${bytes(entry.size_bytes)}${trace.params ? ` + ${t('ex.shell.spec.paramFile')} ${bytes(trace.params.nbytes)}` : ''}`}</dd>
+        </div>
+        <div className="ex-spec__row" data-ok={v.ok}>
+          <dt>{t('ex.shell.spec.validation')}</dt>
+          <dd className="num">{t(v.ok ? 'ex.shell.spec.valOk' : 'ex.shell.spec.valBad', { d: diff(v.max_abs_prob_diff), n: int(v.n_checked), agree: pct(v.argmax_agreement, 1) })}</dd>
+        </div>
       </dl>
-      <div className="ex-spec__classes">
-        <span className="ex-spec__k">{t('ex.shell.spec.classes', { n: ds.classes.length })}</span>
-        <ol className="ex-classes">
-          {ds.classes.map((c, i) => (
-            <li key={i}>
-              {c !== String(i) && <span className="num">{i}</span>} {c}
-            </li>
-          ))}
-        </ol>
-      </div>
+      <details className="ex-spec__more">
+        <summary>{t('ex.shell.spec.sha')}</summary>
+        <dl className="ex-spec__grid">
+          <div className="ex-spec__row">
+            <dt>{t('ex.shell.spec.sha')}</dt>
+            <dd className="num">
+              <code>{entry.sha256}</code>
+            </dd>
+          </div>
+          <div className="ex-spec__row">
+            <dt>{t('ex.shell.spec.bundle')}</dt>
+            <dd className="num">
+              <code>{manifest.bundle_id}</code>
+            </dd>
+          </div>
+          <div className="ex-spec__row">
+            <dt>{t('ex.shell.spec.schema')}</dt>
+            <dd className="num">
+              <code>{trace.schema}</code>
+            </dd>
+          </div>
+        </dl>
+      </details>
     </div>
   )
 }
 
-function LiveBadge({ exec, pending }: { exec: Execution | null; pending: boolean }) {
+function LiveLine({ exec, pending }: { exec: Execution | null; pending: boolean }) {
   const { t } = useI18n()
   return (
-    <p className="ex-badge ex-badge--live" data-state={exec ? 'ready' : pending ? 'pending' : 'idle'}>
-      <Lightning size={14} weight="fill" aria-hidden="true" />
-      <b>{t('ex.shell.badgeLive')}</b>
-      {exec && <span className="num">{t('ex.shell.badgeLiveMeta', { id: exec.inputId, ms: exec.ms < 0.05 ? '<0.1' : exec.ms.toFixed(1) })}</span>}
-      {!exec && <span>{pending ? t('ex.shell.badgePending') : t('ex.shell.badgeIdle')}</span>}
+    <p className="ex-live num" data-state={exec ? 'ready' : pending ? 'pending' : 'idle'}>
+      {exec ? t('ex.shell.badgeLiveMeta', { id: exec.inputId, ms: exec.ms < 0.05 ? '<0.1' : exec.ms.toFixed(1) }) : pending ? t('ex.shell.badgePending') : t('ex.shell.badgeIdle')}
     </p>
   )
 }
 
-function HowToRead() {
-  const { t, tl } = useI18n()
-  return (
-    <details className="ex-howto">
-      <summary>
-        <CaretDown size={14} aria-hidden="true" className="ex-howto__caret" />
-        {t('ex.shell.howto.title')}
-      </summary>
-      <ul>
-        {tl('ex.shell.howto.items').map((s) => (
-          <li key={s}>{s}</li>
-        ))}
-      </ul>
-    </details>
-  )
-}
-
 // --------------------------------------------------------------------------- inference states
-function Inference({ dataset, model, state, onRetry }: { dataset: string; model: ModelKind; state: ReturnType<typeof useExecution>; onRetry: () => void }) {
+function Inference({ dataset, model, state, onRetry }: { dataset: string; model: ModelId; state: ReturnType<typeof useExecution>; onRetry: () => void }) {
   const { t } = useI18n()
   const { manifest, registry } = useBundle()
   const ds = manifest.datasets[dataset]
@@ -243,7 +211,6 @@ function Inference({ dataset, model, state, onRetry }: { dataset: string; model:
       <div className="ex-state ex-state--empty">
         <PencilSimpleLine size={28} aria-hidden="true" />
         <p className="label">{t('ex.shell.empty.title')}</p>
-        <p className="caption">{t('ex.shell.empty.text')}</p>
       </div>
     )
   }

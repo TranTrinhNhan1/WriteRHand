@@ -1,10 +1,10 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { ArrowDown, Check, MagnifyingGlass, Warning } from '@phosphor-icons/react'
+import { Check, MagnifyingGlass, Warning } from '@phosphor-icons/react'
 import { ClassBars } from '../components/ClassBars'
 import { DigitPad, cropOf, type CropRect, type DigitPadHandle, type PadChange } from '../components/DigitPad'
 import { Mnist28 } from '../components/Mnist28'
 import { Thumb28 } from '../components/Thumb28'
-import { MODEL_ORDER, type DatasetEntry, type ModelKind } from '../engine/contract'
+import { MODEL_ORDER, augId, type DatasetEntry, type ModelId, type ModelKind } from '../engine/contract'
 import { useBundle, useExecution, type ExecutionState } from '../engine/react'
 import type { ModelStatus } from '../engine/store'
 import { useI18n } from '../i18n'
@@ -12,7 +12,7 @@ import { useChoice } from '../lib/choice'
 import { bytes, int, latency, pct } from '../lib/format'
 import { MNIST_SIZE, preprocessMnist, type Preprocessed } from '../lib/preprocess'
 import { SAMPLE_DIGITS } from '../lib/samples'
-import { consensusOf, datasetIdsOf, isDigitDataset, modelChoices, type Answer, type ModelChoice } from '../lib/selection'
+import { consensusOf, datasetIdsOf, isDigitDataset, modelChoices, modelPairs, variantId, type Answer, type ModelChoice } from '../lib/selection'
 import { useTestImages, type TestImage } from '../lib/testImages'
 
 const Explorer = lazy(() => import('../components/explorer/Explorer'))
@@ -27,14 +27,17 @@ type Source =
 
 const pixelsOf = (s: Source): Float32Array | null => (s.kind === 'pad' ? s.pre.pixels : s.kind === 'test' ? s.image.pixels : null)
 
+/** Every model id a dataset can have: each architecture and its augmented variant (a constant list). */
+const ALL_IDS: ModelId[] = MODEL_ORDER.flatMap((k) => [k, augId(k)])
+
 /**
- * Runs every model of the dataset on the same pixels. `MODEL_ORDER` is a constant, so the hooks are
+ * Runs every model of the dataset on the same pixels. `ALL_IDS` is a constant, so the hooks are
  * always called in the same order; a model the dataset does not offer (or that failed its export
- * check) gets no input and stays idle.
+ * check, or is not loaded yet) gets no input and stays idle.
  */
-function useAllExecutions(dataset: string, choices: ModelChoice[], pixels: Float32Array | null): Record<ModelKind, ExecutionState> {
-  const out = {} as Record<ModelKind, ExecutionState>
-  for (const id of MODEL_ORDER) {
+function useAllExecutions(dataset: string, choices: ModelChoice[], pixels: Float32Array | null): Record<ModelId, ExecutionState> {
+  const out = {} as Record<ModelId, ExecutionState>
+  for (const id of ALL_IDS) {
     const c = choices.find((x) => x.id === id)
     // eslint-disable-next-line react-hooks/rules-of-hooks -- fixed call order (constant list)
     out[id] = useExecution(dataset, id, c?.selectable ? pixels : null, !!c?.autoLoad)
@@ -208,11 +211,13 @@ interface CardProps {
   selected: boolean
   onSelect: () => void
   onLoad: () => void
+  /** shown in a plain / augmented pair: the row carries the model name, the card its variant */
+  paired?: boolean
 }
 
-function ModelCard({ choice, classes, exec, status, hasInput, dissent, selected, onSelect, onLoad }: CardProps) {
+function ModelCard({ choice, classes, exec, status, hasInput, dissent, selected, onSelect, onLoad, paired }: CardProps) {
   const { t } = useI18n()
-  const { id, entry, selectable } = choice
+  const { kind, entry, selectable } = choice
   const out = entry.trace.output
   const isVote = out.kind === 'vote_share'
   const ready = exec.state === 'ready' ? exec.execution : null
@@ -274,9 +279,18 @@ function ModelCard({ choice, classes, exec, status, hasInput, dissent, selected,
   }
 
   return (
-    <li className={`mcard${dissent ? ' is-dissent' : ''}${ready ? ' has-pred' : ''}${selected ? ' is-selected' : ''}${selectable ? '' : ' is-off'}`}>
+    <li
+      className={`mcard${dissent ? ' is-dissent' : ''}${ready ? ' has-pred' : ''}${selected ? ' is-selected' : ''}${selectable ? '' : ' is-off'}`}
+      data-variant={choice.augmented ? 'augmented' : 'plain'}
+    >
       <div className="mcard__head">
-        <h3 className="mcard__name">{t(`model.${id}`)}</h3>
+        <h3 className="mcard__name">
+          {/* in a pair the row shows the model name and the column header the variant */}
+          <span className={paired ? 'visually-hidden' : undefined}>
+            {t(`model.${kind}`)}
+            {paired ? ` ${choice.augmented ? t('rec.pair.augmented') : t('rec.pair.plain')}` : ''}
+          </span>
+        </h3>
         <span className="mcard__state">
           <span className={`dot dot--${st}`} aria-hidden="true" />
           {st === 'loading' ? t('rec.compare.loading') : st === 'error' ? t('rec.compare.failed') : size}
@@ -299,7 +313,7 @@ function ModelCard({ choice, classes, exec, status, hasInput, dissent, selected,
         </button>
         <details className="mcard__about">
           <summary>{t('rec.card.about')}</summary>
-          <p className="note">{t(`out.note.${id}`)}</p>
+          <p className="note">{t(`out.note.${kind}`)}</p>
           {v?.n_checked ? (
             <p className="note note--muted">
               {t('out.checked', {
@@ -315,25 +329,62 @@ function ModelCard({ choice, classes, exec, status, hasInput, dissent, selected,
   )
 }
 
-function ModelPicker({ choices, value, onChange }: { choices: ModelChoice[]; value: ModelKind | null; onChange: (id: ModelKind) => void }) {
+function ModelPicker({ ds, choices, value, onChange }: { ds: DatasetEntry; choices: ModelChoice[]; value: ModelId | null; onChange: (id: ModelId) => void }) {
   const { t } = useI18n()
+  const current = choices.find((c) => c.id === value) ?? null
+  const plain = choices.filter((c) => !c.augmented)
+  const aug = !!current?.augmented
+  const pick = (kind: ModelKind) => onChange(variantId(ds, kind, aug) ?? kind)
+  const hasVariant = !!current && !!variantId(ds, current.kind, !aug)
   return (
-    <fieldset className="mpick">
-      <legend className="visually-hidden">{t('rec.explore.pick')}</legend>
-      <div className="mpick__row">
-        {choices.map((c) => (
-          <label key={c.id} className={`mpick__opt${c.selectable ? '' : ' is-off'}`}>
-            <input type="radio" name="explore-model" value={c.id} checked={c.id === value} disabled={!c.selectable} onChange={() => onChange(c.id)} />
-            <span className="mpick__pill">
-              <span className="mpick__name">{t(`model.${c.id}`)}</span>
-              <span className="mpick__meta num">
-                {c.selectable ? (c.autoLoad ? bytes(c.bytes) : t('rec.explore.download', { size: bytes(c.bytes) })) : t('rec.explore.blocked')}
-              </span>
-            </span>
-          </label>
-        ))}
-      </div>
-    </fieldset>
+    <div className="mpick">
+      <fieldset className="mpick__set">
+        <legend className="visually-hidden">{t('rec.explore.pick')}</legend>
+        <div className="mpick__row">
+          {plain.map((c) => {
+            const shown = (current?.kind === c.kind ? current : null) ?? choices.find((x) => x.id === variantId(ds, c.kind, aug)) ?? c
+            return (
+              <label key={c.kind} className={`mpick__opt${shown.selectable ? '' : ' is-off'}`}>
+                <input type="radio" name="explore-model" value={c.kind} checked={current?.kind === c.kind} disabled={!shown.selectable} onChange={() => pick(c.kind)} />
+                <span className="mpick__pill">
+                  <span className="mpick__name">{t(`model.${c.kind}`)}</span>
+                  <span className="mpick__meta num">
+                    {shown.selectable ? (shown.autoLoad ? bytes(shown.bytes) : t('rec.explore.download', { size: bytes(shown.bytes) })) : t('rec.explore.blocked')}
+                  </span>
+                </span>
+              </label>
+            )
+          })}
+        </div>
+      </fieldset>
+      {(hasVariant || aug) && current && (
+        <div className="mpick__variant" role="group" aria-label={t('rec.pair.variant')}>
+          {[false, true].map((a) => {
+            const id = variantId(ds, current.kind, a)
+            return (
+              <button key={String(a)} type="button" className="mpick__vbtn" aria-pressed={aug === a} disabled={!id} onClick={() => id && onChange(id)}>
+                {a ? t('rec.pair.augmented') : t('rec.pair.plain')}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Downloads every augmented variant of the dataset that is not loaded yet. */
+function LoadVariants({ choices, dataset, onLoad }: { choices: ModelChoice[]; dataset: string; onLoad: (ids: ModelId[]) => void }) {
+  const { t } = useI18n()
+  const { registry } = useBundle()
+  const statuses = useSyncExternalStore(registry.subscribe, registry.getSnapshot)
+  const waiting = choices.filter((c) => c.augmented && c.selectable && (statuses[`${dataset}/${c.id}`]?.state ?? 'idle') === 'idle')
+  if (!waiting.length) return null
+  const size = waiting.reduce((a, c) => a + c.bytes, 0)
+  return (
+    <button type="button" className="btn btn--quiet btn--small" onClick={() => onLoad(waiting.map((c) => c.id))}>
+      {t('rec.pair.loadAll', { n: waiting.length, size: bytes(size) })}
+    </button>
   )
 }
 
@@ -346,6 +397,8 @@ export default function Recognise() {
   const choices = useMemo(() => modelChoices(ds), [ds])
   const digits = isDigitDataset(ds)
   const nKinds = useMemo(() => new Set(Object.values(manifest.datasets).flatMap((d) => Object.keys(d.models))).size, [manifest])
+  const pairs = useMemo(() => modelPairs(choices), [choices])
+  const paired = choices.some((c) => c.augmented)
 
   const padRef = useRef<DigitPadHandle>(null)
   const exploreRef = useRef<HTMLElement>(null)
@@ -353,7 +406,7 @@ export default function Recognise() {
   const pixels = pixelsOf(source)
 
   const statuses = useSyncExternalStore(registry.subscribe, registry.getSnapshot)
-  const statusOf = (id: ModelKind): ModelStatus => statuses[`${dataset}/${id}`] ?? { state: 'idle' }
+  const statusOf = (id: ModelId): ModelStatus => statuses[`${dataset}/${id}`] ?? { state: 'idle' }
 
   const touched = useRef(false)
   const loadEager = useCallback(() => {
@@ -403,7 +456,10 @@ export default function Recognise() {
   const running = choices.filter((c) => c.selectable && pixels && (execs[c.id].state === 'running' || statusOf(c.id).state === 'loading')).length
   const verdict = consensusOf(answers)
   const verdictName = verdict ? classes[verdict.cls] : null
-  const nameOf = (id: ModelKind) => t(`model.${id}`)
+  const nameOf = (id: ModelId) => {
+    const c = choices.find((x) => x.id === id)
+    return c ? `${t(`model.${c.kind}`)}${c.augmented ? ` (${t('rec.pair.augmented')})` : ''}` : id
+  }
 
   let say: string
   if (verdict && verdictName) {
@@ -431,21 +487,36 @@ export default function Recognise() {
     return () => window.clearTimeout(id)
   }, [announceText])
 
-  const select = (id: ModelKind) => {
+  const select = (id: ModelId) => {
     setModel(id)
     exploreRef.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' })
   }
 
   const testLabel = source.kind === 'test' ? classes[source.image.label] : null
-  const inputChip =
-    source.kind === 'test'
-      ? t('rec.chip.inputTest', { index: source.image.index, name: classes[source.image.label] })
-      : source.kind === 'pad'
-        ? source.upload
-          ? t('rec.chip.inputUpload')
-          : t('rec.chip.inputDrawing')
-        : t('rec.chip.inputNone')
-
+  const renderCard = (c: ModelChoice, inPair: boolean) => {
+    const e = execs[c.id]
+    // in the paired grid the comparison that matters is within the row (marked there), not with the majority
+    const dissent = !inPair && !!(e.state === 'ready' && verdict && verdict.of > 1 && e.execution.top !== verdict.cls)
+    return (
+      <ModelCard
+        key={c.id}
+        choice={c}
+        dataset={dataset}
+        classes={classes}
+        exec={e}
+        status={statusOf(c.id)}
+        hasInput={!!pixels}
+        dissent={dissent}
+        selected={c.id === model}
+        onSelect={() => select(c.id)}
+        onLoad={() => {
+          onIntent()
+          registry.load(dataset, c.id).catch(() => undefined)
+        }}
+        paired={inPair}
+      />
+    )
+  }
   return (
     <div className="console">
       <section className="intro">
@@ -534,30 +605,39 @@ export default function Recognise() {
             </p>
           )}
 
-          <ul className="models">
-            {choices.map((c) => {
-              const e = execs[c.id]
-              const dissent = !!(e.state === 'ready' && verdict && verdict.of > 1 && e.execution.top !== verdict.cls)
-              return (
-                <ModelCard
-                  key={c.id}
-                  choice={c}
-                  dataset={dataset}
-                  classes={classes}
-                  exec={e}
-                  status={statusOf(c.id)}
-                  hasInput={!!pixels}
-                  dissent={dissent}
-                  selected={c.id === model}
-                  onSelect={() => select(c.id)}
-                  onLoad={() => {
-                    onIntent()
-                    registry.load(dataset, c.id).catch(() => undefined)
-                  }}
-                />
-              )
-            })}
-          </ul>
+          {paired ? (
+            <div className="pairs">
+              <div className="pairs__head">
+                <span className="pairs__col" aria-hidden="true">
+                  {t('rec.pair.augmented')}
+                </span>
+                <span className="pairs__col" aria-hidden="true">
+                  {t('rec.pair.plain')}
+                </span>
+                <LoadVariants choices={choices} dataset={dataset} onLoad={(ids) => (onIntent(), ids.forEach((id) => registry.load(dataset, id).catch(() => undefined)))} />
+              </div>
+              <ul className="models models--paired">
+                {pairs.map((p) => {
+                  const a = p.augmented ? execs[p.augmented.id] : null
+                  const b = p.plain ? execs[p.plain.id] : null
+                  const differ = a?.state === 'ready' && b?.state === 'ready' && a.execution.top !== b.execution.top
+                  return (
+                    <li key={p.kind} className={`mpair${differ ? ' is-split' : ''}`} aria-label={t(`model.${p.kind}`)}>
+                      <p className="mpair__name">
+                        {t(`model.${p.kind}`)}
+                        {differ && <span className="mpair__diff">{t('rec.pair.differ')}</span>}
+                      </p>
+                      <ul className="mpair__cells">
+                        {[p.augmented, p.plain].map((c, i) => (c ? renderCard(c, true) : <li key={i} className="mcard mcard--none" aria-hidden="true" />))}
+                      </ul>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          ) : (
+            <ul className="models">{choices.map((c) => renderCard(c, false))}</ul>
+          )}
           <p className="visually-hidden" role="status" aria-live="polite">
             {announce}
           </p>
@@ -572,29 +652,8 @@ export default function Recognise() {
             </span>
             {t('rec.explore.title')}
           </h2>
-          <p className="explore-sec__lede">{t('rec.explore.lede')}</p>
+          <ModelPicker ds={ds} choices={choices} value={model} onChange={setModel} />
         </header>
-        <ModelPicker choices={choices} value={model} onChange={setModel} />
-        <ul className="chips" aria-label={t('rec.chip.aria')}>
-          <li className="chips__item">
-            <span className="chips__key">{t('rec.chip.model')}</span>
-            {model ? nameOf(model) : t('common.none')}
-          </li>
-          <li className="chips__item">
-            <span className="chips__key">{t('rec.chip.datasetKey')}</span>
-            {ds.title}
-          </li>
-          <li className="chips__item">
-            <span className="chips__key">{t('rec.chip.input')}</span>
-            {inputChip}
-          </li>
-        </ul>
-        {!pixels && (
-          <p className="explore-sec__hint">
-            <ArrowDown size={14} weight="bold" aria-hidden="true" style={{ transform: 'rotate(180deg)' }} />
-            {t('rec.explore.empty')}
-          </p>
-        )}
         {model ? (
           <Suspense
             fallback={

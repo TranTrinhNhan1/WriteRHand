@@ -91,7 +91,9 @@ def _weights(kind, model):
     return [t.numpy() for t in model._params()]
 
 
-def record_replay(kind, model_cls, params, data, meta, deployed_path, dataset, log=print):
+def record_replay(
+    kind, model_cls, params, data, meta, deployed_path, dataset, log=print, fit_xy=None
+):
     """Re-train ``model_cls(**params)`` with a snapshot callback; returns the replay dictionary."""
     mean, std = meta["mean"], meta["std"]
     idx = pick_samples(data["y_train"])
@@ -114,7 +116,8 @@ def record_replay(kind, model_cls, params, data, meta, deployed_path, dataset, l
         }
         raw[epoch] = [np.array(w, copy=True) for w in _weights(kind, m)]  # exact copy for the check
 
-    model.fit(data["X_train"], data["y_train"], data["X_val"], data["y_val"], callback=cb)
+    Xf, yf = fit_xy if fit_xy is not None else (data["X_train"], data["y_train"])
+    model.fit(Xf, yf, data["X_val"], data["y_val"], callback=cb)
     hist = model.history
     n_ep = len(hist["loss"])
     # epochs actually trained may be fewer than the maximum: keep only the snapshots that exist

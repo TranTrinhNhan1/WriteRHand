@@ -38,6 +38,8 @@ test chỉ để báo cáo. Bảng này được sinh tự động từ `results
 | Stacking (6 models) | 99.83 | 99.12 | 99.05 | 99.05 | 99.04 | 99.04 | 1.0 | 2.204 | 23.789 |
 <!-- BENCHMARK:END -->
 
+Mỗi mô hình còn có bản tăng cường (`<Model>_aug`: ảnh gốc cộng 2 bản sao xoay ±30°, dịch ±2 px, co giãn 0.9–1.1) dùng cho phần so sánh trên web; số liệu ở `results/augmentation_pairs.json` và báo cáo mục 6.2. Tăng cường giúp MLP, AdaBoost, CNN (kể cả ảnh sạch) nhưng làm Naïve Bayes và softmax kém đi.
+
 Stacking: cột Fit chỉ tính meta-learner (1.0 s); tổng thời gian huấn luyện gồm cả sáu mô hình cơ sở. Meta-learner học trên tập validation nên accuracy validation của stacking không phải ước lượng sạch (kiểm định chéo 5 phần trên validation: 98.69%). SVM và stacking chưa xuất sang web.
 
 Chi tiết: báo cáo `report/main.pdf`, slide `slides/WriteRHand-slides.pdf`, notebook `notebooks/`, nhật ký thí nghiệm `results/`.
@@ -60,6 +62,9 @@ uv run python -m src tune --model all         # quét siêu tham số (chỉ tra
 uv run python -m src train --model all        # huấn luyện cấu hình đã chọn, đánh giá train/val/test -> results/final/
 uv run python -m src baselines --model all    # đối chứng scikit-learn cùng giao thức -> results/baselines/
 uv run python -m src stack                    # stacking: meta-learner trên validation -> results/final/StackingEnsemble.json
+uv run python -m src augment-select --model mlp   # chọn mức xoay của bản tăng cường trên validation -> results/augmentation_deploy_mlp.json
+uv run python -m src train --model cnn --augment --wandb disabled   # bản <Model>_aug (lặp cho từng mô hình)
+uv run python -m src augment-pairs            # so sánh thường / tăng cường (ảnh sạch, ảnh xoay) -> results/augmentation_pairs.json
 uv run python -m src augment --model mlp --seeds 3   # đối chứng tăng cường dữ liệu (mlp | cnn) -> results/augmentation_<model>.json
 uv run python -m src compare                  # CNN so với MLP (McNemar, độ bền) -> results/cnn_vs_mlp.json
 uv run python -m src replay --model mlp       # ghi lại điểm kiểm tra huấn luyện thật cho trình khám phá -> artifacts/replay/

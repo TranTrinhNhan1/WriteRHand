@@ -73,7 +73,6 @@ export default function SoftmaxView({ classes, loaded, execution }: ExplorerView
 
   return (
     <div className="exc">
-      <p className="exc-intro">{t('ex.sm.intro')}</p>
 
       <section className="exc-sec" aria-label={t('ex.sm.classTitle')}>
         <h4 className="exc-h">{t('ex.sm.classTitle')}</h4>
@@ -117,7 +116,6 @@ export default function SoftmaxView({ classes, loaded, execution }: ExplorerView
               { swatch: 'mark', text: t('ex.classic.legSel') },
             ]}
           />
-          <p className="note note--muted">{t('ex.classic.mapHint')}</p>
         </section>
 
         <section className="exc-inspect" aria-label={t('ex.sm.inspectTitle')}>

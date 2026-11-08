@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseBundleManifest, ContractError, modelsOf, type ModelKind } from '../src/engine/contract'
+import { parseBundleManifest, ContractError, kindOf, modelIdsOf, modelsOf, type ModelKind } from '../src/engine/contract'
 import { matches } from '../src/engine/store'
 import { subtreeSizes } from '../src/engine/adaboost'
 import * as R from '../src/engine/reconstruct'
@@ -20,6 +20,29 @@ describe.skipIf(!hasBundle)('manifest contract', () => {
     const m = loadManifest()
     expect(Object.keys(m.datasets).length).toBeGreaterThan(0)
     for (const ds of Object.values(m.datasets)) expect(modelsOf(ds).length).toBeGreaterThan(0)
+  })
+
+  it('pairs each architecture with its augmented variant by id, and rejects an id that does not match its entry', () => {
+    const m = loadManifest()
+    for (const ds of Object.values(m.datasets)) {
+      const ids = modelIdsOf(ds)
+      expect(ids.slice().sort()).toEqual(Object.keys(ds.models).sort())
+      for (const id of ids) {
+        const e = ds.models[id]!
+        expect(id === kindOf(e) || id === `${kindOf(e)}_aug`).toBe(true)
+        expect(e.augmented === true).toBe(id.endsWith('_aug'))
+      }
+    }
+    const raw2 = raw() as never as { datasets: Record<string, { models: Record<string, { augmented?: boolean; kind?: string }> }> }
+    const first = Object.entries(raw2.datasets).find(([, d]) => d.models.mlp_aug)
+    if (first) {
+      const wrongFlag = structuredClone(raw2)
+      wrongFlag.datasets[first[0]].models.mlp_aug.augmented = false
+      expect(() => parseBundleManifest(wrongFlag)).toThrow(ContractError)
+      const wrongId = structuredClone(raw2)
+      wrongId.datasets[first[0]].models.cnn_aug = wrongId.datasets[first[0]].models.mlp_aug
+      expect(() => parseBundleManifest(wrongId)).toThrow(ContractError)
+    }
   })
 
   it('rejects a wrong schema, an inconsistent shape and a tampered parameter index', () => {
@@ -48,7 +71,9 @@ describe.skipIf(!hasBundle)('browser inference and trace reconstruction match Py
 
   for (const [dsId, ds] of Object.entries(manifest?.datasets ?? {})) {
     const vectors = readJson<TestVectors>(ds.test_vectors)
-    for (const model of modelsOf(ds)) {
+    // every model of the manifest, augmented variants included (expected values are keyed by model id)
+    for (const model of modelIdsOf(ds)) {
+      const kind = kindOf(ds.models[model]!)
       it(`${dsId}/${model}: predictions, logits and trace values`, async () => {
         const lm = await registry!.load(dsId, model)
         const exp = vectors.expected[model]
@@ -62,12 +87,12 @@ describe.skipIf(!hasBundle)('browser inference and trace reconstruction match Py
           for (let k = 0; k < ex.probs.length; k++) worst = Math.max(worst, Math.abs(ex.probs[k] - exp.proba[i][k]))
           if (exp.logits) {
             const lg = ex.outputs.logits
-            for (let k = 0; k < lg.length; k++) expect(Math.abs(lg[k] - exp.logits[i][k])).toBeLessThan(model === 'naive_bayes' ? 0.05 : 5e-3)
+            for (let k = 0; k < lg.length; k++) expect(Math.abs(lg[k] - exp.logits[i][k])).toBeLessThan(kind === 'naive_bayes' ? 0.05 : 5e-3)
           }
-          reconWorst = Math.max(reconWorst, reconstructionError(model, lm, ex))
+          reconWorst = Math.max(reconWorst, reconstructionError(kind, lm, ex))
         }
-        expect(worst).toBeLessThan(TOL_PROBA[model])
-        expect(reconWorst).toBeLessThan(model === 'naive_bayes' ? 0.05 : 5e-3)
+        expect(worst).toBeLessThan(TOL_PROBA[kind])
+        expect(reconWorst).toBeLessThan(kind === 'naive_bayes' ? 0.05 : 5e-3)
       })
     }
   }

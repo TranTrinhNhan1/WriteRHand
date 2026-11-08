@@ -1,0 +1,329 @@
+{
+ "schema": 1,
+ "rotation_angles": [
+  0,
+  10,
+  20,
+  30,
+  45,
+  90
+ ],
+ "note": "rotation a: every test image rotated by a random angle in [-a, a] degrees",
+ "models": {
+  "naive_bayes": {
+   "plain": {
+    "class": "GaussianNB",
+    "train_acc": 0.80132,
+    "val_acc": 0.7967,
+    "test_acc": 0.8132,
+    "test_f1_macro": 0.8115551882837904,
+    "fit_time_sec": 0.4448124929331243,
+    "latency_ms": 0.07645145524293184,
+    "augmentation": null,
+    "test_rotation_acc": {
+     "0": 0.8132,
+     "10": 0.7874,
+     "20": 0.7475,
+     "30": 0.6883,
+     "45": 0.5777,
+     "90": 0.3612
+    },
+    "test_stress_acc": {
+     "rotation": 0.7475,
+     "translation": 0.5114,
+     "scaling": 0.7235,
+     "gaussian_noise": 0.8362,
+     "salt_pepper": 0.8181
+    }
+   },
+   "augmented": {
+    "class": "GaussianNB_aug",
+    "train_acc": 0.6904,
+    "val_acc": 0.6921,
+    "test_acc": 0.7064,
+    "test_f1_macro": 0.7060508100172447,
+    "fit_time_sec": 1.4410602198913693,
+    "latency_ms": 0.14978949911892414,
+    "augmentation": {
+     "ops": [
+      "rotation",
+      "translation",
+      "scaling"
+     ],
+     "k": 2,
+     "seed": 123,
+     "ranges": {
+      "rotation": 30.0
+     }
+    },
+    "test_rotation_acc": {
+     "0": 0.7064,
+     "10": 0.6711,
+     "20": 0.6467,
+     "30": 0.6115,
+     "45": 0.5381,
+     "90": 0.3499
+    },
+    "test_stress_acc": {
+     "rotation": 0.6467,
+     "translation": 0.5111,
+     "scaling": 0.6024,
+     "gaussian_noise": 0.8052,
+     "salt_pepper": 0.7783
+    }
+   }
+  },
+  "softmax": {
+   "plain": {
+    "class": "SoftmaxRegression",
+    "train_acc": 0.93618,
+    "val_acc": 0.9215,
+    "test_acc": 0.9252,
+    "test_f1_macro": 0.9241584604276148,
+    "fit_time_sec": 12.692637407919392,
+    "latency_ms": 0.009564915671944618,
+    "augmentation": null,
+    "test_rotation_acc": {
+     "0": 0.9252,
+     "10": 0.913,
+     "20": 0.8702,
+     "30": 0.8045,
+     "45": 0.6879,
+     "90": 0.4334
+    },
+    "test_stress_acc": {
+     "rotation": 0.8702,
+     "translation": 0.5462,
+     "scaling": 0.8269,
+     "gaussian_noise": 0.8769,
+     "salt_pepper": 0.8899
+    }
+   },
+   "augmented": {
+    "class": "SoftmaxRegression_aug",
+    "train_acc": 0.89546,
+    "val_acc": 0.885,
+    "test_acc": 0.8948,
+    "test_f1_macro": 0.893403473428509,
+    "fit_time_sec": 28.46707920404151,
+    "latency_ms": 0.009344890713691711,
+    "augmentation": {
+     "ops": [
+      "rotation",
+      "translation",
+      "scaling"
+     ],
+     "k": 2,
+     "seed": 123,
+     "ranges": {
+      "rotation": 30.0
+     }
+    },
+    "test_rotation_acc": {
+     "0": 0.8948,
+     "10": 0.888,
+     "20": 0.8692,
+     "30": 0.8383,
+     "45": 0.7561,
+     "90": 0.4991
+    },
+    "test_stress_acc": {
+     "rotation": 0.8692,
+     "translation": 0.631,
+     "scaling": 0.8345,
+     "gaussian_noise": 0.7768,
+     "salt_pepper": 0.8112
+    }
+   }
+  },
+  "mlp": {
+   "plain": {
+    "class": "MLP",
+    "train_acc": 0.99868,
+    "val_acc": 0.9818,
+    "test_acc": 0.9824,
+    "test_f1_macro": 0.9823122541446068,
+    "fit_time_sec": 11.020775095093995,
+    "latency_ms": 0.04246947355568409,
+    "augmentation": null,
+    "test_rotation_acc": {
+     "0": 0.9824,
+     "10": 0.9788,
+     "20": 0.96,
+     "30": 0.9202,
+     "45": 0.8218,
+     "90": 0.5271
+    },
+    "test_stress_acc": {
+     "rotation": 0.96,
+     "translation": 0.7286,
+     "scaling": 0.9671,
+     "gaussian_noise": 0.9731,
+     "salt_pepper": 0.9756
+    }
+   },
+   "augmented": {
+    "class": "MLP_aug",
+    "train_acc": 0.99228,
+    "val_acc": 0.9804,
+    "test_acc": 0.9841,
+    "test_f1_macro": 0.9839724453709129,
+    "fit_time_sec": 20.92376235104166,
+    "latency_ms": 0.06072642281651497,
+    "augmentation": {
+     "ops": [
+      "rotation",
+      "translation",
+      "scaling"
+     ],
+     "k": 2,
+     "seed": 123,
+     "ranges": {
+      "rotation": 30.0
+     }
+    },
+    "test_rotation_acc": {
+     "0": 0.9841,
+     "10": 0.9816,
+     "20": 0.9792,
+     "30": 0.9736,
+     "45": 0.9456,
+     "90": 0.6875
+    },
+    "test_stress_acc": {
+     "rotation": 0.9792,
+     "translation": 0.9448,
+     "scaling": 0.9741,
+     "gaussian_noise": 0.9726,
+     "salt_pepper": 0.9768
+    }
+   }
+  },
+  "adaboost": {
+   "plain": {
+    "class": "AdaBoostSAMME",
+    "train_acc": 1.0,
+    "val_acc": 0.9759,
+    "test_acc": 0.976,
+    "test_f1_macro": 0.9757996665952475,
+    "fit_time_sec": 817.855086757103,
+    "latency_ms": 18.705379916355014,
+    "augmentation": null,
+    "test_rotation_acc": {
+     "0": 0.976,
+     "10": 0.9677,
+     "20": 0.9488,
+     "30": 0.9064,
+     "45": 0.8101,
+     "90": 0.5296
+    },
+    "test_stress_acc": {
+     "rotation": 0.9488,
+     "translation": 0.6853,
+     "scaling": 0.9542,
+     "gaussian_noise": 0.746,
+     "salt_pepper": 0.973
+    }
+   },
+   "augmented": {
+    "class": "AdaBoostSAMME_aug",
+    "train_acc": 0.99908,
+    "val_acc": 0.9757,
+    "test_acc": 0.9794,
+    "test_f1_macro": 0.9792221066836874,
+    "fit_time_sec": 1373.214824642986,
+    "latency_ms": 17.844782443717122,
+    "augmentation": {
+     "ops": [
+      "rotation",
+      "translation",
+      "scaling"
+     ],
+     "k": 2,
+     "seed": 123,
+     "ranges": {
+      "rotation": 30.0
+     }
+    },
+    "test_rotation_acc": {
+     "0": 0.9794,
+     "10": 0.977,
+     "20": 0.9726,
+     "30": 0.9676,
+     "45": 0.9407,
+     "90": 0.6876
+    },
+    "test_stress_acc": {
+     "rotation": 0.9726,
+     "translation": 0.9166,
+     "scaling": 0.9697,
+     "gaussian_noise": 0.7044,
+     "salt_pepper": 0.9763
+    }
+   }
+  },
+  "cnn": {
+   "plain": {
+    "class": "CNN",
+    "train_acc": 0.99396,
+    "val_acc": 0.9865,
+    "test_acc": 0.988,
+    "test_f1_macro": 0.9879154896729959,
+    "fit_time_sec": 143.00712883402593,
+    "latency_ms": 0.31528936233371496,
+    "augmentation": null,
+    "test_rotation_acc": {
+     "0": 0.988,
+     "10": 0.985,
+     "20": 0.9746,
+     "30": 0.9432,
+     "45": 0.8551,
+     "90": 0.5585
+    },
+    "test_stress_acc": {
+     "rotation": 0.9746,
+     "translation": 0.8814,
+     "scaling": 0.9848,
+     "gaussian_noise": 0.9807,
+     "salt_pepper": 0.9771
+    }
+   },
+   "augmented": {
+    "class": "CNN_aug",
+    "train_acc": 0.99654,
+    "val_acc": 0.9892,
+    "test_acc": 0.9921,
+    "test_f1_macro": 0.9921153350723682,
+    "fit_time_sec": 337.2500831899233,
+    "latency_ms": 0.3976094303652644,
+    "augmentation": {
+     "ops": [
+      "rotation",
+      "translation",
+      "scaling"
+     ],
+     "k": 2,
+     "seed": 123,
+     "ranges": {
+      "rotation": 30.0
+     }
+    },
+    "test_rotation_acc": {
+     "0": 0.9921,
+     "10": 0.9903,
+     "20": 0.9895,
+     "30": 0.9866,
+     "45": 0.9722,
+     "90": 0.7424
+    },
+    "test_stress_acc": {
+     "rotation": 0.9895,
+     "translation": 0.9773,
+     "scaling": 0.9898,
+     "gaussian_noise": 0.9124,
+     "salt_pepper": 0.9371
+    }
+   }
+  }
+ }
+}

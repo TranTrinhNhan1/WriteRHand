@@ -115,7 +115,7 @@ export function TreeDiagram({ ens, t, round, classes, width, fullDepth, animate 
         </svg>
       </div>
       <p className="exc-tree__detail num" aria-live="polite">
-        {shown ? describe(shown) : tr('ex.ada.treeHint')}
+        {shown ? describe(shown) : '\u00a0'}
       </p>
       <p className="exc-fig__cap">{tr('ex.ada.treeCap', { shown: compact.shown, stubs: nodes.filter((n) => n.kind === 'stub').length, collapsed: compact.collapsed, total: compact.total, d: fullDepth + 1 })}</p>
     </div>

@@ -6,7 +6,7 @@ bundle/
   <dataset>/                       mnist | fashion_mnist | emnist_digits
     models/<id>.onnx               naive_bayes, softmax, mlp, cnn   (input pixels/255, output probabilities)
     models/<id>.params.bin         learned parameters for the execution explorer (float32, indexed in manifest)
-    models/adaboost.bin            SAMME ensemble (evaluated by a small typed-array reader in the browser)
+    models/<id>.bin                SAMME ensemble: adaboost, adaboost_aug (small typed-array reader in the browser)
     python/<Class>.npz             original NumPy/torch weights (load with BaseClassifier.load)
     test_vectors.json              raw test images + expected outputs (browser/ONNX parity tests)
     results.json                   metrics used by the website dashboard
@@ -53,6 +53,18 @@ TITLES = {
     "adaboost": "AdaBoost (SAMME)",
 }
 TOL = {"naive_bayes": 1e-3, "softmax": 1e-4, "mlp": 1e-4, "cnn": 1e-4}
+
+# every model also has an augmented variant (same architecture, trained on the original images plus
+# randomly rotated / shifted / scaled copies): id ``<id>_aug``, class ``<Class>_aug``
+AUG_SUFFIX = "_aug"
+for _mid, (_cname, _builder) in list(EXPORTS.items()):
+    EXPORTS[_mid + AUG_SUFFIX] = (_cname + AUG_SUFFIX, _builder)
+    TITLES[_mid + AUG_SUFFIX] = TITLES[_mid] + " (augmented)"
+
+
+def base_kind(mid):
+    """Model kind of an export id: ``mlp_aug`` -> ``mlp``."""
+    return mid.removesuffix(AUG_SUFFIX)
 
 
 def _validate_onnx(proto, P, ref_proba, tol):
@@ -123,13 +135,14 @@ def export_dataset(bundle, name, artifacts_dir, results_dir, log=print):
         if not npz.is_file():
             log(f"[{name}] skip {mid}: {npz} not found")
             continue
+        kind = base_kind(mid)
         model = BaseClassifier.load(npz)
         shutil.copy(npz, root / "python" / f"{cname}.npz")
         ref = model.predict_proba(Xn)
         extra = None
-        if mid == "adaboost":
+        if kind == "adaboost":
             blob = adaboost_to_binary(model, mean, std)
-            path = root / "models" / "adaboost.bin"
+            path = root / "models" / f"{mid}.bin"
             path.write_bytes(blob)
             parsed = adaboost_from_binary(blob)
             got = adaboost_predict_binary(parsed, P[check_idx])
@@ -140,7 +153,7 @@ def export_dataset(bundle, name, artifacts_dir, results_dir, log=print):
                 "n_checked": int(len(check_idx)),
                 "ok": diff < 1e-9,
             }
-            fmt, fname = "binary", "models/adaboost.bin"
+            fmt, fname = "binary", f"models/{mid}.bin"
             extra = {
                 "n_estimators": len(parsed["alphas"]),
                 "node_counts": parsed["node_counts"],
@@ -151,10 +164,10 @@ def export_dataset(bundle, name, artifacts_dir, results_dir, log=print):
             path = root / "models" / f"{mid}.onnx"
             onnx.save(proto, path)
             outs, check = _validate_onnx(
-                proto, P[check_idx].astype(np.float32), ref[check_idx], TOL[mid]
+                proto, P[check_idx].astype(np.float32), ref[check_idx], TOL[kind]
             )
             fmt, fname = "onnx", f"models/{mid}.onnx"
-        trace, pack = build_trace(mid, model, mean, std, spec["classes"], extra)
+        trace, pack = build_trace(kind, model, mean, std, spec["classes"], extra)
         if fmt == "onnx":
             _check_runtime_shapes(trace, outs)
         if not check["ok"]:
@@ -180,12 +193,17 @@ def export_dataset(bundle, name, artifacts_dir, results_dir, log=print):
             "proba": np.round(out_vec, 6).tolist(),
         }
         if fmt == "onnx":
-            vectors["expected"][mid]["logits"] = _logits_for(model, Xn[vec_idx], mid)
+            vectors["expected"][mid]["logits"] = _logits_for(model, Xn[vec_idx], kind)
         replay = _copy_replay(
             Path(artifacts_dir) / "replay" / f"{cname}.json", root, mid, name, files
         )
         models[mid] = {
             "title": TITLES[mid],
+            "kind": kind,
+            "augmented": mid.endswith(AUG_SUFFIX),
+            "augmentation": _augmentation_of(results_dir, cname)
+            if mid.endswith(AUG_SUFFIX)
+            else None,
             "class": cname,
             "format": fmt,
             "file": fname,
@@ -202,6 +220,9 @@ def export_dataset(bundle, name, artifacts_dir, results_dir, log=print):
             f"[{name}] exported {mid:12s} {fmt:6s} {path.stat().st_size / 1024:9.1f} KiB   "
             f"max|dp|={check['max_abs_prob_diff']:.2e}  argmax agreement={check['argmax_agreement']:.4f}"
         )
+    names = [m["file"] for m in models.values()]
+    if len(names) != len(set(names)):
+        raise SystemExit(f"[{name}] two models share one file: {sorted(names)}")
     vp = root / "test_vectors.json"
     vp.write_text(json.dumps(vectors), encoding="utf-8")
     files[f"{name}/test_vectors.json"] = sha256_file(vp)
@@ -243,7 +264,7 @@ def _copy_replay(src, root, mid, dataset, files):
     if (
         rep["deployed_epoch"] is None
         or rep["schema"] != "writerhand.replay/1"
-        or rep["model"] != mid
+        or rep["model"] != base_kind(mid)
         or rep["dataset"] != dataset
     ):
         raise SystemExit(f"replay {src} does not belong to {dataset}/{mid}")
@@ -264,6 +285,14 @@ def _copy_replay(src, root, mid, dataset, files):
     digest = sha256_file(dst)
     files[f"{dataset}/replay/{mid}.replay.json"] = digest
     return {"file": f"replay/{mid}.replay.json", "sha256": digest, "size_bytes": dst.stat().st_size}
+
+
+def _augmentation_of(results_dir, cname):
+    """Augmentation recipe recorded in ``results/final/<Class>.json`` of an augmented variant."""
+    path = Path(results_dir) / "final" / f"{cname}.json"
+    return (
+        json.loads(path.read_text(encoding="utf-8")).get("augmentation") if path.is_file() else None
+    )
 
 
 def _logits_for(model, Xn, mid):

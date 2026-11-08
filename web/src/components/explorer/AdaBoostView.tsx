@@ -89,7 +89,6 @@ export default function AdaBoostView({ classes, loaded, execution }: ExplorerVie
 
   return (
     <div className="exc">
-      <p className="exc-intro">{t('ex.ada.intro')}</p>
 
       <dl className="exc-facts">
         <div>
@@ -115,7 +114,6 @@ export default function AdaBoostView({ classes, loaded, execution }: ExplorerVie
           <dd className="num">{bytes(loaded.entry.size_bytes)}</dd>
         </div>
       </dl>
-      <p className="note note--muted">{t('ex.ada.parsedNote', { size: bytes(loaded.entry.size_bytes), ms: Math.round(loaded.loadMs) })}</p>
 
       <section className="exc-sec" aria-label={t('ex.ada.roundsTitle')}>
         <PlaybackBar pb={pb} caption={caption} unit={t('ex.ada.unitRounds')} />

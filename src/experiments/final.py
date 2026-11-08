@@ -75,9 +75,11 @@ def sklearn_counterpart(model_key, params, n_train):
     raise KeyError(model_key)
 
 
-def _evaluate_all(name, model, data, fit_kwargs, include_test, repeats):
+def _evaluate_all(name, model, data, fit_kwargs, include_test, repeats, fit_xy=None):
+    """Fit on ``fit_xy`` (default: the train split); train accuracy is always on the original train images."""
     ev = Evaluator(name, model)
-    ev.fit(data["X_train"], data["y_train"], **fit_kwargs)
+    Xf, yf = fit_xy if fit_xy is not None else (data["X_train"], data["y_train"])
+    ev.fit(Xf, yf, **fit_kwargs)
     ev.evaluate(data["X_train"], data["y_train"], "train", repeats=1)
     ev.evaluate(data["X_val"], data["y_val"], "val", repeats=repeats)
     if include_test:
@@ -96,10 +98,15 @@ def train_final(
     out_dir=None,
     art_dir=None,
     log=print,
+    augment=None,
 ):
-    """Train the selected configuration on the 50k train split and report train / val / test."""
+    """Train the selected configuration on the 50k train split and report train / val / test.
+
+    ``augment`` (a spec of ``augment.deploy_spec``) adds randomly transformed copies to the images the model
+    is fitted on; train / validation / test accuracies are still measured on the original images.
+    """
     cls = SPECS[model_key]["cls"]
-    cname = CLASS_NAME[model_key]
+    cname = CLASS_NAME[model_key] + ("_aug" if augment else "")
     out_dir = out_dir or RESULTS_DIR / "final"
     art_dir = art_dir or ARTIFACTS_DIR / cname
     model = cls(
@@ -111,7 +118,14 @@ def train_final(
     fit_kwargs = (
         {} if model_key == "naive_bayes" else {"X_val": data["X_val"], "y_val": data["y_val"]}
     )
-    ev = _evaluate_all(cname, model, data, fit_kwargs, include_test=True, repeats=repeats)
+    fit_xy = None
+    if augment:
+        from src.experiments.augment import apply_spec
+
+        fit_xy = apply_spec(data["X_train"], data["y_train"], augment)
+    ev = _evaluate_all(
+        cname, model, data, fit_kwargs, include_test=True, repeats=repeats, fit_xy=fit_xy
+    )
     latency = single_sample_latency_ms(model, data["X_test"])
     res = ev.results
     res.update(
@@ -128,7 +142,13 @@ def train_final(
                 if len(v) and k != "lr"
             },
             "protocol": "trained on the 50k train split with the configuration chosen on validation; "
-            "test evaluated once for this configuration",
+            "test evaluated once for this configuration"
+            + (
+                "; the training images are extended with randomly transformed copies (see `augmentation`)"
+                if augment
+                else ""
+            ),
+            "augmentation": augment,
         }
     )
     if hasattr(model, "stopped_epoch_"):

@@ -33,6 +33,7 @@
 \input{../../report/generated/cross_eval_numbers}
 \input{../../report/generated/eda_stats}
 \input{../../report/generated/stacking_numbers}
+\input{../../report/generated/aug_pairs_numbers}
 \newcommand{\fig}[2][\linewidth]{\includegraphics[width=#1]{#2}}
 
 \title{So sánh các bộ phân lớp tự cài đặt trên MNIST}
@@ -276,10 +277,11 @@
 % 12
 \begin{frame}{Nâng cao: tăng cường dữ liệu}
   \centering
-  \fig[0.8\linewidth]{augmentation_cnn.png}\par\smallskip
-  \footnotesize
-  \begin{minipage}{0.92\linewidth}
-    Xoay, dịch, co giãn, nhiễu Gauss, nhiễu muối tiêu; chỉ áp dụng cho tập train. Hình: CNN, 2 seed. Cả năm phép: test $99.25\%$ so với $98.82\%$ của điều kiện gốc. Với MLP, phép dịch nâng accuracy trên ảnh bị dịch từ $72.1$ lên $94.5\%$; mức tăng trên ảnh sạch nằm trong độ lệch chuẩn giữa các seed. Mỗi điều kiện có dữ liệu gấp đôi điều kiện gốc nên loại biến đổi và lượng dữ liệu bị lẫn.
+  \fig[0.97\linewidth]{aug_pairs.png}\par\medskip
+  \footnotesize\raggedright
+  \begin{minipage}{0.94\linewidth}
+    Xoay, dịch, co giãn, nhiễu Gauss, nhiễu muối tiêu; chỉ áp dụng cho tập train. Hình: bản thường (nét đứt) và bản tăng cường (nét liền; xoay $\pm30^\circ$, dịch $\pm2$, co giãn $[0.9,1.1]$, thêm 2 bản sao) trên ảnh test bị xoay. MLP, AdaBoost, CNN tốt hơn trên cả ảnh sạch và ảnh xoay (CNN: \augPlainCNN\%$\to$\augTestCNN\%); Naïve Bayes (\augPlainNB\%$\to$\augTestNB\%) và softmax (\augPlainSM\%$\to$\augTestSM\%) \emph{kém hơn} trên ảnh sạch.\par\smallskip
+    Nghiên cứu từng phép với CNN (2 seed): cả năm phép cho test $99.25\%$ so với $98.82\%$. Với MLP, phép dịch nâng accuracy trên ảnh bị dịch từ $72.1$ lên $94.5\%$.
   \end{minipage}
 \end{frame}
 
@@ -300,9 +302,9 @@
     \column{0.45\linewidth}
     \footnotesize
     \bul
-      \item Vẽ hoặc chọn một chữ số, chọn bộ dữ liệu và mô hình, xem dự đoán ngay trong trình duyệt (ONNX Runtime Web).
+      \item Vẽ hoặc chọn một chữ số, xem dự đoán ngay trong trình duyệt (ONNX Runtime Web); mỗi mô hình hiện cạnh bản tăng cường của nó.
       \item Mô hình tải từ Hugging Face theo revision cố định.
-      \item Phần ``nhìn vào bên trong'' vẽ lại phép tính của chính mô hình đã triển khai và đối chiếu với đầu ra ONNX.
+      \item Phần ``nhìn vào bên trong'' vẽ lại phép tính của chính mô hình đã triển khai và đối chiếu với đầu ra ONNX; MLP và CNN vẽ 3D.
     \eul
     \column{0.53\linewidth}
     \fig{explorer_crop.png}

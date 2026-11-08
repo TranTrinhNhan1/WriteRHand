@@ -118,7 +118,7 @@ export function SoftmaxPanel({ logits, probs, classes, revealed, selected, onSel
   let top = 0
   for (let i = 1; i < probs.length; i++) if (probs[i] > probs[top]) top = i
   return (
-    <Panel id="ex-softmax-title" title={t('ex.shell.softmax.title')} sub={t('ex.shell.softmax.sub')} className="ex-softmax">
+    <Panel id="ex-softmax-title" title={t('ex.shell.softmax.title')} className="ex-softmax">
       <p className="num ex-formula">
         p<sub>k</sub> = e<sup>z<sub>k</sub> − m</sup> / Σ<sub>j</sub> e<sup>z<sub>j</sub> − m</sup>, m = max z = {fx(m, 4)}, Σ = {fx(s, 4)}
       </p>

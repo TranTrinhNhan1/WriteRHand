@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { CodedError, asCoded } from '../lib/errors'
 import { fingerprint } from './bytes'
-import type { BundleManifest, DatasetEntry, ModelKind, ReplayData } from './contract'
+import type { BundleManifest, DatasetEntry, ModelId, ReplayData } from './contract'
 import type { Booted } from './boot'
 import { matches, type Execution, type ModelRegistry, type ModelStatus } from './store'
 
@@ -22,7 +22,7 @@ export function useDataset(dataset: string): DatasetEntry {
 }
 
 /** Status of one model (idle / loading / ready / error); re-renders on change. */
-export function useModelStatus(dataset: string, model: ModelKind): ModelStatus {
+export function useModelStatus(dataset: string, model: ModelId): ModelStatus {
   const { registry } = useBundle()
   const all = useSyncExternalStore(registry.subscribe, registry.getSnapshot)
   return all[`${dataset}/${model}`] ?? { state: 'idle' }
@@ -41,7 +41,7 @@ export type ExecutionState =
  * or the pixels change the state drops to `loading` / `running` immediately, so no view can keep
  * showing the previous result. Models are loaded on demand when `autoLoad` is true.
  */
-export function useExecution(dataset: string, model: ModelKind, pixels: Float32Array | null, autoLoad = true): ExecutionState {
+export function useExecution(dataset: string, model: ModelId, pixels: Float32Array | null, autoLoad = true): ExecutionState {
   const { registry, manifest } = useBundle()
   const status = useModelStatus(dataset, model)
   const [result, setResult] = useState<{ exec: Execution } | { error: CodedError } | null>(null)
@@ -72,7 +72,7 @@ export function useExecution(dataset: string, model: ModelKind, pixels: Float32A
 }
 
 /** Recorded training run of a model (genuine checkpoints and metrics), loaded when `enabled`. */
-export function useReplay(dataset: string, model: ModelKind, enabled: boolean): { state: 'idle' | 'loading' | 'none' | 'error' | 'ready'; replay?: ReplayData; error?: CodedError } {
+export function useReplay(dataset: string, model: ModelId, enabled: boolean): { state: 'idle' | 'loading' | 'none' | 'error' | 'ready'; replay?: ReplayData; error?: CodedError } {
   const { registry } = useBundle()
   const [res, setRes] = useState<{ key: string; replay: ReplayData | null; error?: CodedError } | null>(null)
   const key = `${dataset}/${model}`

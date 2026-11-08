@@ -118,9 +118,7 @@ export default function Documents() {
   return (
     <div className="docs sheet">
       <header className="page-head">
-        <p className="eyebrow">{t('nav.documents')}</p>
         <h1 className="display">{t('docs.title')}</h1>
-        <p className="lede">{t('docs.lede')}</p>
       </header>
 
       <div className="prose docs__body">

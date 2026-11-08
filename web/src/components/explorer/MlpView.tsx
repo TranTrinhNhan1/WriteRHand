@@ -6,11 +6,14 @@ import { HeatMap } from './HeatMap'
 import { PlaybackBar } from './PlaybackBar'
 import type { ExplorerViewProps } from './types'
 import { DenseInspector } from './neural/DenseInspector'
-import { fx, int, shape } from './neural/format'
+import { fx, int } from './neural/format'
 import { NetworkGraph, type GraphColumn, type GraphEdge, type GraphSel } from './neural/NetworkGraph'
 import { denseBlocks, gridDims, reachedLayers, selectShown, strongest, type Shown } from './neural/model'
 import { useStepCaption } from './neural/steps'
 import { Panel, PreprocessStrip, SoftmaxPanel, usePersisted } from './neural/ui'
+import Net3D from './three/Net3D'
+import { NetSwitch } from './three/NetSwitch'
+import { mlpSpec } from './three/spec'
 
 export function useNarrow(q = '(max-width: 640px)'): boolean {
   const [v, setV] = useState(() => typeof window !== 'undefined' && window.matchMedia(q).matches)
@@ -173,6 +176,10 @@ export default function MlpView({ classes, loaded, execution }: ExplorerViewProp
         ? t('ex.mlp.colOutput', { a: int(blocks[c - 1].nIn), b: blocks[c - 1].nOut })
         : t(blocks[c - 1].act ? 'ex.mlp.colHidden' : 'ex.mlp.colLinear', { k: c, a: int(blocks[c - 1].nIn), b: int(blocks[c - 1].nOut) })
 
+  const spec3 = useMemo(() => mlpSpec(trace, params, out, classes), [trace, params, out, classes])
+  const sel3 = useMemo(() => ({ layer: sel.col, index: sel.neuron }), [sel.col, sel.neuron])
+  const summary3 = t('ex.three.summary', { layers: spec3.layers.map((l) => l.label).join(' → ') })
+
   const preReached = (image && reached.has(image.id) ? 1 : 0) + (flat && reached.has(flat.id) ? 1 : 0) + (std && reached.has(std.id) ? 1 : 0)
 
   return (
@@ -184,14 +191,33 @@ export default function MlpView({ classes, loaded, execution }: ExplorerViewProp
         </p>
       </div>
 
-      {std && (
-        <Panel id="ex-mlp-pre" title={t('ex.mlp.preTitle')} sub={t('ex.mlp.preSub')}>
-          <PreprocessStrip pixels={execution.pixels} x={values[0]} mean={std.mean!} std={std.std!} eps={std.eps ?? 0} flatten={!!flat} reached={preReached} side={side} />
-        </Panel>
-      )}
-
-      <Panel id="ex-mlp-net" title={t('ex.mlp.netTitle')} sub={t('ex.mlp.netSub', { k: K })} className="ex-net">
-        <NetworkGraph columns={columns} edges={edges} sel={sel} onSelect={choose} label={t('ex.mlp.graphAria', { n: columns.length })} />
+      <Panel id="ex-mlp-net" title={t('ex.mlp.netTitle')} className="ex-net">
+        <NetSwitch
+          three={(fail) => (
+            <>
+              <Net3D spec={spec3} revealed={reached} selected={sel3} onPick={(p) => choose({ col: p.layer, neuron: p.index, from: null })} label={summary3} onUnavailable={fail} />
+              <ul className="ex-lod">
+                {spec3.edges.map((e) => (
+                  <li key={e.layerId} className="num">
+                    {t('ex.three.edges', { a: names(e.from), b: names(e.to), k: e.list.length, n: int(e.total) })}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          flat={() => (
+            <>
+              <NetworkGraph columns={columns} edges={edges} sel={sel} onSelect={choose} label={t('ex.mlp.graphAria', { n: columns.length })} />
+              <ul className="ex-lod">
+                {columns.map((col, i) => (
+                  <li key={col.key}>
+                    <b className="num">{names(i)}</b> <span className="ex-lod__n">{lod(shown[i], i)}</span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        />
         <ul className="ex-legend">
           <li>
             <span className="ex-swatch ex-swatch--pos" aria-hidden="true" />
@@ -201,16 +227,14 @@ export default function MlpView({ classes, loaded, execution }: ExplorerViewProp
             <span className="ex-swatch ex-swatch--neg" aria-hidden="true" />
             {t('ex.mlp.legendNeg')}
           </li>
-          <li className="ex-legend__note">{t('ex.mlp.legendKeys')}</li>
-        </ul>
-        <ul className="ex-lod">
-          {columns.map((col, i) => (
-            <li key={col.key}>
-              <b className="num">{names(i)}</b> {layerTitle(i)}: <span className="ex-lod__n">{lod(shown[i], i)}</span>
-            </li>
-          ))}
         </ul>
       </Panel>
+
+      {std && (
+        <Panel id="ex-mlp-pre" title={t('ex.mlp.preTitle')}>
+          <PreprocessStrip pixels={execution.pixels} x={values[0]} mean={std.mean!} std={std.std!} eps={std.eps ?? 0} flatten={!!flat} reached={preReached} side={side} />
+        </Panel>
+      )}
 
       <div className="ex-inspect">
         <Panel id="ex-mlp-layer" title={layerTitle(c)} sub={c > 0 && blocks[c - 1].act ? t('ex.mlp.layerActive', { a: int(active), n: int(v.length) }) : t('ex.mlp.layerAll', { n: int(v.length) })}>
@@ -228,7 +252,6 @@ export default function MlpView({ classes, loaded, execution }: ExplorerViewProp
             }}
             className="ex-layergrid"
           />
-          <p className="ex-hint num">{t('ex.mlp.gridNote', { w: grid.w, h: grid.h, n: int(v.length) })}</p>
           <div className="ex-layerpick" role="group" aria-label={t('ex.mlp.pickLayer')}>
             {values.map((_, i) => (
               <button key={i} type="button" className="btn btn--quiet ex-chip" aria-pressed={i === c} onClick={() => choose({ col: i, neuron: argmax(values[i]), from: null })}>
@@ -287,7 +310,6 @@ export default function MlpView({ classes, loaded, execution }: ExplorerViewProp
         selected={sel.col === values.length - 1 ? sel.neuron : null}
         onSelect={(k) => choose({ col: values.length - 1, neuron: k, from: null })}
       />
-      <p className="ex-hint num">{t('ex.mlp.shapes', { s: trace.layers.map((l) => shape(l.out_shape)).join(' → ') })}</p>
     </div>
   )
 }

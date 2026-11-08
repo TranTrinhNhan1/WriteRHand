@@ -23,8 +23,10 @@ test.afterEach(async ({ page }) => {
 
 test('the page lists the dataset and all five models, none of them preselected as answered', async ({ page }) => {
   await expect(page.getByRole('radio', { name: /^MNIST/ })).toBeChecked()
-  const headings = await answers(page).getByRole('heading', { level: 3 }).allInnerTexts()
-  expect(headings).toEqual(MODEL_TITLES)
+  // MNIST: one row per model, the augmented variant on the left and the plain model on the right
+  expect(await answers(page).locator('.mpair__name').allInnerTexts()).toEqual(MODEL_TITLES)
+  for (const t of MODEL_TITLES) await expect(card(page, t)).toHaveCount(1)
+  for (const t of MODEL_TITLES) await expect(card(page, t, 'augmented')).toHaveCount(1)
   await expect(page.getByText('Bạn vẽ một chữ số trước nhé')).toBeVisible()
 })
 
@@ -139,7 +141,108 @@ test('switching to Fashion-MNIST changes the classes, the models and the answers
   await expect(page.getByText('Ankle boot')).toHaveCount(0)
 })
 
-test('results page shows the five models in the measured table', async ({ page }) => {
+test('results page shows the five browser models and the two measured-only ones', async ({ page }) => {
   await page.goto('/#/results')
-  for (const t of ['Naive Bayes', 'MLP', 'CNN', 'AdaBoost']) await expect(page.getByText(t).first()).toBeVisible()
+  for (const t of ['Naive Bayes', 'MLP', 'CNN', 'AdaBoost', 'Linear SVM', 'Stacking']) await expect(page.getByText(t).first()).toBeVisible()
+  const table = page.getByRole('region', { name: 'Các chỉ số trên tập Test' })
+  await expect(table.getByRole('row', { name: /Linear SVM.*không chạy trên trình duyệt.*91[.,]95%/ })).toBeVisible()
+  await expect(table.getByRole('row', { name: /Stacking.*không chạy trên trình duyệt.*99[.,]05%/ })).toBeVisible()
+})
+
+test('the MLP network is drawn in 3D from the trace, and the 2D drawing is one click away', async ({ page }) => {
+  await page.getByRole('button', { name: 'Vẽ số 4' }).click()
+  await waitAllAnswered(page)
+  await card(page, 'MLP').getByRole('button', { name: 'Xem bên trong' }).click()
+  const panel = page.getByRole('tabpanel')
+  const stage = panel.getByRole('application', { name: /Các lớp theo thứ tự tính: x · 784 → h1 · \d+/ })
+  await expect(stage).toBeVisible({ timeout: 30_000 })
+  await expect(stage.locator('canvas')).toHaveCount(1)
+  await expect(stage).toHaveAttribute('aria-busy', 'false')
+  // the connection counts come from the trace (784 × hidden width), not from the drawing
+  await expect(panel.getByText(/^x→h1: \d+\/[\d\s.,]+ kết nối$/)).toBeVisible()
+  // keyboard: rotate and reset without errors
+  await stage.focus()
+  await page.keyboard.press('ArrowLeft')
+  await page.keyboard.press('0')
+  await panel.getByRole('button', { name: 'Góc nhìn ban đầu' }).click()
+  // 2D form: the canvas graph of the same layers; back to 3D
+  await panel.getByRole('button', { name: '2D', exact: true }).click()
+  await expect(stage).toHaveCount(0)
+  await expect(panel.locator('.ex-graph canvas')).toHaveCount(1)
+  await panel.getByRole('button', { name: '3D', exact: true }).click()
+  await expect(panel.getByRole('application', { name: /Các lớp theo thứ tự tính/ }).locator('canvas')).toHaveCount(1)
+})
+
+test('the CNN feature maps are drawn as 3D stacks with the shapes of the trace', async ({ page }) => {
+  await page.getByRole('button', { name: 'Vẽ số 9' }).click()
+  await waitAllAnswered(page)
+  const view = card(page, 'CNN').getByRole('button', { name: 'Xem bên trong' })
+  if (await view.isVisible()) await view.click()
+  const panel = page.getByRole('tabpanel')
+  const stage = panel.getByRole('application', { name: /conv0\+\w+ · 16×26×26 → pool0 · 16×13×13/ })
+  await expect(stage).toBeVisible({ timeout: 30_000 })
+  await expect(stage.locator('canvas')).toHaveCount(1)
+})
+
+test('without WebGL the network views fall back to their 2D drawing', async ({ page }) => {
+  await page.addInitScript(() => {
+    type Ctx = (this: unknown, type: string, ...rest: unknown[]) => unknown
+    const proto = (globalThis as unknown as { HTMLCanvasElement: { prototype: { getContext: Ctx } } }).HTMLCanvasElement.prototype
+    const orig = proto.getContext
+    proto.getContext = function (type, ...rest) {
+      if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') return null
+      return orig.call(this, type, ...rest)
+    }
+  })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Vẽ số 4' }).click()
+  await waitAllAnswered(page)
+  await card(page, 'MLP').getByRole('button', { name: 'Xem bên trong' }).click()
+  const panel = page.getByRole('tabpanel')
+  await expect(panel.locator('.ex-graph canvas')).toHaveCount(1, { timeout: 30_000 })
+  await expect(panel.getByRole('application', { name: /Các lớp theo thứ tự tính/ })).toHaveCount(0)
+  await expect(panel.getByRole('button', { name: '3D', exact: true })).toHaveCount(0)
+})
+
+test('MNIST pairs each model with its augmented variant; variants load on request and both answer', async ({ page }) => {
+  const row = answers(page).locator('.mpair').filter({ hasText: 'MLP' }).first()
+  // augmented on the left, plain on the right
+  await expect(row.locator('.mcard').nth(0)).toHaveAttribute('data-variant', 'augmented')
+  await expect(row.locator('.mcard').nth(1)).toHaveAttribute('data-variant', 'plain')
+  await page.getByRole('button', { name: 'Vẽ số 7' }).click()
+  await waitAllAnswered(page)
+  // nothing augmented is downloaded until asked
+  await expect(card(page, 'MLP', 'augmented').getByRole('button', { name: /^Tải/ })).toBeVisible()
+  await page.getByRole('button', { name: /^Tải 5 bản tăng cường · / }).click()
+  for (const t of ['Naive Bayes', 'Softmax regression', 'MLP', 'CNN', 'AdaBoost']) {
+    await expect(card(page, t, 'augmented').getByRole('list', { name: /Đầu ra cho từng lớp/ })).not.toContainText('không có', { timeout: 60_000 })
+  }
+  expect(await predicted(page, 'CNN', 'augmented')).toBe(7)
+  expect(await predicted(page, 'MLP', 'augmented')).toBe(7)
+})
+
+test('the explorer switches between the plain model and its augmented variant with the same view', async ({ page }) => {
+  await page.getByRole('button', { name: 'Vẽ số 4' }).click()
+  await waitAllAnswered(page)
+  await card(page, 'MLP').getByRole('button', { name: 'Xem bên trong' }).click()
+  const variant = page.getByRole('group', { name: 'Biến thể' })
+  await expect(variant.getByRole('button', { name: 'thường', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('tab', { name: /Xem lại quá trình huấn luyện/ })).toBeVisible()
+  await variant.getByRole('button', { name: 'tăng cường', exact: true }).click()
+  await expect(page.getByRole('region', { name: 'MLP · tăng cường' })).toBeVisible({ timeout: 30_000 })
+  // no recorded training run for the variant: no replay tab
+  await expect(page.getByRole('tab', { name: /Xem lại quá trình huấn luyện/ })).toHaveCount(0)
+  const panel = page.getByRole('tabpanel')
+  await expect(panel.getByRole('application', { name: /x · 784 → h1 · \d+/ }).locator('canvas')).toHaveCount(1, { timeout: 30_000 })
+  await expect(card(page, 'MLP', 'augmented').getByRole('button', { name: 'Đang xem' })).toBeVisible()
+  await variant.getByRole('button', { name: 'thường', exact: true }).click()
+  await expect(page.getByRole('tab', { name: /Xem lại quá trình huấn luyện/ })).toBeVisible({ timeout: 30_000 })
+})
+
+test('results page compares every plain model with its augmented variant, numbers from the results file', async ({ page }) => {
+  await page.goto('/#/results')
+  const table = page.getByRole('region', { name: 'Accuracy của bản thường và bản tăng cường' })
+  await expect(table.getByRole('row', { name: /Naive Bayes 81[.,]32% 70[.,]64% −10[.,]68/ })).toBeVisible()
+  await expect(table.getByRole('row', { name: /CNN 98[.,]80% 99[.,]21% \+0[.,]41/ })).toBeVisible()
+  await expect(page.getByText(/xoay ±30°, dịch ±2 px, co giãn 0[.,]9–1[.,]1/)).toBeVisible()
 })

@@ -11,6 +11,22 @@ export type ModelKind = 'naive_bayes' | 'softmax' | 'mlp' | 'cnn' | 'adaboost'
 export const MODEL_ORDER: ModelKind[] = ['naive_bayes', 'softmax', 'mlp', 'cnn', 'adaboost']
 export const isModelKind = (s: string): s is ModelKind => (MODEL_ORDER as string[]).includes(s)
 
+/**
+ * Key of a model in the manifest: its architecture (`ModelKind`) for the plain model, or `<kind>_aug` for the
+ * variant trained with data augmentation. The architecture is `entry.kind` (= `trace.kind`); the id names the files.
+ */
+export type ModelId = string
+export const AUG_SUFFIX = '_aug'
+export const augId = (kind: ModelKind): ModelId => `${kind}${AUG_SUFFIX}`
+
+/** Data augmentation the variant was trained with (null for a plain model). */
+export interface AugRecipe {
+  ops: string[]
+  k?: number
+  seed?: number
+  ranges?: Record<string, unknown>
+}
+
 export type LayerOp =
   | 'input'
   | 'flatten'
@@ -116,7 +132,15 @@ export interface ModelEntry {
   trace: Trace
   /** recorded training run (checkpoints, metrics) or null when the model has no iterative training */
   replay?: ReplayRef | null
+  /** architecture (same as trace.kind); absent in older manifests */
+  kind?: ModelKind
+  /** true for the variant trained on augmented images */
+  augmented?: boolean
+  augmentation?: AugRecipe | null
 }
+
+export const kindOf = (entry: ModelEntry): ModelKind => entry.kind ?? entry.trace.kind
+export const isAugmented = (entry: ModelEntry): boolean => entry.augmented === true
 
 export interface Preprocessing {
   version: string
@@ -148,7 +172,7 @@ export interface DatasetEntry {
   dataset: DatasetMeta
   test_vectors: string
   results: string
-  models: Partial<Record<ModelKind, ModelEntry>>
+  models: Partial<Record<ModelId, ModelEntry>>
 }
 
 export interface BundleManifest {
@@ -276,8 +300,11 @@ export function parseBundleManifest(raw: unknown): BundleManifest {
     if (!ds.preprocessing || typeof ds.preprocessing.mean !== 'number') throw new ContractError('no preprocessing constants', dsId)
     for (const [id, model] of Object.entries(ds.models)) {
       const where = `${dsId}/${id}`
-      if (!isModelKind(id) || !model) throw new ContractError('unknown model id', where)
-      if (model.trace.kind !== id) throw new ContractError(`trace.kind ${model.trace.kind} != ${id}`, where)
+      if (!model) throw new ContractError('unknown model id', where)
+      const kind = model.kind ?? model.trace?.kind
+      if (!isModelKind(kind) || (id !== kind && id !== augId(kind))) throw new ContractError('unknown model id', where)
+      if (model.trace.kind !== kind) throw new ContractError(`trace.kind ${model.trace.kind} != ${kind}`, where)
+      if (model.augmented != null && model.augmented !== (id === augId(kind))) throw new ContractError('augmented flag differs from the model id', where)
       if (!model.sha256 || !model.file) throw new ContractError('missing file hash', where)
       const classes = model.trace.output.classes
       if (classes.length !== ds.classes.length || classes.some((c, i) => c !== ds.classes[i])) {
@@ -293,9 +320,18 @@ export function datasetIds(m: BundleManifest): string[] {
   return Object.keys(m.datasets)
 }
 
+/** Architectures that have a plain model in this dataset, in display order (their ids are the kinds). */
 export function modelsOf(ds: DatasetEntry): ModelKind[] {
   return MODEL_ORDER.filter((k) => ds.models[k])
 }
+
+/** Every model id of the dataset in display order: each architecture's plain model, then its augmented variant. */
+export function modelIdsOf(ds: DatasetEntry): ModelId[] {
+  return MODEL_ORDER.flatMap((k) => [k, augId(k)]).filter((id) => ds.models[id])
+}
+
+/** The augmented variant of an architecture in this dataset, if there is one. */
+export const augmentedOf = (ds: DatasetEntry, kind: ModelKind): ModelId | null => (ds.models[augId(kind)] ? augId(kind) : null)
 
 /** Layer lookup helpers used by every explorer view. */
 export function layerMap(trace: Trace): Map<string, TraceLayer> {
@@ -330,7 +366,7 @@ export interface ReplaySnapshot {
 export interface ReplayData {
   schema: string
   dataset: string
-  model: ModelKind
+  model: ModelId
   seed: number
   params: Record<string, unknown>
   /** per-epoch (or per-round for AdaBoost) measured series; all arrays have `epochs.length` entries */
@@ -348,7 +384,7 @@ export interface ReplayData {
   note: string
 }
 
-export function parseReplay(raw: unknown, expect: { dataset: string; model: ModelKind }): ReplayData {
+export function parseReplay(raw: unknown, expect: { dataset: string; model: ModelId }): ReplayData {
   const r = raw as ReplayData
   const where = `${expect.dataset}/${expect.model}/replay`
   if (!r || r.schema !== REPLAY_SCHEMA) throw new ContractError('unsupported replay schema', where)

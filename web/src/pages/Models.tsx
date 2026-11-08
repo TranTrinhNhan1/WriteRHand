@@ -3,14 +3,15 @@ import '../styles/results.css'
 import '../styles/models.css'
 import { Segmented } from '../components/Segmented'
 import { Tex } from '../components/Tex'
-import { modelsOf, type ModelKind } from '../engine/contract'
+import { augId, modelsOf, type ModelKind } from '../engine/contract'
 import { useBundle } from '../engine/react'
 import { useI18n } from '../i18n'
 import { parameterCount, summarizeLayers } from '../lib/architecture'
 import { useChoice } from '../lib/choice'
 import { bytes, int, paramName, paramValue, pct } from '../lib/format'
 import { datasetIdsOf, downloadBytes } from '../lib/selection'
-import { MODEL_TEX } from './modelContent'
+import { EXTRA_TEX, MODEL_TEX } from './modelContent'
+import type { ResultModel } from '../lib/types'
 
 const HIDDEN_PARAMS = new Set(['verbose', 'dtype'])
 
@@ -38,9 +39,11 @@ function Architecture({ dataset, id }: { dataset: string; id: ModelKind }) {
 
 function ModelArticle({ dataset, id }: { dataset: string; id: ModelKind }) {
   const { t, tl } = useI18n()
-  const { manifest, results } = useBundle()
+  const { manifest, results, extra } = useBundle()
   const ds = manifest.datasets[dataset]
   const entry = ds.models[id]!
+  // the variant trained on augmented images, measured on the same test set (results/augmentation_pairs.json)
+  const augTest = ds.models[augId(id)] ? (extra[dataset]?.pairs?.models[id]?.augmented.test_acc ?? null) : null
   const res = results[dataset]?.models.find((m) => m.id === id)
   const params = Object.entries(entry.params ?? res?.params ?? {}).filter(([k]) => !HIDDEN_PARAMS.has(k))
   const test = res?.splits?.test
@@ -65,6 +68,12 @@ function ModelArticle({ dataset, id }: { dataset: string; id: ModelKind }) {
             <dt>{t('models.testAcc', { dataset: ds.title })}</dt>
             <dd className="num">{pct(test?.accuracy, 2)}</dd>
           </div>
+          {augTest != null && (
+            <div>
+              <dt>{t('models.augTest')}</dt>
+              <dd className="num">{pct(augTest, 2)}</dd>
+            </div>
+          )}
           <div>
             <dt>{t('models.nParams')}</dt>
             <dd className="num">{nParams != null ? int(nParams) : t(id === 'adaboost' ? 'models.nParamsTrees' : 'common.na', { n: int(entry.trace.layers.find((l) => l.op === 'tree_ensemble')?.n_estimators) })}</dd>
@@ -191,20 +200,118 @@ function ModelArticle({ dataset, id }: { dataset: string; id: ModelKind }) {
   )
 }
 
+/** A model measured in Python only (linear SVM, stacking): numbers from extra_models.json, no browser file. */
+function ExtraArticle({ dataset, m }: { dataset: string; m: ResultModel }) {
+  const { t, tl } = useI18n()
+  const { manifest } = useBundle()
+  const ds = manifest.datasets[dataset]
+  const id = m.id as 'svm' | 'stacking'
+  const params = Object.entries(m.params ?? {}).filter(([k]) => !HIDDEN_PARAMS.has(k) && k !== 'bases')
+  const captions = tl(`models.extra.${id}.eq`)
+  const st = m.stacking
+  return (
+    <article id={`model-${id}`} className="model" aria-labelledby={`model-${id}-h`}>
+      <header className="model__head">
+        <h2 id={`model-${id}-h`} className="h2">
+          {t(`model.${id}`)}
+          <span className="offline-tag">{t('results.extra.offline')}</span>
+        </h2>
+        <dl className="facts facts--inline">
+          <div>
+            <dt>{t('models.testAcc', { dataset: ds.title })}</dt>
+            <dd className="num">{pct(m.splits?.test?.accuracy, 2)}</dd>
+          </div>
+          <div>
+            <dt>{t('models.output')}</dt>
+            <dd>{id === 'svm' ? t('models.extra.outScore') : t('models.outProb')}</dd>
+          </div>
+          {st && (
+            <div>
+              <dt>{t('models.extra.cv')}</dt>
+              <dd className="num">{pct(st.cv_val_acc, 2)}</dd>
+            </div>
+          )}
+        </dl>
+      </header>
+      <div className="model__body">
+        <div className="model__col">
+          <div className="equations">
+            {EXTRA_TEX[id].map((lines, i) => (
+              <figure key={captions[i] ?? i} className="equation">
+                <figcaption className="caption">{captions[i]}</figcaption>
+                {lines.map((line) => (
+                  <Tex key={line} tex={line} block />
+                ))}
+              </figure>
+            ))}
+          </div>
+        </div>
+        <div className="model__col">
+          {params.length > 0 && (
+            <>
+              <p className="label">{t('results.tuning.chosenTitle')}</p>
+              <dl className="params params--grid">
+                {params.map(([k, val]) => (
+                  <div key={k}>
+                    <dt>{paramName(k)}</dt>
+                    <dd className="num">{paramValue(val)}</dd>
+                  </div>
+                ))}
+              </dl>
+            </>
+          )}
+          {st && (
+            <>
+              <div className="table-wrap" role="region" aria-label={t('models.extra.bases')} tabIndex={0}>
+                <table className="table num">
+                  <thead>
+                    <tr>
+                      <th scope="col" className="is-left">
+                        {t('models.extra.bases')}
+                      </th>
+                      <th scope="col">{t('models.testAcc', { dataset: ds.title })}</th>
+                      <th scope="col">{t('models.extra.weight')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {st.bases.map((b) => (
+                      <tr key={b.id}>
+                        <th scope="row" className="is-left">
+                          {isModelKey(b.id) ? t(`model.${b.id}`) : b.id}
+                        </th>
+                        <td>{pct(b.test_accuracy, 2)}</td>
+                        <td>{b.weight != null ? b.weight.toFixed(3) : '\u2013'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="caption">{t('results.extra.stackFit')}</p>
+            </>
+          )}
+        </div>
+      </div>
+    </article>
+  )
+}
+
+const MODEL_KEYS = ['naive_bayes', 'softmax', 'mlp', 'cnn', 'adaboost', 'svm', 'stacking'] as const
+const isModelKey = (s: string): s is (typeof MODEL_KEYS)[number] => (MODEL_KEYS as readonly string[]).includes(s)
+
 export default function Models() {
   const { t } = useI18n()
-  const { manifest } = useBundle()
+  const { manifest, extra } = useBundle()
   const { dataset, setDataset } = useChoice()
   const ds = manifest.datasets[dataset]
   const ids = modelsOf(ds)
-  const [active, setActive] = useState<ModelKind | null>(null)
+  const extras = extra[dataset]?.models ?? []
+  const [active, setActive] = useState<string | null>(null)
   const dsIds = datasetIdsOf(manifest)
 
   return (
     <div className="models sheet">
       <header className="page-head">
-        <p className="eyebrow">{t('nav.models')}</p>
-        <h1 className="display">{t('models.title', { n: ids.length })}</h1>
+        <h1 className="display">{t('models.title', { n: ids.length + extras.length })}</h1>
         <p className="lede">{t('models.lede')}</p>
         {dsIds.length > 1 && (
           <Segmented
@@ -216,7 +323,7 @@ export default function Models() {
         )}
         <nav aria-label={t('models.jump')} className="jump">
           <ul>
-            {ids.map((id) => (
+            {[...ids, ...extras.map((m) => m.id)].map((id) => (
               <li key={id}>
                 <button
                   type="button"
@@ -236,6 +343,9 @@ export default function Models() {
       </header>
       {ids.map((id) => (
         <ModelArticle key={`${dataset}-${id}`} dataset={dataset} id={id} />
+      ))}
+      {extras.map((m) => (
+        <ExtraArticle key={`${dataset}-${m.id}`} dataset={dataset} m={m} />
       ))}
     </div>
   )

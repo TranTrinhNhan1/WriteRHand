@@ -87,7 +87,6 @@ export default function NaiveBayesView({ classes, loaded, execution }: ExplorerV
 
   return (
     <div className="exc">
-      <p className="exc-intro">{t('ex.nb.intro')}</p>
 
       <section className="exc-sec" aria-label={t('ex.nb.classTitle')}>
         <h4 className="exc-h">{t('ex.nb.classTitle')}</h4>
@@ -134,7 +133,6 @@ export default function NaiveBayesView({ classes, loaded, execution }: ExplorerV
               { swatch: 'mark', text: t('ex.classic.legSel') },
             ]}
           />
-          <p className="note note--muted">{t('ex.classic.mapHint')}</p>
         </section>
 
         <section className="exc-inspect" aria-label={t('ex.nb.inspectTitle')} aria-live="off">

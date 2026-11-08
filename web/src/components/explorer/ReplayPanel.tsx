@@ -1,7 +1,7 @@
 import { ArrowClockwise, CheckCircle, ClockCounterClockwise, WarningCircle, XCircle } from '@phosphor-icons/react'
 import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useI18n, type Key } from '../../i18n'
-import type { ModelKind, ReplayData, ReplayTensor } from '../../engine/contract'
+import { kindOf, type ModelId, type ReplayData, type ReplayTensor } from '../../engine/contract'
 import { useBundle, usePlayback, useReplay } from '../../engine/react'
 import { bytes } from '../../lib/format'
 import { HeatMap } from './HeatMap'
@@ -11,7 +11,7 @@ import { column, correctCount, predicted, samplePixels, seriesAt, snapshotAt, te
 
 interface Props {
   dataset: string
-  model: ModelKind
+  model: ModelId
 }
 
 /**
@@ -72,7 +72,7 @@ function ReplayBody({ dataset, model, onRetry }: Props & { onRetry: () => void }
         <div className="ex-state ex-state--empty">
           <ClockCounterClockwise size={28} aria-hidden="true" />
           <p className="label">{t('ex.replay.noneTitle')}</p>
-          <p className="caption">{model === 'naive_bayes' ? t('ex.replay.noneNb') : t('ex.replay.noneMissing', { model: entry.title })}</p>
+          <p className="caption">{kindOf(entry) === 'naive_bayes' ? t('ex.replay.noneNb') : t('ex.replay.noneMissing', { model: entry.title })}</p>
           <p className="caption">{t('ex.replay.noneHonest')}</p>
         </div>
       </div>
@@ -91,7 +91,7 @@ const SERIES_KEYS = ['loss', 'val_loss', 'inner_val_loss', 'val_acc', 'train_acc
 
 function ReplayView({ r, classes, vote }: { r: ReplayData; classes: string[]; vote: boolean }) {
   const { t } = useI18n()
-  const rounds = r.model === 'adaboost'
+  const rounds = r.model === 'adaboost' || r.model === 'adaboost_aug'
   const unit = rounds ? t('ex.replay.round') : t('ex.replay.epoch')
   const last = r.snapshots.length - 1
   const pb = usePlayback(last, `${r.dataset}/${r.model}`, 900, false)

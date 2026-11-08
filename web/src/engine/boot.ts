@@ -4,11 +4,14 @@ import { sha256Hex } from './bytes'
 import { parseBundleManifest, ContractError, type BundleManifest } from './contract'
 import { hfResolveUrl, MODEL_LOCK, type ModelLock } from './lock'
 import type { Results } from '../lib/types'
+import { parseExtraModels, type ExtraResults } from '../lib/extraModels'
 
 export interface Booted {
   manifest: BundleManifest
   /** measured numbers per dataset (dashboard) */
   results: Record<string, Results>
+  /** measured models that are not in the bundle (results pages only), per dataset */
+  extra: Record<string, ExtraResults>
   /** where model files are fetched from: the pinned Hugging Face revision, or a local bundle in development */
   baseUrl: string
   lock: ModelLock | null
@@ -63,5 +66,12 @@ export async function loadBundle(): Promise<Booted> {
       results[id] = JSON.parse(new TextDecoder().decode(b)) as Results
     }),
   )
-  return { manifest, results, baseUrl, lock }
+  // committed with the site next to the manifest; it never changes which models run in the browser
+  let extra: Record<string, ExtraResults> = {}
+  try {
+    extra = parseExtraModels(JSON.parse(new TextDecoder().decode(await getBuf(`${dataBase}/extra_models.json`))))
+  } catch {
+    extra = {}
+  }
+  return { manifest, results, extra, baseUrl, lock }
 }

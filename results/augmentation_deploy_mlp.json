@@ -1,0 +1,139 @@
+{
+ "schema": 1,
+ "model": "mlp",
+ "params": {
+  "hidden_sizes": [
+   512,
+   256
+  ],
+  "learning_rate": 0.05,
+  "momentum": 0.9,
+  "p_drop": 0.0,
+  "batch_size": 128,
+  "epochs": 40,
+  "seed": 42
+ },
+ "copies": 2,
+ "stress_on_validation": {
+  "rotation": 30.0,
+  "translation": 3.0,
+  "scaling": [
+   0.8,
+   1.2
+  ]
+ },
+ "max_clean_val_drop": 0.005,
+ "rule": "highest stressed-validation accuracy among candidates whose clean validation accuracy is within max_clean_val_drop of the non-augmented model; test is never used to choose",
+ "baseline": {
+  "val_acc": 0.9818,
+  "val_stress_acc": 0.6102,
+  "test_acc": 0.9824,
+  "test_rotation_acc": {
+   "0": 0.9824,
+   "10": 0.9788,
+   "20": 0.96,
+   "30": 0.9202,
+   "45": 0.8218,
+   "90": 0.5271
+  }
+ },
+ "candidates": {
+  "rotation_15": {
+   "spec": {
+    "ops": [
+     "rotation",
+     "translation",
+     "scaling"
+    ],
+    "k": 2,
+    "seed": 123,
+    "ranges": {
+     "rotation": 15.0
+    }
+   },
+   "fit_time_sec": 40.08486518799327,
+   "n_train": 150000,
+   "stopped_epoch": 18,
+   "val_acc": 0.986,
+   "val_stress_acc": 0.9006,
+   "test_acc": 0.9881,
+   "test_rotation_acc": {
+    "0": 0.9881,
+    "10": 0.9857,
+    "20": 0.9793,
+    "30": 0.9643,
+    "45": 0.891,
+    "90": 0.5828
+   }
+  },
+  "rotation_30": {
+   "spec": {
+    "ops": [
+     "rotation",
+     "translation",
+     "scaling"
+    ],
+    "k": 2,
+    "seed": 123,
+    "ranges": {
+     "rotation": 30.0
+    }
+   },
+   "fit_time_sec": 32.16969677922316,
+   "n_train": 150000,
+   "stopped_epoch": 9,
+   "val_acc": 0.9804,
+   "val_stress_acc": 0.9073,
+   "test_acc": 0.9841,
+   "test_rotation_acc": {
+    "0": 0.9841,
+    "10": 0.9816,
+    "20": 0.9792,
+    "30": 0.9736,
+    "45": 0.9456,
+    "90": 0.6875
+   }
+  },
+  "rotation_45": {
+   "spec": {
+    "ops": [
+     "rotation",
+     "translation",
+     "scaling"
+    ],
+    "k": 2,
+    "seed": 123,
+    "ranges": {
+     "rotation": 45.0
+    }
+   },
+   "fit_time_sec": 41.05571714602411,
+   "n_train": 150000,
+   "stopped_epoch": 9,
+   "val_acc": 0.9758,
+   "val_stress_acc": 0.902,
+   "test_acc": 0.977,
+   "test_rotation_acc": {
+    "0": 0.977,
+    "10": 0.9746,
+    "20": 0.9734,
+    "30": 0.9712,
+    "45": 0.9654,
+    "90": 0.8
+   }
+  }
+ },
+ "chosen": "rotation_30",
+ "spec": {
+  "ops": [
+   "rotation",
+   "translation",
+   "scaling"
+  ],
+  "k": 2,
+  "seed": 123,
+  "ranges": {
+   "rotation": 30.0
+  }
+ }
+}

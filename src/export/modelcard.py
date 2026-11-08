@@ -49,7 +49,13 @@ fingerprint `{meta["split_fingerprint"]}`) / {meta["n_test"]} official test. Nor
                 f"{v['validation']['max_abs_prob_diff']:.1e} |"
             )
     desc = "\n".join(
-        f"- **{v['title']}** - {DESCRIPTIONS[k]}."
+        f"- **{v['title']}** - {DESCRIPTIONS[k.removesuffix('_aug')]}."
+        + (
+            " Same architecture, trained on the original images plus randomly rotated (up to 30 degrees), "
+            "shifted and scaled copies; compared side by side with the plain model."
+            if v.get("augmented")
+            else ""
+        )
         for k, v in next(iter(manifest["datasets"].values()))["models"].items()
     )
     git = next((s.get("git") or {} for s in sites.values()), {}).get("commit")
@@ -74,7 +80,7 @@ license_name: unspecified-educational
 
 # WriteRHand
 
-Five image classifiers whose mathematical core was implemented **from scratch** (NumPy; PyTorch
+Five image classifiers (each also as an augmented variant) whose mathematical core was implemented **from scratch** (NumPy; PyTorch
 only as a tensor library, *no autograd, no nn.Module, no F.conv2d*) for a university Pattern
 Recognition course, trained **separately** on three 28x28 datasets: MNIST, Fashion-MNIST and
 EMNIST Digits. They are *educational* models, not production OCR. Code, tests and report:
@@ -120,7 +126,7 @@ fallback). Seeds are fixed (git commit `{git}`).
 
 ## AI-assisted development
 Parts of this code, the tests, the export pipeline and the website were produced with the help of an
-AI coding assistant (Claude Code) and reviewed/run by the project authors, as disclosed in the
+AI coding assistant and reviewed/run by the project authors, as disclosed in the
 course report.
 
 ## License

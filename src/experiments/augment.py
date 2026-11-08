@@ -151,12 +151,138 @@ def example_grid(X, y, n=8, seed=0):
 
 
 def make_model(kind, params, seed):
+    """``kind``: ``mlp`` | ``cnn`` for the ablation study; any key of ``SPECS`` for the deployed variants."""
     p = {**params, "seed": seed}
     if kind == "mlp":
         return MLP(**{**p, "hidden_sizes": tuple(p["hidden_sizes"])})
     if kind == "cnn":
         return CNN(**{k: tuple(v) if k in ("channels", "dense") else v for k, v in p.items()})
+    from src.experiments.search import SPECS
+
+    if kind in SPECS:
+        cls = SPECS[kind]["cls"]
+        if kind == "naive_bayes":
+            p = {k: v for k, v in params.items() if k != "seed"}
+        return cls(**p)
     raise ValueError(kind)
+
+
+# --------------------------------------------------------------------------- deployed models
+# The demo models (MLP, CNN) are trained on the original images plus K augmented copies. The rotation
+# range is chosen on the validation split among the candidates below; everything else is fixed.
+DEPLOY_COPIES = 2
+DEPLOY_SEED = 123
+DEPLOY_ROTATIONS = (15.0, 30.0, 45.0)
+# fixed geometric stress applied to the validation split to compare candidates (test is not used)
+DEPLOY_STRESS = {"rotation": 30.0, "translation": 3.0, "scaling": (0.8, 1.2)}
+DEPLOY_MAX_CLEAN_DROP = (
+    0.005  # a candidate may not lose more than 0.5 pt of clean validation accuracy
+)
+ROTATION_ANGLES = (
+    0,
+    10,
+    20,
+    30,
+    45,
+    90,
+)  # information only: test images rotated by a random angle in +-a
+
+
+def deploy_spec(rotation, k=DEPLOY_COPIES):
+    """Augmentation of a deployed model: rotation (+-rotation deg), shift (+-2 px), scale (0.9-1.1)."""
+    return {
+        "ops": list(GEOMETRIC),
+        "k": int(k),
+        "seed": DEPLOY_SEED,
+        "ranges": {"rotation": float(rotation)},
+    }
+
+
+def apply_spec(X, y, spec):
+    """Original images followed by ``k`` randomly transformed copies, as described by ``spec``."""
+    ranges = {
+        k_: tuple(v) if isinstance(v, list) else v for k_, v in (spec.get("ranges") or {}).items()
+    }
+    Xa = transform_images(X, tuple(spec["ops"]), k=spec["k"], seed=spec["seed"], **ranges)
+    return np.vstack([X, Xa]), np.concatenate([y, np.tile(y, spec["k"])])
+
+
+def _acc(model, X, y):
+    return float(np.mean(model.predict(X) == y))
+
+
+def _probe(model, data, stress_val):
+    """Clean / stressed validation accuracy and test accuracy at several rotation levels."""
+    return {
+        "val_acc": _acc(model, data["X_val"], data["y_val"]),
+        "val_stress_acc": _acc(model, stress_val, data["y_val"]),
+        "test_acc": _acc(model, data["X_test"], data["y_test"]),
+        "test_rotation_acc": {
+            str(a): _acc(
+                model,
+                data["X_test"]
+                if a == 0
+                else transform_images(
+                    data["X_test"], ("rotation",), k=1, seed=999, rotation=float(a)
+                ),
+                data["y_test"],
+            )
+            for a in ROTATION_ANGLES
+        },
+    }
+
+
+def select_deployed(data, kind, params, baseline_model, log=print, rotations=DEPLOY_ROTATIONS):
+    """Choose the rotation range of the deployed ``kind`` on validation only.
+
+    Rule: among the candidates whose clean validation accuracy is within ``DEPLOY_MAX_CLEAN_DROP`` of the
+    non-augmented model, take the highest accuracy on the geometrically stressed validation split. The test
+    split is evaluated for information (rotation table) and never used to choose.
+    """
+    stress_val = transform_images(data["X_val"], GEOMETRIC, k=1, seed=999, **DEPLOY_STRESS)
+    out = {
+        "schema": 1,
+        "model": kind,
+        "params": params,
+        "copies": DEPLOY_COPIES,
+        "stress_on_validation": {
+            k_: list(v) if isinstance(v, tuple) else v for k_, v in DEPLOY_STRESS.items()
+        },
+        "max_clean_val_drop": DEPLOY_MAX_CLEAN_DROP,
+        "rule": "highest stressed-validation accuracy among candidates whose clean validation accuracy "
+        "is within max_clean_val_drop of the non-augmented model; test is never used to choose",
+        "baseline": _probe(baseline_model, data, stress_val),
+        "candidates": {},
+    }
+    log(
+        f"[augment-select:{kind}] baseline {out['baseline']['val_acc']:.4f} / stress {out['baseline']['val_stress_acc']:.4f}"
+    )
+    for rot in rotations:
+        spec = deploy_spec(rot)
+        t0 = time.perf_counter()
+        Xf, yf = apply_spec(data["X_train"], data["y_train"], spec)
+        m = make_model(kind, params, params.get("seed", 42))
+        if kind == "naive_bayes":
+            m.fit(Xf, yf)
+        else:
+            m.fit(Xf, yf, data["X_val"], data["y_val"])
+        row = {
+            "spec": spec,
+            "fit_time_sec": time.perf_counter() - t0,
+            "n_train": int(len(yf)),
+            "stopped_epoch": int(getattr(m, "stopped_epoch_", 0) or 0),
+            **_probe(m, data, stress_val),
+        }
+        out["candidates"][f"rotation_{int(rot)}"] = row
+        log(
+            f"[augment-select:{kind}] rot={rot:.0f} val={row['val_acc']:.4f} "
+            f"stress={row['val_stress_acc']:.4f} fit={row['fit_time_sec']:.0f}s"
+        )
+    floor = out["baseline"]["val_acc"] - DEPLOY_MAX_CLEAN_DROP
+    ok = {k_: v for k_, v in out["candidates"].items() if v["val_acc"] >= floor}
+    out["chosen"] = max(ok, key=lambda k_: ok[k_]["val_stress_acc"]) if ok else None
+    out["spec"] = out["candidates"][out["chosen"]]["spec"] if out["chosen"] else None
+    return out
 
 
 def run_ablation(

@@ -11,6 +11,10 @@ import { fx, int, shape } from './neural/format'
 import { channel, channelArgmax, convStages, denseBlocks, kernelSlice, poolCell, pooledReady, rasterPos, reachedLayers, runtimeOf, type ConvStage } from './neural/model'
 import { useStepCaption } from './neural/steps'
 import { CheckRow, Hint, Panel, PreprocessStrip, SoftmaxPanel, Term, usePersisted } from './neural/ui'
+import Net3D from './three/Net3D'
+import { NetSwitch } from './three/NetSwitch'
+import { cnnSpec } from './three/spec'
+import type { Pick3D } from './three/engine3d'
 
 const argmax = (v: ArrayLike<number>) => {
   let b = 0
@@ -78,6 +82,20 @@ export default function CnnView({ classes, loaded, execution }: ExplorerViewProp
 
   const preReached = (image && reached.has(image.id) ? 1 : 0) + 1 + (std && reached.has(std.id) ? 1 : 0)
 
+  const spec3 = useMemo(() => cnnSpec(trace, loaded.params!, out, execution.pixels, classes), [trace, loaded.params, out, execution.pixels, classes])
+  const summary3 = t('ex.three.summary', { layers: spec3.layers.map((l) => l.label).join(' → ') })
+  const actKey = (stage.act ?? stage.conv).id
+  const sel3 = useMemo<Pick3D | null>(() => {
+    const li = spec3.layers.findIndex((l) => l.key === actKey)
+    return li >= 0 ? { layer: li, index: c } : null
+  }, [spec3, actKey, c])
+  const pick3 = (p: Pick3D) => {
+    const l = spec3.layers[p.layer]
+    if (l.kind !== 'maps' || l.stage == null) return
+    setStageIdx(l.stage)
+    if (l.c > 1) setChans((prev) => ({ ...prev, [l.stage!]: p.index }))
+  }
+
   return (
     <div className="ex-view ex-cnn">
       <div className="ex-view__bar">
@@ -87,22 +105,35 @@ export default function CnnView({ classes, loaded, execution }: ExplorerViewProp
         </p>
       </div>
 
+      <Panel id="ex-cnn-flow" title={t('ex.cnn.flowTitle')} className="ex-net">
+        <NetSwitch
+          three={(fail) => (
+            <>
+              <Net3D spec={spec3} revealed={reached} selected={sel3} onPick={pick3} label={summary3} onUnavailable={fail} />
+              <ul className="ex-lod">
+                {spec3.edges.map((e) => (
+                  <li key={e.layerId} className="num">
+                    {t('ex.three.edges', { a: spec3.layers[e.from].key, b: spec3.layers[e.to].key, k: e.list.length, n: int(e.total) })}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          flat={() => <ForwardStrip loaded={loaded} execution={execution} reached={reached} stages={stages} chans={chans} stageIdx={s} onStage={setStageIdx} classes={classes} />}
+        />
+      </Panel>
+
       {std && (
-        <Panel id="ex-cnn-pre" title={t('ex.cnn.preTitle')} sub={t('ex.cnn.preSub')}>
+        <Panel id="ex-cnn-pre" title={t('ex.cnn.preTitle')}>
           <PreprocessStrip pixels={execution.pixels} x={out[std.runtime ?? 'x']} mean={std.mean!} std={std.std!} eps={std.eps ?? 0} flatten={false} reached={preReached} side={side} />
         </Panel>
       )}
-
-      <Panel id="ex-cnn-flow" title={t('ex.cnn.flowTitle')} sub={t('ex.cnn.flowSub')}>
-        <ForwardStrip loaded={loaded} execution={execution} reached={reached} stages={stages} chans={chans} stageIdx={s} onStage={setStageIdx} classes={classes} />
-      </Panel>
 
       <StagePanel key={s} stage={stage} stages={stages} s={s} setStage={setStageIdx} c={c} setC={setC} loaded={loaded} execution={execution} reached={reached} side={side} oh={oh} ow={ow} />
 
       <Classifier loaded={loaded} execution={execution} blocks={blocks} classes={classes} reached={reached} />
 
       <SoftmaxPanel logits={out[blocks[blocks.length - 1].zRuntime ?? 'logits']} probs={execution.probs} classes={classes} revealed={!soft || reached.has(soft.id)} />
-      <p className="ex-hint num">{t('ex.mlp.shapes', { s: trace.layers.map((l) => shape(l.out_shape)).join(' → ') })}</p>
     </div>
   )
 }
@@ -286,7 +317,7 @@ function StagePanel({ stage, stages, s, setStage, c, setC, loaded, execution, re
   const stageTitle = (st: ConvStage) => t('ex.cnn.stageTab', { k: st.index + 1, cin: st.kernelShape[1], cout: st.kernelShape[0], ks: `${st.kernelShape[2]}×${st.kernelShape[3]}` })
 
   return (
-    <Panel id="ex-cnn-stage" title={t('ex.cnn.stageTitle', { k: s + 1, n: stages.length })} sub={t('ex.cnn.stageSub')} className="ex-stage">
+    <Panel id="ex-cnn-stage" title={t('ex.cnn.stageTitle', { k: s + 1, n: stages.length })} className="ex-stage">
       {stages.length > 1 && (
         <div className="ex-layerpick" role="group" aria-label={t('ex.cnn.pickStage')}>
           {stages.map((st, i) => (
@@ -341,7 +372,6 @@ function StagePanel({ stage, stages, s, setStage, c, setC, loaded, execution, re
             </button>
           ))}
         </div>
-        <p className="ex-hint">{t('ex.cnn.mapsNote', { c, n: cout })}</p>
       </div>
 
       {/* sliding window */}
@@ -547,7 +577,7 @@ function Classifier({
   const spatial: SpatialInput = src && src.out_shape.length === 3 ? { kind: 'maps', c: src.out_shape[0], h: src.out_shape[1], w: src.out_shape[2] } : null
   const name = (i: number) => (spatial?.kind === 'maps' ? t('ex.cnn.flatName', { i, c: Math.floor(i / (spatial.h * spatial.w)), r: Math.floor((i % (spatial.h * spatial.w)) / spatial.w), q: i % spatial.w }) : `#${i}`)
   return (
-    <Panel id="ex-cnn-head" title={t('ex.cnn.headTitle')} sub={inLayer?.op === 'flatten' && src ? t('ex.cnn.flatSub', { s: shape(src.out_shape), n: int(b.nIn) }) : t('ex.cnn.headSub')}>
+    <Panel id="ex-cnn-head" title={t('ex.cnn.headTitle')} sub={inLayer?.op === 'flatten' && src ? t('ex.cnn.flatSub', { s: shape(src.out_shape), n: int(b.nIn) }) : undefined}>
       {blocks.length > 1 && (
         <div className="ex-layerpick" role="group" aria-label={t('ex.mlp.pickLayer')}>
           {blocks.map((x, i) => (

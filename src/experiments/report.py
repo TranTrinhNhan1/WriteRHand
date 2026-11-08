@@ -70,6 +70,190 @@ def _split_summary(s):
     return d
 
 
+def _tuning_entry(t):
+    """Sweeps of one ``results/tuning/<Class>.json`` in the shape the website draws."""
+    sweeps = {}
+    for tr in t["trials"]:
+        if tr["param"] is None:
+            continue
+        sweeps.setdefault(tr["param"], []).append(
+            {
+                "value": tr["value"],
+                "train_acc": tr["train_acc"],
+                "val_acc": tr["val_acc"],
+                "train_time_sec": tr["train_time_sec"],
+                "stage": tr["stage"],
+            }
+        )
+    return {
+        "best_params": t["best_params"],
+        "n_trials": t["n_trials"],
+        "sweeps": sweeps,
+        "epoch_curve": t.get("epoch_curve"),
+        "curve": next((tr["curve"] for tr in t["trials"] if tr["stage"].startswith("curve")), None),
+    }
+
+
+# models measured in results/ but not exported to the browser bundle (no ONNX, no trace)
+EXTRA_MODELS = (("svm", "LinearSVM", "Linear SVM"), ("stacking", "StackingEnsemble", "Stacking"))
+EXTRA_SCHEMA = "writerhand.extra/1"
+
+
+def _final_entry(mid, cname, title, f, sk):
+    entry = {
+        "id": mid,
+        "name": title,
+        "class": cname,
+        "params": f["params"],
+        "train_time_sec": f["train_time_sec"],
+        "latency_ms_single_sample": f["latency_ms_single_sample"],
+        "splits": {s: _split_summary(f["splits"][s]) for s in SPLITS},
+        "top_confusions": top_confusions(f["splits"]["test"]["confusion_matrix"]),
+        "history": f.get("history") or {},
+        "best_epoch": f.get("best_epoch"),
+        "stopped_epoch": f.get("stopped_epoch"),
+        "in_browser": False,
+        "sklearn": None,
+    }
+    if sk:
+        entry["sklearn"] = {
+            "class": sk["sklearn_class"],
+            "train_time_sec": sk["train_time_sec"],
+            "latency_ms_single_sample": sk["latency_ms_single_sample"],
+            "splits": {
+                s: {k: sk["splits"][s][k] for k in ("accuracy", "f1_macro", "predict_time_sec")}
+                for s in SPLITS
+            },
+        }
+    return entry
+
+
+def build_extra_models(results_dir):
+    """Website data of the models that are measured but not in the browser bundle (linear SVM, stacking).
+
+    Only numbers read from ``results_dir`` (``final/``, ``tuning/``, ``baselines/``); ``None`` when neither
+    model has a final result. The output is deterministic (no timestamp), so a regenerated file only
+    differs when the results do.
+    """
+    rd = Path(results_dir)
+    cls_to_id = {**{v: k for k, v in CLASS_NAME.items()}, **{c: m for m, c, _ in EXTRA_MODELS}}
+    models, tuning = [], {}
+    for mid, cname, title in EXTRA_MODELS:
+        f = _read(rd / "final" / f"{cname}.json")
+        if not f:
+            continue
+        entry = _final_entry(
+            mid, cname, title, f, _read(rd / "baselines" / f"sklearn_{cname}.json")
+        )
+        if mid == "stacking":
+            bases = f.get("base_models") or f["params"].get("bases") or []
+            base_fit = [
+                (_read(rd / "final" / f"{b}.json") or {}).get("train_time_sec") for b in bases
+            ]
+            meta_fit = f.get("meta_fit_sec", f["train_time_sec"])
+            entry["stacking"] = {
+                "fitted_on": "val",
+                "meta_learner": "softmax",
+                "n_features": f.get("n_features"),
+                "meta_fit_sec": meta_fit,
+                "base_fit_sec": sum(base_fit) if all(x is not None for x in base_fit) else None,
+                "selected_l2": f.get("selected_l2"),
+                "cv_val_acc": f.get("cv_val_acc"),
+                "soft_vote_test_accuracy": f.get("soft_vote_test_accuracy"),
+                "bases": [
+                    {
+                        "id": cls_to_id.get(b, b),
+                        "test_accuracy": (f.get("base_test_accuracy") or {}).get(b),
+                        "weight": (f.get("block_importance") or {}).get(b),
+                    }
+                    for b in bases
+                ],
+            }
+            # total cost: the six base models are trained first, then the meta-learner
+            if entry["stacking"]["base_fit_sec"] is not None:
+                entry["train_time_sec"] = entry["stacking"]["base_fit_sec"] + meta_fit
+            cv = f.get("cv_on_validation") or {}
+            if cv:
+                pts = sorted(((float(k), v) for k, v in cv.items()), key=lambda p: p[0])
+                tuning[mid] = {
+                    "best_params": {"l2": f.get("selected_l2")},
+                    "n_trials": len(pts),
+                    "sweeps": {
+                        "l2": [
+                            {"value": k, "val_acc": v["cv_val_acc_mean"], "stage": "cv:l2"}
+                            for k, v in pts
+                        ]
+                    },
+                    "epoch_curve": None,
+                    "curve": None,
+                }
+        else:
+            t = _read(rd / "tuning" / f"{cname}.json")
+            if t:
+                tuning[mid] = _tuning_entry(t)
+        models.append(entry)
+    out = {"models": models, "tuning": tuning} if models else {}
+    pairs = build_pairs(rd)
+    if pairs:
+        out["pairs"] = pairs
+    return out or None
+
+
+PAIR_KEYS = (
+    "train_acc",
+    "val_acc",
+    "test_acc",
+    "test_f1_macro",
+    "fit_time_sec",
+    "latency_ms",
+    "test_rotation_acc",
+    "test_stress_acc",
+)
+
+
+def build_pairs(results_dir):
+    """Plain vs augmented variant of every model (``augmentation_pairs.json``), for the website; ``None`` if absent.
+
+    The recipe is the augmented variants' own record, completed with the default range of every listed
+    operation that the record does not override (``src.experiments.augment.DEFAULTS``).
+    """
+    raw = _read(Path(results_dir) / "augmentation_pairs.json")
+    if not raw or not raw.get("models"):
+        return None
+    from src.experiments.augment import DEFAULTS
+
+    recipe = None
+    models = {}
+    for kind, pair in raw["models"].items():
+        if not pair.get("plain") or not pair.get("augmented"):
+            continue
+        models[kind] = {
+            tag: {k: pair[tag].get(k) for k in PAIR_KEYS} for tag in ("plain", "augmented")
+        }
+        aug = pair["augmented"].get("augmentation")
+        if aug and recipe is None:
+            ranges = aug.get("ranges") or {}
+            recipe = {
+                "ops": list(aug.get("ops") or []),
+                "copies": aug.get("k"),
+                "ranges": {op: ranges.get(op, DEFAULTS.get(op)) for op in aug.get("ops") or []},
+            }
+    if not models:
+        return None
+    return {"rotation_angles": raw.get("rotation_angles"), "recipe": recipe, "models": models}
+
+
+def write_extra_models(datasets, out_path):
+    """Write ``extra_models.json`` for the site: ``datasets`` maps a dataset id to its results dir."""
+    out = {"schema": EXTRA_SCHEMA, "datasets": {}}
+    for name, rd in datasets.items():
+        e = build_extra_models(rd)
+        if e:
+            out["datasets"][name] = e
+    Path(out_path).write_text(json.dumps(out, separators=(",", ":")) + "\n", encoding="utf-8")
+    return out
+
+
 def build_site_data(results_dir, manifest=None):
     """JSON consumed by the website dashboard (only measured numbers)."""
     data = load_all(results_dir)
@@ -106,28 +290,7 @@ def build_site_data(results_dir, manifest=None):
             }
         models.append(entry)
         if t:
-            sweeps = {}
-            for tr in t["trials"]:
-                if tr["param"] is None:
-                    continue
-                sweeps.setdefault(tr["param"], []).append(
-                    {
-                        "value": tr["value"],
-                        "train_acc": tr["train_acc"],
-                        "val_acc": tr["val_acc"],
-                        "train_time_sec": tr["train_time_sec"],
-                        "stage": tr["stage"],
-                    }
-                )
-            tuning[mid] = {
-                "best_params": t["best_params"],
-                "n_trials": t["n_trials"],
-                "sweeps": sweeps,
-                "epoch_curve": t.get("epoch_curve"),
-                "curve": next(
-                    (tr["curve"] for tr in t["trials"] if tr["stage"].startswith("curve")), None
-                ),
-            }
+            tuning[mid] = _tuning_entry(t)
     extras = {}
     for key, fname in (
         ("cnn_vs_mlp", "cnn_vs_mlp.json"),

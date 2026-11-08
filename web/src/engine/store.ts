@@ -11,7 +11,7 @@ import type { Key, Params } from '../i18n'
 import { CodedError, asCoded } from '../lib/errors'
 import { adaboostRun, parseAdaBoostBinary, type AdaBoostEnsemble, type AdaBoostRun } from './adaboost'
 import { fingerprint, sha256Hex } from './bytes'
-import { ContractError, parseReplay, type BundleManifest, type ModelEntry, type ModelKind, type ReplayData, type Trace } from './contract'
+import { ContractError, parseReplay, type BundleManifest, type ModelEntry, type ModelId, type ReplayData, type Trace } from './contract'
 import { loadParams, type ParamSet } from './params'
 
 export const INPUT_DIM = 784
@@ -32,7 +32,7 @@ export interface Execution {
   seq: number
   key: string
   dataset: string
-  model: ModelKind
+  model: ModelId
   /** fingerprint of the 784 input pixels */
   inputId: string
   pixels: Float32Array
@@ -49,7 +49,7 @@ export interface Execution {
 export interface LoadedModel {
   key: string
   dataset: string
-  model: ModelKind
+  model: ModelId
   entry: ModelEntry
   trace: Trace
   params: ParamSet | null
@@ -71,10 +71,10 @@ export interface RegistryOptions {
   verifyHashes?: boolean
 }
 
-export const modelKey = (m: BundleManifest, dataset: string, model: ModelKind) => `${m.bundle_id}/${dataset}/${model}`
+export const modelKey = (m: BundleManifest, dataset: string, model: ModelId) => `${m.bundle_id}/${dataset}/${model}`
 
 /** True only when `exec` was produced by this exact model for exactly these pixels. */
-export function matches(exec: Execution | null | undefined, manifest: BundleManifest, dataset: string, model: ModelKind, pixels: Float32Array | null): exec is Execution {
+export function matches(exec: Execution | null | undefined, manifest: BundleManifest, dataset: string, model: ModelId, pixels: Float32Array | null): exec is Execution {
   return !!exec && !!pixels && exec.key === modelKey(manifest, dataset, model) && exec.inputId === fingerprint(pixels)
 }
 
@@ -103,7 +103,7 @@ export class ModelRegistry {
 
   getSnapshot = () => this.statuses
 
-  status(dataset: string, model: ModelKind): ModelStatus {
+  status(dataset: string, model: ModelId): ModelStatus {
     return this.statuses[`${dataset}/${model}`] ?? { state: 'idle' }
   }
 
@@ -112,7 +112,7 @@ export class ModelRegistry {
     this.listeners.forEach((fn) => fn())
   }
 
-  get(dataset: string, model: ModelKind): LoadedModel | undefined {
+  get(dataset: string, model: ModelId): LoadedModel | undefined {
     return this.loaded.get(`${dataset}/${model}`)
   }
 
@@ -138,7 +138,7 @@ export class ModelRegistry {
     return buf
   }
 
-  load(dataset: string, model: ModelKind): Promise<LoadedModel> {
+  load(dataset: string, model: ModelId): Promise<LoadedModel> {
     const id = `${dataset}/${model}`
     const done = this.loaded.get(id)
     if (done) return Promise.resolve(done)
@@ -149,7 +149,7 @@ export class ModelRegistry {
     return job
   }
 
-  private async doLoad(dataset: string, model: ModelKind): Promise<LoadedModel> {
+  private async doLoad(dataset: string, model: ModelId): Promise<LoadedModel> {
     const id = `${dataset}/${model}`
     const entry = this.manifest.datasets[dataset]?.models[model]
     if (!entry) throw new CodedError('err.generic')
@@ -236,7 +236,7 @@ export class ModelRegistry {
   }
 
   private stamp(
-    base: { key: string; dataset: string; model: ModelKind },
+    base: { key: string; dataset: string; model: ModelId },
     pixels: Float32Array,
     probs: Float64Array,
     top: number,
@@ -248,7 +248,7 @@ export class ModelRegistry {
   }
 
   /** The recorded training run of a model (hash-checked), or null when it has none. */
-  async loadReplay(dataset: string, model: ModelKind): Promise<ReplayData | null> {
+  async loadReplay(dataset: string, model: ModelId): Promise<ReplayData | null> {
     const ref = this.manifest.datasets[dataset]?.models[model]?.replay
     if (!ref) return null
     const buf = await this.fetchBuf(`${dataset}/${ref.file}`, ref.sha256)
@@ -260,7 +260,7 @@ export class ModelRegistry {
   }
 
   /** Runs the model on one image (784 values in [0, 1]); calls are serialised. */
-  async execute(dataset: string, model: ModelKind, pixels: Float32Array): Promise<Execution> {
+  async execute(dataset: string, model: ModelId, pixels: Float32Array): Promise<Execution> {
     const lm = this.loaded.get(`${dataset}/${model}`) ?? (await this.load(dataset, model))
     const job = this.queue.then(() => lm.execute(pixels))
     this.queue = job.catch(() => undefined)

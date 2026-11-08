@@ -51,3 +51,15 @@ export const MODEL_TEX: Record<ModelKind, string[][]> = {
     ['H(x) = \\arg\\max_k \\sum_{t=1}^{T} \\alpha_t\\,[h_t(x) = k]'],
   ],
 }
+
+/** Linear SVM and stacking: measured in Python only (results pages), captions in models.extra.<id>.eq. */
+export const EXTRA_TEX: Record<'svm' | 'stacking', string[][]> = {
+  svm: [
+    ['z = xW + b, \\qquad \\hat y = \\arg\\max_k\\, z_k'],
+    ['L = \\frac{1}{B}\\sum_{i=1}^{B} \\sum_{k} \\max\\big(0,\\, 1 - t_{ik} z_{ik}\\big) + \\frac{\\lambda}{2}\\lVert W \\rVert_F^2, \\qquad t_{ik} = \\pm 1'],
+  ],
+  stacking: [
+    ['f(x) = \\big[\\log\\, \\max\\big(p^{(1)}(x), 10^{-4}\\big),\\, \\dots,\\, z^{\\text{SVM}}(x)\\big]'],
+    ['\\hat y = \\arg\\max_k\\, \\operatorname{softmax}\\big(\\tilde f(x)\\, W + b\\big)_k'],
+  ],
+}

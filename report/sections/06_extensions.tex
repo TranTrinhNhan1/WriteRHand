@@ -31,6 +31,25 @@ Năm phép biến đổi chỉ áp dụng cho tập train, nhãn không đổi (
 
 \Cref{tab:augmentation} cho thấy với MLP, mọi điều kiện tăng validation $0.09$--$0.57$ điểm nhưng cùng bậc với độ lệch chuẩn ghép cặp ($0.33$--$0.55$), nên chưa khẳng định được tác dụng trên ảnh sạch; với CNN, test sạch tăng từ $98.82\%$ lên $99.00$--$99.25\%$ (chỉ 2 seed). Tác dụng rõ nhất là độ bền với đúng loại biến đổi: huấn luyện với phép dịch nâng accuracy của MLP trên ảnh bị dịch từ $72.1\%$ lên $94.5\%$. Một phép tăng cường cũng có thể làm giảm độ bền ở loại khác: với CNN, chỉ dùng phép dịch hoặc nhóm hình học làm accuracy trên ảnh nhiễu Gauss mạnh giảm từ $97.2\%$ xuống $95.0\%$ và $93.6\%$.
 
+\paragraph{Cặp mô hình thường và tăng cường.} Để so sánh trực tiếp, mỗi mô hình có thêm một bản huấn luyện trên ảnh gốc cùng hai bản sao biến đổi hình học (xoay $\pm30^\circ$, dịch $\pm2$ pixel, co giãn $[0.9,1.1]$), giữ nguyên siêu tham số của bản thường; các bản này cũng được đưa lên web để so sánh. Mức xoay được chọn trên validation của MLP trong ba ứng viên $15^\circ$, $30^\circ$, $45^\circ$: lấy mức có accuracy cao nhất trên validation bị biến đổi mạnh (xoay $\pm30^\circ$, dịch $\pm3$, co giãn $[0.8,1.2]$), với điều kiện accuracy validation trên ảnh sạch không giảm quá $0.5$ điểm so với bản thường; tập test không dùng để chọn. Cùng một công thức được áp dụng cho cả năm mô hình để mỗi cặp so sánh công bằng.
+
+\begin{table}[tbp]
+\centering\scriptsize
+\setlength{\tabcolsep}{3.5pt}
+\input{generated/aug_pairs}
+\caption{Accuracy test (\%) của bản thường và bản tăng cường trên ảnh sạch và trên ảnh test bị xoay ngẫu nhiên trong $\pm$ góc; chữ đậm là bản cao hơn.}
+\label{tab:aug-pairs}
+\end{table}
+
+\begin{figure}[tbp]
+\centering
+\includegraphics[width=\textwidth]{../results/figures/aug_pairs.pdf}
+\caption{Accuracy test theo mức xoay, bản thường (nét đứt) và bản tăng cường (nét liền).}
+\label{fig:aug-pairs}
+\end{figure}
+
+Với MLP (\augPlainMLP\%$\to$\augTestMLP\%), AdaBoost (\augPlainADA\%$\to$\augTestADA\%) và CNN (\augPlainCNN\%$\to$\augTestCNN\%), tăng cường tăng accuracy trên ảnh sạch và tăng mạnh khi ảnh bị xoay (CNN ở $\pm45^\circ$: $85.5\%\to97.2\%$). Với Naïve Bayes (\augPlainNB\%$\to$\augTestNB\%) và softmax (\augPlainSM\%$\to$\augTestSM\%), tăng cường làm \emph{giảm} accuracy trên ảnh sạch: hai mô hình ít tham số này không đủ sức học thêm các biến thể, và theo quy tắc chọn ở trên chúng sẽ bị loại. Khi xoay đến $\pm90^\circ$ mọi mô hình vẫn sai nhiều (cao nhất $74.2\%$) vì công thức chỉ bao phủ đến $\pm30^\circ$. Mỗi bản chỉ được huấn luyện một lần (một seed).
+
 \subsection{Fashion-MNIST và EMNIST Digits}
 \label{sec:datasets}
 Fashion-MNIST \citep{xiao2017} gồm ảnh $28\times28$ của $10$ loại quần áo; EMNIST Digits \citep{cohen2017} gồm chữ số viết tay ($240\,000$ ảnh train, $40\,000$ ảnh test; nhóm lấy $60\,000$ ảnh train chia $50\,000/10\,000$ và giữ nguyên $40\,000$ ảnh test). Mỗi bộ dữ liệu có phép chia, hằng số chuẩn hóa và siêu tham số riêng (quét rút gọn, một seed).
@@ -43,4 +62,4 @@ Thứ hạng ổn định ở hai bộ chữ số (Naïve Bayes $<$ softmax $<$ 
 
 \subsection{Giao diện demo}
 \label{sec:demo}
-Trang web (React, TypeScript, ONNX Runtime Web \citep{onnxruntime}) cho phép vẽ hoặc chọn ảnh, chọn bộ dữ liệu và một trong năm mô hình rồi xem dự đoán chạy ngay trong trình duyệt. Mô hình được xuất sang ONNX (riêng AdaBoost dùng tệp nhị phân của các cây) và đối chiếu với mô hình Python: \input{generated/export_check}. Mô hình nằm trên Hugging Face Hub, được ghim theo mã commit. Chức năng ``nhìn vào bên trong'' vẽ lại phép tính của chính mô hình đã triển khai; đó là trực quan hóa phép tính, không phải lời giải thích vì sao mô hình quyết định như vậy.
+Trang web (React, TypeScript, ONNX Runtime Web \citep{onnxruntime}) cho phép vẽ hoặc chọn ảnh, chọn bộ dữ liệu rồi xem dự đoán của các mô hình chạy ngay trong trình duyệt; với MNIST, mỗi mô hình hiện cạnh bản có tăng cường của nó để so sánh trên cùng nét vẽ (mục~\ref{sec:augmentation}). Mô hình được xuất sang ONNX (riêng AdaBoost dùng tệp nhị phân của các cây) và đối chiếu với mô hình Python: \input{generated/export_check}. Mô hình nằm trên Hugging Face Hub, được ghim theo mã commit. Chức năng ``nhìn vào bên trong'' vẽ lại phép tính của chính mô hình đã triển khai (MLP và CNN được vẽ ba chiều bằng three.js); đó là trực quan hóa phép tính, không phải lời giải thích vì sao mô hình quyết định như vậy.

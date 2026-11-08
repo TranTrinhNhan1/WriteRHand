@@ -55,6 +55,9 @@ npm run preview      # serves dist/ under /WriteRHand/
 * `public/data/manifest.json` and `public/data/<dataset>/results.json` are committed same-origin copies written by
   `uv run python -m src export --site`. At start-up the site compares the SHA-256 of the manifest with the lock and
   refuses to run on a mismatch. Every downloaded model file is checked against the hash in the manifest.
+* `public/data/extra_models.json` holds the measured numbers of the models that are not in the bundle (linear SVM,
+  stacking: no ONNX, never run in the browser; shown on Results and Models only). It is written from `results/` by
+  `uv run python -m src site-extra` (and by `export --site`); a pytest checks the committed file matches `results/`.
 * `npm run bundle:check` verifies that the committed manifest, the lock and the remote manifest agree;
   `npm run bundle:fetch` downloads the pinned bundle into `public/bundle/` (git-ignored) with every file verified.
 * The trace contract that the explorer draws from is in `../docs/TRACE_CONTRACT.md`.
@@ -82,6 +85,9 @@ npm run preview      # serves dist/ under /WriteRHand/
 * `src/components/explorer/` draws the diagrams and animations from the trace metadata only (no hard-coded architecture).
   Activations are shown as what a layer computed for this input; they are not presented as an explanation of the decision.
   The training replay shows only recorded checkpoints and metrics (`writerhand.replay/1`).
+* The MLP and CNN networks are drawn in 3D with three.js (`explorer/three/`; loaded on demand in its own chunk):
+  layer widths, channels × H × W and the strongest a·w connections come from the trace and the current execution
+  (`three/spec.ts`). Without WebGL, or on request, the same panel shows the 2D drawing.
 * Input to every model: 784 pixels in [0, 1]; the (p - mean) / (std + eps) standardisation is part of the graphs / the
   AdaBoost evaluator. Preprocessing of drawings (`src/lib/preprocess.ts`): ink bounding box, area-averaged resize so the
   longer side is 20 px, paste into 28 x 28, shift so the centre of mass is at (14, 14).

@@ -6,6 +6,8 @@ import { useId, useState, type CSSProperties } from 'react'
 import { Section } from '../components/Section'
 import { Segmented } from '../components/Segmented'
 import { ChartFigure } from '../components/charts/ChartFigure'
+import { LineChart } from '../components/charts/LineChart'
+import type { PairSide, Pairs } from '../lib/extraModels'
 import { MODEL_ORDER, isModelKind } from '../engine/contract'
 import { useBundle } from '../engine/react'
 import { useI18n, type Key } from '../i18n'
@@ -571,8 +573,140 @@ export function AllDatasets() {
             ),
           )}
         </ul>
-        <p className="caption">{t('results.all.why')}</p>
       </div>
     </section>
+  )
+}
+
+// --------------------------------------------------------------------------- plain vs augmented (one pair per model)
+/** Recipe of the augmented variants in a few words: "rotation ±30°, shift ±2 px, scaling 0.9–1.1, 2 copies". */
+function recipeLabel(t: T, recipe: Pairs['recipe']): string | null {
+  if (!recipe) return null
+  const parts: string[] = []
+  for (const op of recipe.ops) {
+    const v = recipe.ranges[op]
+    if (op === 'rotation' && finite(v)) parts.push(t('results.pairs.rotation', { a: num(v, 0) }))
+    else if (op === 'translation' && finite(v)) parts.push(t('results.pairs.translation', { a: num(v, 0) }))
+    else if (op === 'scaling' && Array.isArray(v) && v.length === 2) parts.push(t('results.pairs.scaling', { lo: num(v[0], 1), hi: num(v[1], 1) }))
+    else parts.push(condName(t, op))
+  }
+  if (finite(recipe.copies)) parts.push(t('results.pairs.copies', { n: recipe.copies! }))
+  return t('results.pairs.recipe', { parts: parts.join(', ') })
+}
+
+const PAIR_ROT = [30, 90]
+
+export function PairsSection({ pairs }: { pairs: Pairs }) {
+  const { t } = useI18n()
+  const kinds = MODEL_ORDER.filter((k) => pairs.models[k])
+  const rot = PAIR_ROT.filter((a) => kinds.every((k) => finite(pairs.models[k]!.plain.test_rotation_acc[String(a)])))
+  const recipe = recipeLabel(t, pairs.recipe)
+  const better = (a: number | null | undefined, b: number | null | undefined, lowerIsBetter = false) =>
+    finite(a) && finite(b) && a !== b ? ((lowerIsBetter ? a < b : a > b) ? 'is-best' : undefined) : undefined
+  const sub = [t('results.pairs.plain'), t('results.pairs.aug')]
+  const groups = [t('results.pairs.test'), ...rot.map((a) => t('results.pairs.rot', { a }))]
+  const angles = pairs.rotation_angles
+  const name = (k: (typeof kinds)[number]) => t(`model.${k}`)
+  const PLAIN = 'var(--ink-3)'
+  const AUG = 'var(--accent)'
+  return (
+    <Section id="r-pairs" title={t('results.pairs.title')} intro={recipe ? <p>{recipe}</p> : null}>
+      <div className="table-wrap" role="region" aria-label={t('results.pairs.region')} tabIndex={0}>
+        <table className="table num table--sticky pairs-table">
+          <thead>
+            <tr>
+              <th scope="col" rowSpan={2} className="is-left">
+                {t('results.metrics.model')}
+              </th>
+              {groups.map((g, i) => (
+                <th key={g} scope="colgroup" colSpan={i === 0 ? 3 : 2} className="is-group">
+                  {g}
+                </th>
+              ))}
+            </tr>
+            <tr>
+              {sub.map((h) => (
+                <th key={`t-${h}`} scope="col">
+                  {h}
+                </th>
+              ))}
+              <th scope="col">{t('results.pairs.delta')}</th>
+              {rot.flatMap((g) =>
+                sub.map((h) => (
+                  <th key={`${g}-${h}`} scope="col">
+                    {h}
+                  </th>
+                )),
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {kinds.map((k) => {
+              const { plain: p, augmented: a } = pairs.models[k]!
+              const d = (a.test_acc - p.test_acc) * 100
+              return (
+                <tr key={k}>
+                  <th scope="row" className="is-left">
+                    {name(k)}
+                  </th>
+                  <td className={better(p.test_acc, a.test_acc)}>{pct(p.test_acc, 2)}</td>
+                  <td className={better(a.test_acc, p.test_acc)}>{pct(a.test_acc, 2)}</td>
+                  <td className={d < 0 ? 'is-neg' : undefined}>{`${d > 0 ? '+' : d < 0 ? '−' : ''}${num(Math.abs(d), 2)}`}</td>
+                  {rot.flatMap((r) => {
+                    const x = p.test_rotation_acc[String(r)]
+                    const y = a.test_rotation_acc[String(r)]
+                    return [
+                      <td key={`${r}p`} className={better(x, y)}>
+                        {pct(x, 1)}
+                      </td>,
+                      <td key={`${r}a`} className={better(y, x)}>
+                        {pct(y, 1)}
+                      </td>,
+                    ]
+                  })}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <ChartFigure
+        title={t('results.pairs.chartTitle')}
+        caption={t('results.pairs.chartNote')}
+        legend={[
+          { label: t('results.pairs.plain'), color: PLAIN, marker: 'circle', dashed: true },
+          { label: t('results.pairs.aug'), color: AUG, marker: 'square' },
+        ]}
+        table={{
+          columns: [t('results.metrics.model'), ...angles.flatMap((x) => [`±${x}° ${sub[0]}`, `±${x}° ${sub[1]}`])],
+          rows: kinds.map((k) => [name(k), ...angles.flatMap((x) => [pct(pairs.models[k]!.plain.test_rotation_acc[String(x)], 1), pct(pairs.models[k]!.augmented.test_rotation_acc[String(x)], 1)])]),
+        }}
+      >
+        <div className="pairs-charts">
+          {kinds.map((k) => {
+            const pts = (side: PairSide) => angles.filter((x) => finite(side.test_rotation_acc[String(x)])).map((x) => ({ x, y: side.test_rotation_acc[String(x)] }))
+            return (
+              <figure key={k} className="pairs-charts__one">
+                <figcaption className="label">{name(k)}</figcaption>
+                <LineChart
+                  series={[
+                    { key: 'plain', label: t('results.pairs.plain'), color: PLAIN, marker: 'circle', dashed: true, points: pts(pairs.models[k]!.plain) },
+                    { key: 'aug', label: t('results.pairs.aug'), color: AUG, marker: 'square', points: pts(pairs.models[k]!.augmented) },
+                  ]}
+                  xLabel={t('results.pairs.axis')}
+                  yLabel={t('results.curves.panel.yAcc')}
+                  xFormat={(v) => `${v}`}
+                  yFormat={(v) => pct(v, 0)}
+                  yMin={0.3}
+                  yMax={1}
+                  height={170}
+                  ariaLabel={`${t('results.pairs.aria')}: ${name(k)}`}
+                />
+              </figure>
+            )
+          })}
+        </div>
+      </ChartFigure>
+    </Section>
   )
 }

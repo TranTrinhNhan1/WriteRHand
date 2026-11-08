@@ -6,7 +6,10 @@
     baselines   train the scikit-learn counterparts under the same protocol
     stack       stacking ensemble over the trained base models (hold-out = validation split)
     export      ONNX / JSON export + validation against the Python model
+    site-extra  web/public/data/extra_models.json (linear SVM, stacking: measured, not in the browser bundle)
     augment     optional study: MLP with vs without data augmentation (3 seeds)
+    augment-pairs   plain vs augmented variant of every model (clean + robustness)
+    augment-select  choose the augmentation of the deployed MLP / CNN on the validation split
     replay      record training replays (real checkpoints + metrics) for the explorer
     report      tables and figures from results/
     upload      push the artifacts to the Hugging Face Hub
@@ -87,6 +90,26 @@ def _best_params(model_key, results_dir):
     return json.loads(path.read_text(encoding="utf-8"))["best_params"]
 
 
+AUGMENT_RECIPE_FROM = "mlp"  # one recipe for every augmented variant: the one chosen for the MLP
+
+
+def _augment_spec(model_key, rd):
+    """Augmentation recipe of the ``<Model>_aug`` variants (chosen on the MLP's validation split).
+
+    The same recipe is applied to every model so that each pair (plain, augmented) is a fair comparison;
+    ``results/augmentation_deploy_<model>.json`` keeps the per-model selection runs.
+    """
+    path = Path(rd) / f"augmentation_deploy_{AUGMENT_RECIPE_FROM}.json"
+    if not path.is_file():
+        raise SystemExit(
+            f"{path} not found - run `augment-select --model {AUGMENT_RECIPE_FROM}` first."
+        )
+    spec = json.loads(path.read_text(encoding="utf-8"))["spec"]
+    if spec is None:
+        raise SystemExit(f"{path}: no candidate satisfied the selection rule.")
+    return spec
+
+
 def cmd_train(args):
     from src.experiments.final import train_final
 
@@ -102,8 +125,9 @@ def cmd_train(args):
             meta,
             tracker=tracker,
             out_dir=rd / "final",
-            art_dir=ad / CLASS_NAME[m],
+            art_dir=ad / (CLASS_NAME[m] + ("_aug" if args.augment else "")),
             repeats=2 if args.smoke else 5,
+            augment=_augment_spec(m, rd) if args.augment else None,
         )
     print("tracking mode:", tracker.mode, "| runs:", len(tracker.runs))
 
@@ -146,6 +170,34 @@ def cmd_augment(args):
     print("saved", run_study_cli(data, args.model, params, seeds, args.copies, conds, rd))
 
 
+def cmd_augment_select(args):
+    """Choose the rotation range of an augmented model variant on the validation split."""
+    from src.experiments.augment import select_deployed
+    from src.models.base import BaseClassifier
+
+    data, _ = _load(args.smoke, _dataset(args))
+    rd, ad = _dirs(args)
+    params = _best_params(args.model, rd)
+    if args.smoke:
+        params = {**params, "epochs": 2}
+    base = BaseClassifier.load(ad / CLASS_NAME[args.model] / "model.npz")
+    kw = {"rotations": tuple(float(r) for r in args.rotations)} if args.rotations else {}
+    res = select_deployed(data, args.model, params, base, **kw)
+    out = rd / f"augmentation_deploy_{args.model}.json"
+    out.write_text(json.dumps(res, indent=1), encoding="utf-8")
+    print("chosen:", res["chosen"], "->", out)
+
+
+def cmd_augment_pairs(args):
+    """Plain vs augmented variant of every model: clean and robustness accuracy on the test split."""
+    from src.experiments.augment_pairs import run_pairs
+
+    data, _ = _load(dataset=_dataset(args))
+    rd, ad = _dirs(args)
+    run_pairs(data, art_root=ad, res_root=rd)
+    print("wrote", rd / "augmentation_pairs.json")
+
+
 def cmd_replay(args):
     """Record training replays (checkpoints + metrics of the real training run) for the explorer."""
     from src.experiments.final import load_json
@@ -162,16 +214,23 @@ def cmd_replay(args):
         if m == "naive_bayes":
             print("naive_bayes: closed-form fit, no iterative training to replay")
             continue
-        cname = CLASS_NAME[m]
+        cname = CLASS_NAME[m] + ("_aug" if args.augment else "")
         params = _best_params(m, rd)
         path = ad / cname / "model.npz"
+        fit_xy = None
+        if args.augment:
+            from src.experiments.augment import apply_spec
+
+            fit_xy = apply_spec(data["X_train"], data["y_train"], _augment_spec(m, rd))
         if m == "adaboost":
             fin = load_json(rd / "final" / f"{cname}.json")
             rep = adaboost_replay(
                 BaseClassifier.load(path), fin["history"], data, meta, _dataset(args), params
             )
         else:
-            rep = record_replay(m, SPECS[m]["cls"], params, data, meta, path, _dataset(args))
+            rep = record_replay(
+                m, SPECS[m]["cls"], params, data, meta, path, _dataset(args), fit_xy=fit_xy
+            )
         out = save_replay(rep, ad / "replay" / f"{cname}.json")
         print(
             f"{m}: {len(rep['snapshots'])} snapshots, final_matches_deployed={rep['final_matches_deployed']} -> {out}"
@@ -247,7 +306,23 @@ def _sync_site(bundle):
     for name in man["datasets"]:
         (out / name).mkdir()
         shutil.copy(bundle / name / "results.json", out / name / "results.json")
+    _write_site_extra(list(man["datasets"]))
     print(f"site data -> {out} ({len(man['datasets'])} datasets)")
+
+
+def _write_site_extra(names):
+    """web/public/data/extra_models.json: measured models that are not in the browser bundle."""
+    from src.experiments.report import write_extra_models
+    from src.utils.paths import ROOT
+
+    path = ROOT / "web" / "public" / "data" / "extra_models.json"
+    out = write_extra_models({n: dataset_dirs(n)[0] for n in names}, path)
+    print(f"extra models -> {path} ({', '.join(out['datasets']) or 'none'})")
+
+
+def cmd_site_extra(args):
+    """Rewrite web/public/data/extra_models.json (linear SVM, stacking) from results/ only."""
+    _write_site_extra([args.dataset] if args.dataset else list(DATASETS))
 
 
 def cmd_upload(args):
@@ -298,13 +373,31 @@ def build_parser():
     add("prepare", cmd_prepare)
     tn = add("tune", cmd_tune, model=True, wandb=True, smoke=True)
     tn.add_argument("--light", action="store_true", help="reduced sweeps (extra datasets only)")
-    add("train", cmd_train, model=True, wandb=True, smoke=True)
+    tr = add("train", cmd_train, model=True, wandb=True, smoke=True)
+    tr.add_argument(
+        "--augment",
+        action="store_true",
+        help="train the augmented variant (<Model>_aug) with the spec chosen by `augment-select`",
+    )
     add("baselines", cmd_baselines, model=True, smoke=True)
     aug = add("augment", cmd_augment, smoke=True)
     aug.add_argument("--model", choices=["mlp", "cnn"], default="mlp")
     aug.add_argument("--seeds", type=int, default=3, help="number of training seeds per condition")
     aug.add_argument("--copies", type=int, default=1, help="augmented copies per training image")
-    add("replay", cmd_replay, model=True)
+    asel = add("augment-select", cmd_augment_select, smoke=True)
+    asel.add_argument("--model", choices=list(SPECS), default="mlp")
+    asel.add_argument(
+        "--rotations",
+        nargs="+",
+        type=float,
+        default=None,
+        help="candidate rotation ranges in degrees (default: 15 30 45)",
+    )
+    add("augment-pairs", cmd_augment_pairs)
+    rp = add("replay", cmd_replay, model=True)
+    rp.add_argument(
+        "--augment", action="store_true", help="replay the augmented training run (mlp / cnn)"
+    )
     add("stack", cmd_stack, smoke=True)
     add("compare", cmd_compare)
     add("report", cmd_report)
@@ -315,6 +408,8 @@ def build_parser():
         action="store_true",
         help="also copy manifest.json and <dataset>/results.json into web/public/data (committed)",
     )
+    se = add("site-extra", cmd_site_extra, dataset=False)
+    se.add_argument("--dataset", choices=list(DATASETS), default=None)
     up = add("upload", cmd_upload, dataset=False)
     up.add_argument("--repo-id", default=None, help="e.g. <user>/WriteRHand-MNIST")
     up.add_argument("--dry-run", action="store_true")

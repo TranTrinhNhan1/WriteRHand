@@ -124,6 +124,7 @@ export function ArchitectureDiagram({ trace, reached, selected, onSelect }: Prop
               data-op={l.op}
               aria-pressed={selected === l.id}
               onClick={() => onSelect?.(l.id)}
+              title={[d, extra].filter(Boolean).join(' · ') || undefined}
               aria-label={`${i + 1}. ${opName} ${l.id}, ${t('ex.arch.out')} ${shape(l.out_shape)}${d ? `, ${d}` : ''}${extra ? `, ${extra}` : ''}${isReached ? '' : `, ${t('ex.arch.pending')}`}`}
             >
               <span className="ex-arch__head">

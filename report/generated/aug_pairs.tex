@@ -1,0 +1,13 @@
+\begin{tabular}{lrrrrrrrr}
+\toprule
+& \multicolumn{2}{c}{ảnh sạch} & \multicolumn{2}{c}{xoay $\pm20^\circ$} & \multicolumn{2}{c}{xoay $\pm45^\circ$} & \multicolumn{2}{c}{xoay $\pm90^\circ$} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+Mô hình & thường & tăng cường & thường & tăng cường & thường & tăng cường & thường & tăng cường \\
+\midrule
+Gaussian NB & 81.3 & 70.6 & 74.8 & 64.7 & 57.8 & 53.8 & 36.1 & 35.0 \\
+Softmax regression & 92.5 & 89.5 & 87.0 & 86.9 & 68.8 & \textbf{75.6} & 43.3 & \textbf{49.9} \\
+MLP & 98.2 & \textbf{98.4} & 96.0 & \textbf{97.9} & 82.2 & \textbf{94.6} & 52.7 & \textbf{68.8} \\
+AdaBoost-SAMME & 97.6 & \textbf{97.9} & 94.9 & \textbf{97.3} & 81.0 & \textbf{94.1} & 53.0 & \textbf{68.8} \\
+CNN & 98.8 & \textbf{99.2} & 97.5 & \textbf{99.0} & 85.5 & \textbf{97.2} & 55.9 & \textbf{74.2} \\
+\bottomrule
+\end{tabular}

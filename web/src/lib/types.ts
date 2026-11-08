@@ -1,6 +1,11 @@
 import type { ModelKind } from '../engine/contract'
 
 export type { ModelKind }
+/** Models measured in results/ but not exported to the browser bundle (no ONNX, no trace). */
+export type ExtraModelId = 'svm' | 'stacking'
+export const EXTRA_ORDER: ExtraModelId[] = ['svm', 'stacking']
+/** Every model of the results pages: the five browser models first, then the measured-only ones. */
+export type ResultId = ModelKind | ExtraModelId
 export type SplitId = 'train' | 'val' | 'test'
 
 export const SPLIT_IDS: SplitId[] = ['train', 'val', 'test']
@@ -31,8 +36,23 @@ export interface SklearnRef {
   splits?: Partial<Record<SplitId, { accuracy?: number | null; f1_macro?: number | null; predict_time_sec?: number | null }>>
 }
 
+/** Hold-out stacking: what the meta-learner was fitted on and which base models it combines. */
+export interface StackingInfo {
+  /** the split the meta-learner was fitted on: its accuracy on that split (and on train) is not a clean estimate */
+  fitted_on: 'val'
+  meta_learner?: string
+  n_features?: number | null
+  meta_fit_sec?: number | null
+  /** sum of the base models' training times (train_time_sec of the entry = this + meta_fit_sec) */
+  base_fit_sec?: number | null
+  selected_l2?: number | null
+  cv_val_acc?: number | null
+  soft_vote_test_accuracy?: number | null
+  bases: { id: string; test_accuracy?: number | null; weight?: number | null }[]
+}
+
 export interface ResultModel {
-  id: ModelKind
+  id: ResultId
   name: string
   class?: string
   params?: Record<string, unknown> | null
@@ -45,6 +65,7 @@ export interface ResultModel {
   stopped_epoch?: number | null
   in_browser?: boolean | null
   sklearn?: SklearnRef | null
+  stacking?: StackingInfo | null
 }
 
 export interface SweepPoint {
@@ -158,7 +179,7 @@ export interface Results {
   git?: { commit?: string; short?: string; dirty?: boolean }
   protocol?: string
   models: ResultModel[]
-  tuning?: Partial<Record<ModelKind, TuningEntry>>
+  tuning?: Partial<Record<ResultId, TuningEntry>>
   augmentation?: { mlp?: AugStudy; cnn?: AugStudy }
   cnn_vs_mlp?: CnnVsMlp
   cross_eval?: CrossEval[]

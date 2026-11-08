@@ -13,9 +13,9 @@ import { useChoice } from '../lib/choice'
 import { date, int, ms, num, paramName, paramValue, pct, seconds } from '../lib/format'
 import { curvePanel, historyPanels, isValidMatrix, splitOf, sweepPanels, type SeriesRole } from '../lib/results'
 import { datasetIdsOf } from '../lib/selection'
-import { SPLIT_IDS, type ModelKind, type ResultModel, type SplitId } from '../lib/types'
+import { EXTRA_ORDER, SPLIT_IDS, type ResultId, type ResultModel, type SplitId } from '../lib/types'
 import { finite } from '../lib/scale'
-import { AllDatasets, AugmentationSection, CnnVsMlpSection, CrossEvalSection } from './resultsExtra'
+import { AllDatasets, AugmentationSection, CnnVsMlpSection, CrossEvalSection, PairsSection } from './resultsExtra'
 
 const SPLIT_COLOR: Record<SplitId, string> = { train: 'var(--c-train)', val: 'var(--c-val)', test: 'var(--c-test)' }
 
@@ -33,6 +33,20 @@ function best(values: (number | null | undefined)[], higherIsBetter = true): num
   return higherIsBetter ? Math.max(...v) : Math.min(...v)
 }
 
+const RESULT_ORDER: ResultId[] = [...MODEL_ORDER, ...EXTRA_ORDER]
+
+/** Model name for a table row; a model measured in Python only carries a compact tag. */
+export function ModelName({ m, mark }: { m: ResultModel; mark?: string }) {
+  const { t } = useI18n()
+  return (
+    <>
+      {t(`model.${m.id}`)}
+      {mark && <sup className="fnmark">{mark}</sup>}
+      {m.in_browser === false && <span className="offline-tag">{t('results.extra.offline')}</span>}
+    </>
+  )
+}
+
 function Cell({ v, b, text }: { v: number | null | undefined; b: number | null; text: string }) {
   return <td className={finite(v) && b != null && v === b ? 'is-best' : undefined}>{text}</td>
 }
@@ -48,6 +62,7 @@ function MetricsTable({ models, split }: { models: ResultModel[]; split: SplitId
   ] as const
   const bests = cols.map((c) => best(models.map((m) => splitOf(m, split)?.[c.key])))
   return (
+    <>
     <div className="table-wrap" role="region" aria-label={t('results.metrics.region', { split: splitName })} tabIndex={0}>
       <table className="table num">
         <caption className="visually-hidden">{t('results.metrics.caption', { split: splitName })}</caption>
@@ -67,7 +82,7 @@ function MetricsTable({ models, split }: { models: ResultModel[]; split: SplitId
           {models.map((m) => (
             <tr key={m.id}>
               <th scope="row" className="is-left">
-                {t(`model.${m.id}`)}
+                <ModelName m={m} mark={m.stacking && split !== 'test' ? '†' : undefined} />
               </th>
               {cols.map((c, i) => (
                 <Cell key={c.key} v={splitOf(m, split)?.[c.key]} b={bests[i]} text={pct(splitOf(m, split)?.[c.key], 2)} />
@@ -77,6 +92,8 @@ function MetricsTable({ models, split }: { models: ResultModel[]; split: SplitId
         </tbody>
       </table>
     </div>
+    {split !== 'test' && models.some((m) => m.stacking) && <p className="caption table-note">† {t('results.extra.stackFit')}</p>}
+    </>
   )
 }
 
@@ -93,7 +110,6 @@ export default function Results() {
   return (
     <div className="results sheet">
       <header className="page-head">
-        <p className="eyebrow">{t('nav.results')}</p>
         <h1 className="display">{t('results.title')}</h1>
         <Segmented
           legend={t('results.tabs.legend')}
@@ -117,17 +133,19 @@ function DatasetResults({ dataset }: { dataset: string }) {
   const { t, lang } = useI18n()
   const bundle = useBundle()
   const entry = bundle.manifest.datasets[dataset]
-  const results = bundle.results[dataset] ?? { models: [] }
-  const models = [...results.models].sort((a, b) => MODEL_ORDER.indexOf(a.id) - MODEL_ORDER.indexOf(b.id))
+  const extra = bundle.extra[dataset]
+  const base = bundle.results[dataset] ?? { models: [] }
+  const results = extra ? { ...base, models: [...base.models, ...extra.models], tuning: { ...base.tuning, ...extra.tuning } } : base
+  const models = [...results.models].sort((a, b) => RESULT_ORDER.indexOf(a.id) - RESULT_ORDER.indexOf(b.id))
   const classes = entry.classes
   const hw = results.hardware
   const ds = results.dataset ?? entry.dataset
 
   const [split, setSplit] = useState<SplitId>('test')
-  const [cmModel, setCmModel] = useState<ModelKind>(models.find((m) => m.id === 'cnn')?.id ?? models.find((m) => m.id === 'mlp')?.id ?? models[0]?.id)
+  const [cmModel, setCmModel] = useState<ResultId>(models.find((m) => m.id === 'cnn')?.id ?? models.find((m) => m.id === 'mlp')?.id ?? models[0]?.id)
   const [cmSplit, setCmSplit] = useState<SplitId>('test')
-  const [curveModel, setCurveModel] = useState<ModelKind>(models.find((m) => m.history && Object.keys(m.history).length)?.id ?? models[0]?.id)
-  const [tuneModel, setTuneModel] = useState<ModelKind>(models.find((m) => results.tuning?.[m.id]?.sweeps)?.id ?? models[0]?.id)
+  const [curveModel, setCurveModel] = useState<ResultId>(models.find((m) => m.history && Object.keys(m.history).length)?.id ?? models[0]?.id)
+  const [tuneModel, setTuneModel] = useState<ResultId>(models.find((m) => results.tuning?.[m.id]?.sweeps)?.id ?? models[0]?.id)
 
   const splitOptions = SPLIT_IDS.map((s) => ({ value: s, label: t(`split.${s}`) }))
   const legendOf = (): LegendItem[] => SPLIT_IDS.map((s) => ({ label: t(`split.${s}`), color: SPLIT_COLOR[s] }))
@@ -160,8 +178,9 @@ function DatasetResults({ dataset }: { dataset: string }) {
   const curve = curvePanel(tuning)
 
   const sk = models.filter((m) => m.sklearn)
+  const stack = models.find((m) => m.stacking)
 
-  const modelName = (id: ModelKind) => t(`model.${id}`)
+  const modelName = (id: ResultId) => t(`model.${id}`)
   const unit = (v: number | null | undefined) => (finite(v) ? String(v!.toPrecision(4)) : '\u2013')
   const hwLine = [hw?.cpu ?? t('results.facts.unknownCpu'), hw?.logical_cores ? t('results.facts.cores', { n: hw.logical_cores }) : '', hw?.device ?? '']
     .filter(Boolean)
@@ -174,11 +193,6 @@ function DatasetResults({ dataset }: { dataset: string }) {
   return (
     <>
       <div className="results__intro">
-        <p className="lede">
-          {finite(ds?.n_train) && finite(ds?.n_val) && finite(ds?.n_test)
-            ? t('results.lede', { title: entry.title, train: int(ds?.n_train), val: int(ds?.n_val), test: int(ds?.n_test) })
-            : t('results.ledeFallback')}
-        </p>
         <dl className="facts">
           <div>
             <dt>{t('results.facts.dataset')}</dt>
@@ -226,7 +240,7 @@ function DatasetResults({ dataset }: { dataset: string }) {
               ariaLabel={t('results.metrics.accAria')}
             />
           </ChartFigure>
-          <ChartFigure title={t('results.metrics.f1By')} caption={t('results.metrics.f1ByNote')} legend={legendOf()} table={tableOf(f1Rows)}>
+          <ChartFigure title={t('results.metrics.f1By')} legend={legendOf()} table={tableOf(f1Rows)}>
             <BarChart
               rows={f1Rows}
               series={series}
@@ -240,6 +254,8 @@ function DatasetResults({ dataset }: { dataset: string }) {
           </ChartFigure>
         </div>
       </Section>
+
+      {extra?.pairs && <PairsSection pairs={extra.pairs} />}
 
       <Section id="r-time" title={t('results.time.title')} intro={<p>{t('results.time.intro')}</p>}>
         <div className="table-wrap" role="region" aria-label={t('results.time.region')} tabIndex={0}>
@@ -261,7 +277,7 @@ function DatasetResults({ dataset }: { dataset: string }) {
                 return (
                   <tr key={m.id}>
                     <th scope="row" className="is-left">
-                      {modelName(m.id)}
+                      <ModelName m={m} mark={m.stacking ? '‡' : undefined} />
                     </th>
                     <td>{seconds(m.train_time_sec)}</td>
                     <td>{seconds(tm?.predict_time_sec)}</td>
@@ -273,6 +289,11 @@ function DatasetResults({ dataset }: { dataset: string }) {
             </tbody>
           </table>
         </div>
+        {stack?.stacking && (
+          <p className="caption table-note">
+            ‡ {t('results.extra.stackCost', { base: seconds(stack.stacking.base_fit_sec), meta: seconds(stack.stacking.meta_fit_sec) })}
+          </p>
+        )}
         <p className="caption">
           {[
             hw?.cpu ?? t('results.time.noCpu'),
@@ -317,7 +338,7 @@ function DatasetResults({ dataset }: { dataset: string }) {
           </ChartFigure>
           <ChartFigure
             title={t('results.time.oneTitle')}
-            caption={t('results.time.oneNote')}
+            caption={t('results.time.logScale')}
             table={{ columns: [t('results.time.model'), t('results.time.colMs')], rows: latency.map((r) => [r.label, unit(r.values[0])]) }}
           >
             <BarChart
@@ -337,7 +358,6 @@ function DatasetResults({ dataset }: { dataset: string }) {
         title={t('results.cm.title')}
         intro={
           <>
-            <p>{t('results.cm.intro')}</p>
             <Segmented legend={t('results.cm.model')} value={cmModel} onChange={setCmModel} options={modelOptions} />
             <Segmented legend={t('split.label')} value={cmSplit} onChange={setCmSplit} options={splitOptions} />
           </>
@@ -454,7 +474,7 @@ function DatasetResults({ dataset }: { dataset: string }) {
                 <ChartFigure
                   key={sw.param}
                   title={t('results.tuning.accAgainst', { param: pname })}
-                  caption={sw.chosen ? t('results.tuning.chosen', { value: sw.chosen.label }) : undefined}
+                  caption={[sw.chosen ? t('results.tuning.chosen', { value: sw.chosen.label }) : '', tuneModel === 'stacking' ? t('results.extra.stackCv') : ''].filter(Boolean).join(' ') || undefined}
                   legend={lines.map((l) => ({ label: l.label, color: l.color, marker: l.marker }))}
                   table={{
                     columns: [pname, t('results.tuning.trainAcc'), t('results.tuning.valAcc')],
@@ -550,7 +570,7 @@ function DatasetResults({ dataset }: { dataset: string }) {
                   return (
                     <tr key={m.id}>
                       <th scope="row" className="is-left">
-                        {modelName(m.id)}
+                        <ModelName m={m} />
                       </th>
                       <td className="is-left">{s.class ?? '\u2013'}</td>
                       <td>{pct(tm?.accuracy, 2)}</td>

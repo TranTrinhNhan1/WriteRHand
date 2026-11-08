@@ -760,3 +760,49 @@
   text-transform: uppercase;
   color: var(--warn);
 }
+
+/* measured in Python only (linear SVM, stacking): compact tag next to the model name */
+.offline-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 6px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-xs);
+  color: var(--ink-3);
+  font: 500 0.6875rem/1.6 var(--mono);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  vertical-align: 1px;
+}
+.fnmark {
+  margin-left: 1px;
+  color: var(--ink-3);
+  font-size: 0.7em;
+}
+.table-note {
+  margin-top: 8px;
+}
+@media (max-width: 640px) {
+  .table .offline-tag {
+    display: block;
+    width: max-content;
+    margin: 2px 0 0;
+  }
+}
+
+/* plain vs augmented ----------------------------------------------------------- */
+.pairs-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  gap: 16px 20px;
+}
+
+.pairs-charts__one {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pairs-table td.is-neg {
+  color: var(--danger);
+}
