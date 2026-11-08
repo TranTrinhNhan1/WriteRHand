@@ -1,0 +1,21 @@
+\begin{table}[H]\centering\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrrrrrrrr}
+\toprule
+ & & \multicolumn{2}{c}{Validation} & Test & \multicolumn{5}{c}{Test sau nhiễu (\%)} \\
+\cmidrule(lr){3-4}\cmidrule(lr){6-10}
+Điều kiện & Số mẫu & Acc (\%) & $\Delta$ so với gốc & Acc (\%) & Xoay & Dịch & Co giãn & Gauss & Muối tiêu \\
+\midrule
+Không tăng cường & 50\,000 & 97.88 $\pm$ 0.42 & +0.00 $\pm$ 0.00 & 98.02 & 95.8 & 72.1 & 96.5 & 97.1 & 97.4 \\
+Xoay & 100\,000 & 98.45 $\pm$ 0.06 & +0.57 $\pm$ 0.47 & 98.48 & 97.6 & 75.9 & 97.1 & 97.6 & 98.0 \\
+Dịch chuyển & 100\,000 & 98.43 $\pm$ 0.30 & +0.54 $\pm$ 0.55 & 98.41 & 96.6 & 94.5 & 97.5 & 97.6 & 97.8 \\
+Co giãn & 100\,000 & 98.30 $\pm$ 0.10 & +0.42 $\pm$ 0.45 & 98.33 & 96.3 & 75.7 & 97.5 & 97.4 & 97.7 \\
+Nhiễu Gauss & 100\,000 & 98.27 $\pm$ 0.01 & +0.38 $\pm$ 0.42 & 98.35 & 96.3 & 74.4 & 96.9 & 97.7 & 97.9 \\
+Nhiễu muối tiêu & 100\,000 & 98.25 $\pm$ 0.04 & +0.37 $\pm$ 0.40 & 98.32 & 96.3 & 74.1 & 96.7 & 97.5 & 97.9 \\
+Hình học (xoay, dịch, co giãn) & 100\,000 & 98.19 $\pm$ 0.21 & +0.31 $\pm$ 0.33 & 98.24 & 97.1 & 94.3 & 97.4 & 97.1 & 97.6 \\
+Cả năm phép & 100\,000 & 97.98 $\pm$ 0.03 & +0.09 $\pm$ 0.40 & 98.11 & 96.8 & 93.7 & 97.2 & 97.3 & 97.5 \\
+\bottomrule
+\end{tabular}
+\caption{MLP với cấu hình đã chọn, huấn luyện lại với 3 seed (42, 43, 44) cho mỗi điều kiện; $\Delta$ là hiệu validation accuracy so với điều kiện gốc \emph{cùng seed} (trung bình $\pm$ độ lệch chuẩn mẫu). 1 bản sao biến đổi cho mỗi ảnh train; điều kiện được chọn chỉ theo validation (\texttt{rotation}). Các cột ``Test sau nhiễu'' đo độ bền trên tập test bị biến đổi ở mức mạnh hơn mức huấn luyện, chỉ để báo cáo.}
+\label{tab:augmentation-mlp}
+\end{table}

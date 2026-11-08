@@ -51,6 +51,17 @@ Số hạng $\ln(K-1)$ khiến bộ học chỉ cần tốt hơn đoán ngẫu n
 \item Dự đoán: $\hat y=\argmax_k\sum_t\alpha_t[h_t(\bm x)=k]$; ``xác suất'' là tỉ lệ phiếu bầu có trọng số (không được hiệu chỉnh).
 \end{algo}
 
+\subsection{Mạng tích chập nhỏ (CNN)}
+\label{sec:cnn-method}
+CNN là phần mở rộng so sánh với MLP. Kích thước mỗi lớp \emph{không} được gõ cứng trong báo cáo hay trong giao diện: chúng được đọc từ \texttt{CNN.describe()} của mô hình đã huấn luyện và từ đồ thị ONNX xuất ra. Với cấu hình được chọn trên validation (\texttt{channels}=$(16,32)$, \texttt{kernel\_size}=3, \texttt{dense}=$(64)$), đường đi của một ảnh là
+\begin{align*}
+1{\times}28{\times}28 &\xrightarrow{\text{conv }3{\times}3} 16{\times}26{\times}26 \xrightarrow{\text{ReLU, max-pool }2} 16{\times}13{\times}13 \\
+&\xrightarrow{\text{conv }3{\times}3} 32{\times}11{\times}11 \xrightarrow{\text{ReLU, max-pool }2} 32{\times}5{\times}5 \xrightarrow{\text{flatten}} 800 \to 64 \to 10,
+\end{align*}
+tổng cộng $56\,714$ tham số (so với $535\,818$ của MLP). Tích chập được cài đặt bằng \emph{im2col}: mỗi cửa sổ $k{\times}k{\times}C_{\text{in}}$ được trải thành một hàng, nên giá trị tại một vị trí là $\bm{p}^{\top}\bm{w}+b$ (nhân từng phần tử rồi cộng), đúng như phép tính mà trình khám phá vẽ ra; max-pool ghi lại vị trí cực đại để chuyển gradient ngược về đúng ô; gradient của kernel là $\text{patches}^{\top}\,\partial L/\partial \text{out}$ và gradient theo đầu vào được cộng dồn bằng \emph{col2im}.
+
+\textbf{Phần viết tay và phần dùng PyTorch.} Viết tay: im2col/col2im, lan truyền tiến và lùi của tích chập, max-pool và ReLU, lớp dày đặc, softmax kèm cross-entropy, cập nhật SGD có momentum, khởi tạo He, dropout, dừng sớm. PyTorch chỉ là kho tensor và phép nhân ma trận (\texttt{matmul}); \emph{không} dùng \texttt{autograd}, \texttt{nn.Module}, \texttt{optim}, \texttt{F.conv2d} hay \texttt{F.max\_pool2d}. Tính đúng được kiểm chứng độc lập (Mục~\ref{sec:verification}): tích chập khớp một vòng lặp ngây thơ bảy tầng, và tích chập, max-pool và gradient đầy đủ khớp \texttt{F.conv2d}, \texttt{F.max\_pool2d} và autograd (chỉ dùng trong kiểm thử), cộng thêm sai phân hữu hạn.
+
 \subsection{Độ phức tạp tính toán}
 \begin{table}[H]
 \centering\small
@@ -62,6 +73,7 @@ Gaussian NB & $O(ND)$ & $O(KD)$ \\
 Softmax regression & $O(E\,N\,K\,D)$ & $O(KD)$ \\
 MLP ($H$ nơ-ron ẩn, 1 lớp) & $O(E\,N\,D\,H)$ & $O(DH+HK)$ \\
 AdaBoost ($T$ cây, độ sâu $d$) & $O(T\,d\,N\,D)$ & $O(T\,d)$ \\
+CNN ($C_\ell$ kênh, kernel $k$, ảnh $S\times S$) & $O(E\,N\sum_\ell S_\ell^2 k^2 C_{\ell-1}C_\ell)$ & $O(\sum_\ell S_\ell^2 k^2 C_{\ell-1}C_\ell)$ \\
 \bottomrule
 \end{tabular}
 \caption{Độ phức tạp theo số mẫu $N$, số chiều $D$, số lớp $K$, số epoch $E$. Suy luận của AdaBoost chỉ so sánh $T d$ ngưỡng nên rất rẻ.}

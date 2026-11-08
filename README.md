@@ -1,7 +1,7 @@
 # WriteRHand - nhận dạng chữ số viết tay MNIST bằng các bộ phân lớp tự cài đặt
 
-Đồ án môn **Nhận dạng mẫu (Pattern Recognition)**. Bốn bộ phân lớp, phần tính toán lõi viết bằng NumPy
-(PyTorch chỉ làm tensor cho MLP, **không dùng autograd**; scikit-learn chỉ để đối chiếu):
+Đồ án môn **Nhận dạng mẫu (Pattern Recognition)**. Bốn bộ phân lớp cùng một CNN nhỏ làm phần mở rộng, phần tính toán lõi viết tay
+(NumPy; PyTorch chỉ làm kho tensor cho MLP và CNN, **không dùng autograd, `nn.Module`, `optim`, `F.conv2d`, `F.max_pool2d`**; scikit-learn chỉ để đối chiếu):
 
 | # | Bộ phân lớp | Cách huấn luyện | Mã nguồn |
 |---|-------------|-----------------|----------|
@@ -9,11 +9,13 @@
 | 2 | Hồi quy logistic đa lớp (softmax) | mini-batch Gradient Descent, L2 | `src/models/logistic_regression.py` |
 | 3 | MLP (ReLU, dropout, momentum) | lan truyền ngược viết tay, early stopping | `src/models/mlp.py` |
 | 4 | AdaBoost-SAMME (cây Gini có trọng số) | boosting tuần tự | `src/models/adaboost.py` |
+| 5 | CNN nhỏ (conv-ReLU-max-pool ×2, dense) | im2col/col2im, backprop và SGD momentum viết tay | `src/models/cnn.py` |
 
-**English summary.** Handwritten digit classification on MNIST with four classifiers implemented from scratch,
+**English summary.** Handwritten digit classification on MNIST with four classifiers (plus a small CNN) implemented from scratch,
 a leak-free reproducible protocol (stratified 50k/10k train/validation split, official 10k test), validation-only
 hyper-parameter search, scikit-learn parity tests, W&B tracking (offline fallback), ONNX export to Hugging Face,
-an in-browser demo (React + ONNX Runtime Web) and a LaTeX report with slides.
+extensions (Fashion-MNIST, EMNIST Digits, five augmentation transforms with a controlled ablation, CNN vs MLP), an in-browser demo
+(React + ONNX Runtime Web) with a Model Execution Explorer driven by the deployed model through a versioned trace contract, a LaTeX report and Beamer slides.
 
 **Demo trực tuyến:** <https://trantrinhnhan1.github.io/WriteRHand/> · **Mô hình:** <https://huggingface.co/TranTrinhNhan1111/WriteRHand-MNIST>
 
@@ -29,6 +31,7 @@ test chỉ để báo cáo. Bảng này được sinh tự động từ `results
 | Softmax regression | 93.62 | 92.15 | 92.52 | 92.45 | 92.41 | 92.42 | 12.7 | 0.024 | 0.010 |
 | MLP | 99.87 | 98.18 | 98.24 | 98.23 | 98.23 | 98.23 | 11.0 | 0.051 | 0.042 |
 | AdaBoost-SAMME | 100.00 | 97.59 | 97.60 | 97.58 | 97.58 | 97.58 | 817.9 | 0.751 | 18.705 |
+| CNN | 99.40 | 98.65 | 98.80 | 98.79 | 98.79 | 98.79 | 143.0 | 1.163 | 0.315 |
 <!-- BENCHMARK:END -->
 
 Chi tiết: báo cáo `report/main.pdf`, slide `slides/WriteRHand-slides.pdf`, notebook `notebooks/`, nhật ký thí nghiệm `results/`.
@@ -50,10 +53,25 @@ uv run python -m src prepare                  # tải MNIST, chia phân tầng 5
 uv run python -m src tune --model all         # quét siêu tham số (chỉ train/val)  -> results/tuning/
 uv run python -m src train --model all        # huấn luyện cấu hình đã chọn, đánh giá train/val/test -> results/final/
 uv run python -m src baselines --model all    # đối chứng scikit-learn cùng giao thức -> results/baselines/
-uv run python -m src augment                  # (tuỳ chọn) nghiên cứu tăng cường dữ liệu -> results/augmentation.json
-uv run python -m src report                   # bảng + hình (results/tables, results/figures) và cập nhật README
-uv run python -m src export                   # ONNX/JSON + kiểm chứng số học -> artifacts/bundle
-uv run python -m src upload --dry-run         # xem sẽ đẩy gì lên Hugging Face (bỏ --dry-run để đẩy)
+uv run python -m src augment --model mlp --seeds 3   # đối chứng tăng cường dữ liệu (mlp | cnn) -> results/augmentation_<model>.json
+uv run python -m src compare                  # CNN so với MLP (McNemar, độ bền) -> results/cnn_vs_mlp.json
+uv run python -m src replay --model mlp       # ghi lại điểm kiểm tra huấn luyện thật cho trình khám phá -> artifacts/replay/
+uv run python -m src report                   # bảng + hình + đoạn LaTeX và cập nhật README
+uv run python -m src export --site            # ONNX/nhị phân + hợp đồng vết + kiểm chứng số học -> artifacts/bundle, web/public/data
+uv run python -m src upload --write-lock      # đẩy lên Hugging Face và ghim revision vào web/model-lock.json
+```
+
+Bộ dữ liệu khác (mỗi bộ có phép chia, siêu tham số, kết quả và mô hình riêng, ghi vào `results/datasets/<tên>/`):
+
+```bash
+for ds in fashion_mnist emnist_digits; do
+  uv run python -m src prepare --dataset $ds
+  uv run python -m src tune --model all --light --dataset $ds      # quét rút gọn
+  uv run python -m src train --model all --dataset $ds
+  uv run python -m src baselines --model all --dataset $ds
+  for m in softmax mlp cnn adaboost; do uv run python -m src replay --model $m --dataset $ds; done
+  uv run python -m src report --dataset $ds
+done
 ```
 
 `--smoke` chạy bản siêu nhỏ (vài giây) để kiểm tra pipeline; `--results-dir`/`--artifacts-dir` đổi nơi ghi.
@@ -65,32 +83,33 @@ Notebook tái lập kết quả chính: `notebooks/reproduce_results.ipynb` (kh�
 mã băm phép chia dữ liệu, loss/accuracy theo epoch, ma trận nhầm lẫn, thời gian và artifact mô hình. Nhật ký JSON trong `results/` luôn được ghi, không phụ thuộc W&B.
 
 ### Mô hình và website
-Trọng số **không** được commit. Bundle (ONNX + JSON + model card) nằm trên Hugging Face:
+Trọng số **không** được commit. Bundle (ONNX + tham số nhị phân + hợp đồng vết + model card) nằm trên Hugging Face và được **ghim theo mã commit** trong `web/model-lock.json`:
 <https://huggingface.co/TranTrinhNhan1111/WriteRHand-MNIST>. Website tĩnh (React + TypeScript + Vite + ONNX Runtime Web) nằm trong `web/`
-(xem `web/README.md`), có giao diện sáng/tối và mục "Nhìn vào bên trong" minh hoạ từng bước tính của bốn thuật toán trên chính nét vẽ của bạn; CI build và triển khai lên GitHub Pages bằng `.github/workflows/pages.yml`.
+(xem `web/README.md` và `docs/TRACE_CONTRACT.md`): chọn bộ dữ liệu và một trong năm mô hình, có giao diện sáng/tối, và một **trình khám phá thực thi mô hình** vẽ đúng phép tính của mô hình đã triển khai (sơ đồ dựng từ metadata của hợp đồng vết, giá trị từ ONNX Runtime Web, đối chiếu với tính lại từ tham số) cho MLP, CNN, Naïve Bayes, softmax và AdaBoost, cùng chế độ phát lại huấn luyện chỉ từ các điểm kiểm tra thật. Trực quan hoá tính toán không phải là giải thích quyết định; điều này được ghi rõ trong giao diện và báo cáo. CI chạy kiểm thử Python, kiểm thử Vitest/parity trên bundle đã ghim (thiếu bundle là lỗi, không bỏ qua), kiểm thử trình duyệt Playwright, rồi build và triển khai lên GitHub Pages (`.github/workflows/`).
 
 ## Giao thức thực nghiệm (tóm tắt)
 - 60 000 ảnh huấn luyện chính thức → **50 000 train / 10 000 validation** (phân tầng, seed 42); 10 000 ảnh test chính thức.
 - Chuẩn hóa `(pixel/255 − mean)/(std + 1e-8)` với `mean`, `std` chỉ tính trên train; cùng công thức dùng trong trình duyệt.
-- Chọn siêu tham số bằng quét tuần tự từng tham số, chọn theo validation; mọi cấu hình đã chạy được ghi lại. Hàm tìm kiếm không nhận mảng test.
+- Chọn siêu tham số bằng quét tuần tự từng tham số (coordinate descent do nhóm tự viết, không dùng Optuna), chọn theo validation; mọi cấu hình đã chạy được ghi lại. Hàm tìm kiếm không nhận mảng test.
 - Mô hình cuối huấn luyện trên 50 000 ảnh train; báo cáo train/val/test với accuracy, macro precision/recall/F1, confusion matrix.
 
 ## Báo cáo và slide
 ```bash
 cd report && pdflatex main.tex && bibtex main && pdflatex main.tex && pdflatex main.tex   # cần TeX Live có T5 + lmodern
-uv run python slides/build_slides.py && node slides/export_pdf.mjs                        # slide (cần playwright-core + Chromium cho PDF)
+cd slides/beamer && latexmk -pdf main.tex && cp main.pdf ../WriteRHand-slides.pdf                                             # slide Beamer (Computer Modern)
 ```
 Các con số trong báo cáo và slide được đọc từ `results/` (xem `src/experiments/texfrag.py`), không nhập tay.
 
 ## Cấu trúc thư mục
 ```
-src/                 models/ (4 bộ phân lớp), preprocessing/, evaluation/, experiments/ (tune, train, report, augment), export/ (ONNX, Hugging Face), cli.py
-tests/               kiểm thử đơn vị + đối chiếu scikit-learn (73 kiểm thử, chạy offline)
+src/                 models/ (5 mô hình), preprocessing/ (3 bộ dữ liệu), evaluation/, experiments/ (tune, train, augment, compare, replay, report), export/ (ONNX, hợp đồng vết, Hugging Face), cli.py
+tests/               kiểm thử đơn vị, đối chiếu scikit-learn/PyTorch, bundle và hợp đồng vết (chạy offline)
+docs/                TRACE_CONTRACT.md: hợp đồng giữa Python và trình khám phá
 notebooks/           EDA, reproduce_results (chính), fine-tuning, final_eval_with_test_set, eval_for_ensemble (khám phá)
 results/             tuning/ final/ baselines/ tables/ figures/ (sinh ra bởi chương trình)
 report/              báo cáo LaTeX (main.tex → main.pdf, các đoạn sinh tự động ở generated/)
-slides/              slide HTML (index.html) + PDF; dựng lại: uv run python slides/build_slides.py
-web/                 website demo      .github/workflows/   CI + GitHub Pages
+slides/              slide Beamer (beamer/main.tex) + PDF
+web/                 website demo (src/engine, src/components/explorer, e2e/)      .github/workflows/   CI + GitHub Pages
 ```
 
 ## Thành viên

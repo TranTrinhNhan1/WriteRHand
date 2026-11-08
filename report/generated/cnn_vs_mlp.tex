@@ -1,0 +1,22 @@
+\begin{table}[H]\centering\small
+\begin{tabular}{lrr}
+\toprule
+ & MLP & CNN \\
+\midrule
+Số tham số & 535\,818 & 56\,714 \\
+Kích thước ONNX (KiB) & 2094 & 223 \\
+Accuracy test (\%) & 98.24 & 98.80 \\
+Precision / Recall / F1 macro (\%) & 98.23 / 98.23 / 98.23 & 98.79 / 98.79 / 98.79 \\
+Accuracy train $-$ test (điểm) & 1.63 & 0.60 \\
+Thời gian huấn luyện (s) & 11 & 143 \\
+Độ trễ một ảnh (ms) & 0.042 & 0.315 \\
+Accuracy khi xoay (\%) & 96.00 & 97.46 \\
+Accuracy khi dịch (\%) & 72.86 & 88.14 \\
+Accuracy khi co giãn (\%) & 96.71 & 98.48 \\
+Accuracy khi nhiễu Gauss (\%) & 97.31 & 98.07 \\
+Accuracy khi muối tiêu (\%) & 97.56 & 97.71 \\
+\bottomrule
+\end{tabular}
+\caption{CNN và MLP trên MNIST, cùng giao thức; mọi số lấy từ các lần chạy đã ghi. Hàng cuối: ảnh test bị biến đổi cố định (seed 999, mức mạnh hơn lúc huấn luyện), chỉ để báo cáo. Kiểm định McNemar chính xác trên dự đoán test: chỉ MLP đúng 64 ảnh, chỉ CNN đúng 120 ảnh, $p=4.4e-05$.}
+\label{tab:cnn-vs-mlp}
+\end{table}

@@ -1,0 +1,15 @@
+\begin{table}[H]\centering\small
+\begin{tabular}{lrr}
+\toprule
+Mô hình & Huấn luyện trên MNIST & Huấn luyện trên EMNIST Digits \\
+\midrule
+Gaussian NB & 49.80 & 80.03 \\
+Softmax regression & 53.59 & 93.81 \\
+MLP & 76.70 & 98.36 \\
+CNN & 92.15 & 98.64 \\
+AdaBoost-SAMME & 73.69 & 97.38 \\
+\bottomrule
+\end{tabular}
+\caption{Accuracy (\%) trên $40\,000$ ảnh test của EMNIST Digits. Cột giữa là mô hình huấn luyện trên MNIST (dùng hằng số chuẩn hóa của MNIST) đánh giá trực tiếp; cột phải là mô hình huấn luyện trên EMNIST Digits. Đây là hai mô hình khác nhau.}
+\label{tab:cross-eval}
+\end{table}

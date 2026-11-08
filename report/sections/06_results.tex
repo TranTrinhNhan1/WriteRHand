@@ -74,7 +74,7 @@ Với mỗi mô hình, scikit-learn được dùng \emph{cùng siêu tham số} 
 \begin{itemize}
 \item \textbf{Naïve Bayes} trùng khớp hoàn toàn (\accTestNB\% cả hai), đúng như kiểm thử số học ở Mục~\ref{sec:verification}.
 \item \textbf{Softmax}: bản của chúng tôi cao hơn \diffSkSM{} điểm phần trăm. Đây không phải lợi thế thuật toán: scikit-learn chạy L-BFGS đến giới hạn 1000 vòng (cảnh báo chưa hội tụ), không dừng sớm và không chính quy hóa ($\ell_2=0$ như cấu hình được chọn), còn chúng tôi dừng ở epoch được chọn trên validation.
-\item \textbf{MLP}: \accTestMLP\% so với \accTestSkMLP\%. Cùng kiến trúc, momentum, batch và quy tắc dừng sớm, nhưng khởi tạo, thứ tự lấy mẫu và cách tách tập dừng sớm khác nhau nên chênh \diffSkMLP{} điểm phần trăm nằm trong dao động giữa các seed (xem \cref{tab:augmentation}).
+\item \textbf{MLP}: \accTestMLP\% so với \accTestSkMLP\%. Cùng kiến trúc, momentum, batch và quy tắc dừng sớm, nhưng khởi tạo, thứ tự lấy mẫu và cách tách tập dừng sớm khác nhau nên chênh \diffSkMLP{} điểm phần trăm nằm trong dao động giữa các seed (xem \cref{tab:augmentation-mlp}).
 \item \textbf{AdaBoost}: \accTestADA\% so với \accTestSkADA\% (chênh \diffSkADA). Hai bản không cùng thuật toán chia: của chúng tôi dùng histogram \texttt{n\_bins}=32 và chọn ngẫu nhiên một nửa số đặc trưng cho mỗi cây, scikit-learn tìm ngưỡng chính xác trên mọi đặc trưng. Thời gian huấn luyện (\fitADA\,s so với \fitSkADA\,s) vì vậy không phải so sánh sạch, và lượt chạy scikit-learn có trùng thời gian với một thí nghiệm khác trên cùng máy.
 \end{itemize}
 Thời gian của các bản scikit-learn khác nhau chủ yếu do thư viện đại số tuyến tính và cách cài đặt (ví dụ \texttt{lbfgs} lặp 1000 vòng trên toàn bộ dữ liệu), không nên đọc thành nhận xét về thuật toán.

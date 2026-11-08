@@ -33,7 +33,7 @@ Cả bốn mô hình đều nhầm $4\to9$ hoặc $7\to9$ và $5\to3$: những c
 
 \subsection{Giới hạn của kết quả}
 \begin{itemize}
-\item \textbf{Một seed.} Mỗi mô hình chính chỉ được huấn luyện một lần (seed 42) và chỉ có một phép chia train/validation. Riêng MLP chúng tôi có ba seed trong thí nghiệm tăng cường (\cref{tab:augmentation}): độ lệch chuẩn của test accuracy giữa các seed là cỡ vài phần mười điểm phần trăm, tức cùng bậc với chênh lệch giữa MLP và scikit-learn.
+\item \textbf{Một seed.} Mỗi mô hình chính chỉ được huấn luyện một lần (seed 42) và chỉ có một phép chia train/validation. Riêng MLP chúng tôi có ba seed trong thí nghiệm tăng cường (\cref{tab:augmentation-mlp}): độ lệch chuẩn của test accuracy giữa các seed là cỡ vài phần mười điểm phần trăm, tức cùng bậc với chênh lệch giữa MLP và scikit-learn.
 \item \textbf{Quét tuần tự.} Coordinate descent một vòng không xét tương tác giữa các siêu tham số (ví dụ learning rate tối ưu phụ thuộc kích thước batch và momentum) và có thể bỏ lỡ tổ hợp tốt hơn. Thứ tự quét cũng ảnh hưởng đến kết quả.
 \item \textbf{Chọn trên validation, báo cáo trên test.} Test chỉ được dùng một lần cho mỗi cấu hình cuối cùng. Với Naïve Bayes, test cao hơn validation (\accTestNB\% so với \accValNB\%), điều thường thấy ở MNIST vì tập test chính thức dễ hơn một chút; chúng tôi không dùng điều này để chọn gì.
 \item \textbf{Một máy, CPU, có nhiễu.} Thời gian đo trên một máy; không dùng GPU. Một số lượt chạy (các baseline scikit-learn, tuning) có thể trùng thời gian với công việc khác nên chỉ dùng để so bậc độ lớn.
