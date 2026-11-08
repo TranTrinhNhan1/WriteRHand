@@ -1,12 +1,12 @@
 {
   "report": {
-    "sources_sha256": "86342b3423232c8fcf97e9406fc78515b1284cc0b4ed7872848d9de3db226c6a",
-    "pdf_sha256": "9df14e004b42edb300d26e08c8508ac316eff920ad3780638b5bde3ed0424b0a",
-    "pages": 11
+    "sources_sha256": "16eeb24bff32300817569ada7f9c2c879ed1fa819005ad7e598be621911807f7",
+    "pdf_sha256": "8ab7f1e16c64b7d0e38355e83a151500e2174de5df67a7da28f9da580e5d71c0",
+    "pages": 10
   },
   "slides": {
-    "sources_sha256": "2ee5454be2cdf0ede3a83652bcba531560453cf05d010227872becf33697a6dc",
-    "pdf_sha256": "3a6a6c16891e7aaab9301503f72ddaf403f393a7a9285552d03d7590011a3dd2",
+    "sources_sha256": "cdac83a1d86f8bb79581a20043c58b010f411a5b09b8b837ad49ec81544fda96",
+    "pdf_sha256": "0bf2b50203e2636b13cbb7bc28baf96b3152de93788173221dce1a210cff0e82",
     "pages": 15
   }
 }

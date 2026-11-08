@@ -123,8 +123,7 @@ web/                 website demo (src/engine, src/components/explorer, e2e/)   
 ```
 
 ## Thành viên
-Trần Trinh Nhân (24280088) và Lâm Nhật Tiến (24280027), đóng góp 50%/50% (nhóm tự thống nhất); chi tiết ở mục 9 của báo cáo. Phần hoàn thiện đồ án được thực hiện **với sự hỗ trợ của
-trợ lý lập trình AI (Claude Code)** theo đúng công bố trong báo cáo. Quy trình nhóm: [WORKFLOW.md](WORKFLOW.md).
+Trần Trinh Nhân (24280088) và Lâm Nhật Tiến (24280027), đóng góp 50%/50% (nhóm tự thống nhất); chi tiết ở mục 9 của báo cáo. Nhóm có dùng trợ lý AI để **hỗ trợ lập trình và điều chỉnh siêu tham số**, theo công bố trong báo cáo. Quy trình nhóm: [WORKFLOW.md](WORKFLOW.md).
 
 ## Tài liệu / nguồn
 LeCun et al. (1998) cho MNIST; Zhu et al. (2009) cho SAMME; xem danh mục đầy đủ trong báo cáo.
