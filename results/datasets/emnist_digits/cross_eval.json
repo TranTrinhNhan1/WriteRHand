@@ -1,0 +1,29 @@
+[
+ {
+  "trained_on": "mnist",
+  "evaluated_on": "emnist_digits",
+  "rows": [
+   {
+    "model": "naive_bayes",
+    "accuracy": 0.497975
+   },
+   {
+    "model": "softmax",
+    "accuracy": 0.5359
+   },
+   {
+    "model": "mlp",
+    "accuracy": 0.767
+   },
+   {
+    "model": "cnn",
+    "accuracy": 0.921475
+   },
+   {
+    "model": "adaboost",
+    "accuracy": 0.736925
+   }
+  ],
+  "note": "Models trained on MNIST (its own normalisation constants) evaluated on the EMNIST Digits test set. These are NOT the models trained on that dataset; see the dataset's own table for those."
+ }
+]

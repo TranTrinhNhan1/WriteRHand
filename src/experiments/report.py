@@ -9,14 +9,21 @@ import numpy as np
 from src.experiments.search import CLASS_NAME, SPECS
 from src.utils.paths import ARTIFACTS_DIR, ROOT
 
-ORDER = ["naive_bayes", "softmax", "mlp", "adaboost"]
+ORDER = ["naive_bayes", "softmax", "mlp", "adaboost", "cnn"]
 TITLE = {
     "naive_bayes": "Gaussian NB",
     "softmax": "Softmax regression",
     "mlp": "MLP",
     "adaboost": "AdaBoost-SAMME",
+    "cnn": "CNN",
 }
-COLOR = {"naive_bayes": "#8c6d31", "softmax": "#3b6ea8", "mlp": "#b5483a", "adaboost": "#4d8a5b"}
+COLOR = {
+    "naive_bayes": "#8c6d31",
+    "softmax": "#3b6ea8",
+    "mlp": "#b5483a",
+    "adaboost": "#4d8a5b",
+    "cnn": "#6b4c9a",
+}
 SPLITS = ("train", "val", "test")
 
 
@@ -121,14 +128,32 @@ def build_site_data(results_dir, manifest=None):
                     (tr["curve"] for tr in t["trials"] if tr["stage"].startswith("curve")), None
                 ),
             }
+    extras = {}
+    for key, fname in (
+        ("cnn_vs_mlp", "cnn_vs_mlp.json"),
+        ("cross_eval", "cross_eval.json"),
+    ):
+        v = _read(Path(results_dir) / fname)
+        if v:
+            extras[key] = v
+    if "cnn_vs_mlp" in extras and manifest:
+        for row in extras["cnn_vs_mlp"]["rows"]:
+            m = manifest["models"].get(row["id"])
+            if m:
+                row["onnx_bytes"] = m["size_bytes"]
+    aug = {k: _read(Path(results_dir) / f"augmentation_{k}.json") for k in ("mlp", "cnn")}
+    aug = {k: v for k, v in aug.items() if v}
+    if aug:
+        extras["augmentation"] = aug
     return {
+        **extras,
         "generated": datetime.now(UTC).isoformat(timespec="seconds"),
         "dataset": any_final["dataset"] if any_final else None,
         "hardware": any_final["hardware"] if any_final else None,
         "git": any_final["git"] if any_final else None,
         "protocol": (
             "Train 50 000 / validation 10 000 (stratified split of the official training "
-            "set) / test 10 000 (official). Hyper-parameters selected on validation only; "
+            "set) / official test set. Hyper-parameters selected on validation only; "
             "test evaluated for the final configurations."
         ),
         "models": models,
@@ -342,6 +367,28 @@ def _save(fig, out_dir, name):
     fig.savefig(out_dir / f"{name}.pdf")
 
 
+CLASS_NAMES = [str(i) for i in range(10)]
+LABEL_WORD = "digit"
+
+
+def set_dataset_labels(names, word):
+    """Class names used on confusion-matrix axes (set per dataset by ``build_report``)."""
+    global CLASS_NAMES, LABEL_WORD
+    CLASS_NAMES, LABEL_WORD = list(names), word
+
+
+def _class_ticks(ax, with_y=True):
+    names = CLASS_NAMES
+    ax.set_xticks(range(len(names)))
+    ax.set_yticks(range(len(names)))
+    if all(len(n) == 1 for n in names):
+        ax.set_xticklabels(names)
+        ax.set_yticklabels(names)
+    else:
+        ax.set_xticklabels(names, rotation=60, ha="right", fontsize=7)
+        ax.set_yticklabels(names if with_y else [""] * len(names), fontsize=7)
+
+
 def fig_confusions(plt, data, out):
     mids = [m for m in ORDER if data[m]["final"]]
     fig, axes = plt.subplots(1, len(mids), figsize=(3.5 * len(mids) + 0.6, 3.9))
@@ -366,12 +413,11 @@ def fig_confusions(plt, data, out):
                     )
         acc = data[mid]["final"]["splits"]["test"]["accuracy"]
         ax.set_title(f"{TITLE[mid]}\ntest accuracy {100 * acc:.2f}%")
-        ax.set_xticks(range(10))
-        ax.set_yticks(range(10))
-        ax.set_xlabel("predicted digit")
+        _class_ticks(ax, k == 0)
+        ax.set_xlabel("predicted " + LABEL_WORD)
         if k == 0:
-            ax.set_ylabel("true digit")
-        _panel(ax, "abcd"[k])
+            ax.set_ylabel("true " + LABEL_WORD)
+        _panel(ax, "abcde"[k])
         _save_single(plt, mid, cm, norm, out)
     fig.subplots_adjust(wspace=0.18)
     cb = fig.colorbar(im, ax=list(axes), fraction=0.012, pad=0.012)
@@ -396,8 +442,7 @@ def _save_single(plt, mid, cm, norm, out):
                     fontsize=6.5,
                     color="white" if norm[i, j] > 0.55 else "#333",
                 )
-    ax.set_xticks(range(10))
-    ax.set_yticks(range(10))
+    _class_ticks(ax, True)
     ax.set_xlabel("predicted label")
     ax.set_ylabel("true label")
     ax.set_title(f"{TITLE[mid]} - test confusion matrix")
@@ -715,7 +760,10 @@ def fig_benchmark(plt, data, out):
     )
     for ax in axes:
         ax.set_xticks(x)
-        ax.set_xticklabels(names, fontsize=8)
+        ax.set_xticklabels(
+            [n.replace(" ", "\n", 1).replace("-", "-\n", 1) if len(n) > 7 else n for n in names],
+            fontsize=8,
+        )
     fig.tight_layout()
     _save(fig, out, "benchmark")
     plt.close(fig)
@@ -735,7 +783,7 @@ def fig_top_confusions(plt, data, out):
         ax.set_title(TITLE[mid])
         ax.set_xlabel("test errors (count)")
         ax.grid(axis="y", visible=False)
-        _panel(ax, "abcd"[k])
+        _panel(ax, "abcde"[k])
     fig.suptitle(
         "Most frequent confusions (true digit \u2192 predicted digit); same x-scale in all panels",
         y=1.02,
@@ -888,9 +936,14 @@ def update_readme(readme, table_md):
     return True
 
 
-def build_report(results_dir, artifacts_dir=ARTIFACTS_DIR, log=print):
+def build_report(results_dir, artifacts_dir=ARTIFACTS_DIR, log=print, dataset="mnist"):
+    from src.preprocessing.preprocess import DATASETS
+
     results_dir = Path(results_dir)
     data = load_all(results_dir)
+    set_dataset_labels(
+        DATASETS[dataset]["classes"], "digit" if DATASETS[dataset]["kind"] == "digits" else "class"
+    )
     plt = _style()
     fig_dir = results_dir / "figures"
     fig_dir.mkdir(parents=True, exist_ok=True)
@@ -905,6 +958,10 @@ def build_report(results_dir, artifacts_dir=ARTIFACTS_DIR, log=print):
     fig_learning_curves(plt, data, fig_dir)
     fig_benchmark(plt, data, fig_dir)
     fig_top_confusions(plt, data, fig_dir)
+    if dataset != "mnist":
+        log(f"[{dataset}] digit-specific figures (interpretability, errors, eda) skipped")
+        log(f"tables -> {results_dir / 'tables'} ; figures -> {fig_dir}")
+        return data
     for name, fn in (
         ("interpretability", lambda: fig_interpretability(plt, data, fig_dir, artifacts_dir)),
         ("errors", lambda: fig_errors(plt, data, fig_dir, artifacts_dir)),
@@ -914,6 +971,9 @@ def build_report(results_dir, artifacts_dir=ARTIFACTS_DIR, log=print):
             fn()
         except Exception as e:
             log(f"skipped figure '{name}': {type(e).__name__}: {e}")
+    from src.experiments.extras_report import build_extras
+
+    build_extras(log=log)
     log(f"tables -> {results_dir / 'tables'} ; figures -> {fig_dir}")
     return data
 

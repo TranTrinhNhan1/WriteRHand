@@ -93,7 +93,12 @@ def train_final(
     cname = CLASS_NAME[model_key]
     out_dir = out_dir or RESULTS_DIR / "final"
     art_dir = art_dir or ARTIFACTS_DIR / cname
-    model = cls(**{k: tuple(v) if k == "hidden_sizes" else v for k, v in params.items()})
+    model = cls(
+        **{
+            k: tuple(v) if k in ("hidden_sizes", "channels", "dense") else v
+            for k, v in params.items()
+        }
+    )
     fit_kwargs = (
         {} if model_key == "naive_bayes" else {"X_val": data["X_val"], "y_val": data["y_val"]}
     )

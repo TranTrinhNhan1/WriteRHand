@@ -27,7 +27,7 @@ def tiny(digits):
 META = {"preprocess_version": "test", "split_fingerprint": "abc", "seed": 42}
 
 
-@pytest.mark.parametrize("model_key", list(search.SPECS))
+@pytest.mark.parametrize("model_key", [k for k in search.SPECS if k != "cnn"])
 def test_tune_needs_no_test_data_and_logs_every_trial(model_key, tiny, tmp_path, monkeypatch):
     # tiny 10-class problem with 64 features: shrink the sweeps
     sweeps = {

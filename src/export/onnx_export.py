@@ -2,14 +2,16 @@
 
 Every graph has the same contract:
     input   ``pixels``         float32 [N, 784]  raw pixels scaled to [0, 1] (NOT standardised)
-    output  ``probabilities``  float32 [N, 10]
-Extra outputs ("trace") let the website show what happens inside a model; they never change the
-probabilities. MLP: ``a0``, ``a1`` (hidden activations after ReLU), ``logits``. Softmax: ``x``,
-``weights`` [784, 10], ``bias``, ``logits``. Naive Bayes: ``x``, ``class_mean`` and ``class_var``
-[10, 784] (in standardised pixel units), ``log_prior``, ``logits``.
+    output  ``probabilities``  float32 [N, K]
+Extra, optional outputs ("runtime trace") expose the per-sample intermediate tensors for the model
+execution explorer; they never change the probabilities. They are listed with their shapes in the
+``trace`` section of the manifest (see ``docs/TRACE_CONTRACT.md``). The learned parameters are
+shipped once in a separate ``<model>.params.bin`` (same float32 values as the graph initializers).
 The preprocessing ``(x - mean) / (std + 1e-8)`` is the first node of the graph, so a browser only
 has to hand over pixel / 255 and the training-time normalisation is applied identically.
 """
+
+import json
 
 import numpy as np
 import onnx
@@ -21,11 +23,6 @@ IR_VERSION = 8  # widely supported by onnxruntime / onnxruntime-web
 
 def _init(name, arr):
     return numpy_helper.from_array(np.asarray(arr, dtype=np.float32), name=name)
-
-
-def _const_output(name, src):
-    """Expose an initializer as a graph output (through Identity) without touching the maths."""
-    return helper.make_node("Identity", [src], [name])
 
 
 def _wrap(nodes, inits, doc, n_classes, class_names, trace=()):
@@ -77,7 +74,9 @@ def mlp_to_onnx(model, mean, std):
             nodes.append(helper.make_node("Relu", [z], [f"a{i}"]))
             a = f"a{i}"
     nodes.append(helper.make_node("Softmax", ["logits"], ["probabilities"], axis=1))
-    trace = [(f"a{i}", ["batch", W.shape[1]]) for i, (W, _) in enumerate(layers[:-1])]
+    trace = [("x", ["batch", 784])]
+    for i, (W, _) in enumerate(layers[:-1]):
+        trace += [(f"z{i}", ["batch", W.shape[1]]), (f"a{i}", ["batch", W.shape[1]])]
     trace.append(("logits", ["batch", len(model.classes)]))
     return _wrap(
         nodes,
@@ -96,9 +95,8 @@ def softmax_regression_to_onnx(model, mean, std):
         helper.make_node("Gemm", ["x", "W", "b"], ["logits"]),
         helper.make_node("Softmax", ["logits"], ["probabilities"], axis=1),
     ]
-    nodes += [_const_output("weights", "W"), _const_output("bias", "b")]
     k = len(model.classes)
-    trace = [("x", ["batch", 784]), ("weights", [784, k]), ("bias", [k]), ("logits", ["batch", k])]
+    trace = [("x", ["batch", 784]), ("logits", ["batch", k])]
     return _wrap(
         nodes, inits, "Multiclass softmax regression", len(model.classes), model.classes, trace
     )
@@ -113,7 +111,6 @@ def gaussian_nb_to_onnx(model, mean, std):
     c = np.log(model.prior) - 0.5 * np.log(2 * np.pi * var).sum(1) - 0.5 * (mu**2 / var).sum(1)
     nodes, inits = _normalise_nodes(mean, std)
     inits += [_init("A", A), _init("B", B), _init("c", c)]
-    inits += [_init("mean_k", mu), _init("var_k", var), _init("logprior_k", np.log(model.prior))]
     nodes += [
         helper.make_node("Mul", ["x", "x"], ["x2"]),
         helper.make_node("MatMul", ["x2", "A"], ["t1"]),
@@ -121,18 +118,9 @@ def gaussian_nb_to_onnx(model, mean, std):
         helper.make_node("Add", ["t1", "t2"], ["t3"]),
         helper.make_node("Add", ["t3", "c"], ["logits"]),
         helper.make_node("Softmax", ["logits"], ["probabilities"], axis=1),
-        _const_output("class_mean", "mean_k"),
-        _const_output("class_var", "var_k"),
-        _const_output("log_prior", "logprior_k"),
     ]
     k = len(model.classes)
-    trace = [
-        ("x", ["batch", 784]),
-        ("class_mean", [k, 784]),
-        ("class_var", [k, 784]),
-        ("log_prior", [k]),
-        ("logits", ["batch", k]),
-    ]
+    trace = [("x", ["batch", 784]), ("logits", ["batch", k])]
     return _wrap(
         nodes,
         inits,
@@ -143,9 +131,82 @@ def gaussian_nb_to_onnx(model, mean, std):
     )
 
 
-def adaboost_to_json(model, mean, std):
-    """Compact JSON of the SAMME ensemble (evaluated by a tiny JS function in the browser)."""
-    trees = []
+def cnn_to_onnx(model, mean, std):
+    """Conv -> Relu -> MaxPool stages, Flatten, dense head. ONNX ``Conv`` is a cross-correlation,
+    exactly what ``src/models/cnn.py`` computes."""
+    nodes, inits = _normalise_nodes(mean, std)
+    inits.append(numpy_helper.from_array(np.array([-1, 1, 28, 28], dtype=np.int64), "img_shape"))
+    nodes.append(helper.make_node("Reshape", ["x", "img_shape"], ["x_img"]))
+    w = model.weights_numpy()
+    a = "x_img"
+    trace = [("x", ["batch", 784])]
+    h = 28
+    for s_, (K, kb) in enumerate(zip(w["K"], w["kb"], strict=True)):
+        inits += [_init(f"K{s_}", K), _init(f"kb{s_}", kb)]
+        nodes.append(
+            helper.make_node(
+                "Conv", [a, f"K{s_}", f"kb{s_}"], [f"conv{s_}"], pads=[0, 0, 0, 0], strides=[1, 1]
+            )
+        )
+        nodes.append(helper.make_node("Relu", [f"conv{s_}"], [f"act{s_}"]))
+        nodes.append(
+            helper.make_node(
+                "MaxPool",
+                [f"act{s_}"],
+                [f"pool{s_}"],
+                kernel_shape=[model.pool, model.pool],
+                strides=[model.pool, model.pool],
+            )
+        )
+        hconv = h - K.shape[2] + 1
+        h = hconv // model.pool
+        c = K.shape[0]
+        a = f"pool{s_}"
+        trace += [
+            (f"conv{s_}", ["batch", c, hconv, hconv]),
+            (f"act{s_}", ["batch", c, hconv, hconv]),
+            (f"pool{s_}", ["batch", c, h, h]),
+        ]
+    nodes.append(helper.make_node("Flatten", [a], ["flat"], axis=1))
+    a = "flat"
+    n_dense = len(w["W"])
+    for i, (W, b) in enumerate(zip(w["W"], w["b"], strict=True)):
+        inits += [_init(f"W{i}", W), _init(f"b{i}", b)]
+        z = "logits" if i == n_dense - 1 else f"z{i}"
+        nodes.append(helper.make_node("Gemm", [a, f"W{i}", f"b{i}"], [z]))
+        if i < n_dense - 1:
+            nodes.append(helper.make_node("Relu", [z], [f"a{i}"]))
+            trace += [(f"z{i}", ["batch", W.shape[1]]), (f"a{i}", ["batch", W.shape[1]])]
+            a = f"a{i}"
+    trace.append(("logits", ["batch", len(model.classes)]))
+    nodes.append(helper.make_node("Softmax", ["logits"], ["probabilities"], axis=1))
+    return _wrap(
+        nodes,
+        inits,
+        "Small CNN (Conv-ReLU-MaxPool stages + dense head) trained with hand-written backprop",
+        len(model.classes),
+        model.classes,
+        trace,
+    )
+
+
+# --------------------------------------------------------------------------- AdaBoost (binary)
+ADA_MAGIC = b"WRHADA01"
+
+
+def adaboost_to_binary(model, mean, std):
+    """Compact binary for the SAMME ensemble (about half the size of the former JSON and parsed
+    with typed-array views, no ``JSON.parse`` of tens of MB).
+
+    Layout (little endian)::
+
+        8 B   magic ``WRHADA01``
+        4 B   uint32 header length H            (header is padded with spaces to a multiple of 8)
+        H B   UTF-8 JSON header: classes, alphas, preprocess, node_counts, max_depth
+        then, concatenated over trees in order and each padded to 8 bytes:
+        float64 threshold[N] ; int16 feature[N] ; int16 left[N] ; int16 right[N] ; uint8 klass[N]
+    """
+    n_nodes, parts = [], []
     for t in range(model.n_estimators_):
         n = (
             int(np.flatnonzero(model.tree_feature[t] >= 0).max() + 1)
@@ -153,37 +214,93 @@ def adaboost_to_json(model, mean, std):
             else 0
         )
         n = max(n, int(max(model.tree_left[t].max(), model.tree_right[t].max())) + 1, 1)
-        trees.append(
-            {
-                "f": model.tree_feature[t][:n].tolist(),
-                "t": [float(x) for x in model.tree_threshold[t][:n]],
-                "l": model.tree_left[t][:n].tolist(),
-                "r": model.tree_right[t][:n].tolist(),
-                "c": model.tree_leaf[t][:n].tolist(),
-            }
+        n_nodes.append(n)
+        parts.append(
+            (
+                np.asarray(model.tree_threshold[t][:n], dtype="<f8"),
+                np.asarray(model.tree_feature[t][:n], dtype="<i2"),
+                np.asarray(model.tree_left[t][:n], dtype="<i2"),
+                np.asarray(model.tree_right[t][:n], dtype="<i2"),
+                np.asarray(model.tree_leaf[t][:n], dtype="u1"),
+            )
         )
-    return {
+    depths = []
+    for t in range(model.n_estimators_):
+        f, l_, r_ = parts[t][1], parts[t][2], parts[t][3]
+        depth, stack = 0, [(0, 0)]
+        while stack:
+            node, d = stack.pop()
+            depth = max(depth, d)
+            if f[node] >= 0:
+                stack += [(int(l_[node]), d + 1), (int(r_[node]), d + 1)]
+        depths.append(depth)
+    header = {
         "type": "adaboost-samme",
+        "version": 1,
         "classes": [int(c) for c in model.classes],
         "alphas": [float(a) for a in model.alphas],
-        "trees": trees,
         "preprocess": {"mean": mean, "std": std, "eps": 1e-8},
-        "note": "x = (pixel/255 - mean)/(std+eps); go left when x[f] < threshold",
+        "node_counts": n_nodes,
+        "depths": depths,
+        "rule": "x = (pixel/255 - mean)/(std+eps); go left when x[feature] < threshold; leaf: feature = -1",
     }
+    hb = json.dumps(header, separators=(",", ":")).encode("utf-8")
+    hb += b" " * (-(12 + len(hb)) % 8)
+    out = [ADA_MAGIC, np.uint32(len(hb)).tobytes(), hb]
+    for thr, f, l_, r_, c in parts:
+        for arr in (thr, f, l_, r_, c):
+            raw = arr.tobytes()
+            out.append(raw + b"\0" * (-len(raw) % 8))
+    return b"".join(out)
 
 
-def adaboost_predict_json(spec, pixels01):
-    """Reference evaluator of the exported JSON (mirrors the JS code; used in tests)."""
+def adaboost_from_binary(buf):
+    """Inverse of ``adaboost_to_binary`` (reference reader, mirrors ``web/src/lib/adaboost.ts``)."""
+    buf = bytes(buf)
+    if buf[:8] != ADA_MAGIC:
+        raise ValueError("not a WriteRHand AdaBoost file")
+    hl = int(np.frombuffer(buf[8:12], "<u4")[0])
+    spec = json.loads(buf[12 : 12 + hl].decode("utf-8"))
+    pos = 12 + hl
+    trees = []
+    for n in spec["node_counts"]:
+        tree = {}
+        for key, dt, size in (
+            ("t", "<f8", 8),
+            ("f", "<i2", 2),
+            ("l", "<i2", 2),
+            ("r", "<i2", 2),
+            ("c", "u1", 1),
+        ):
+            nbytes = n * size
+            tree[key] = np.frombuffer(buf, dt, n, pos).astype(
+                np.float64 if key == "t" else np.int64
+            )
+            pos += nbytes + (-nbytes % 8)
+        trees.append(tree)
+    spec["trees"] = trees
+    return spec
+
+
+def adaboost_scores(spec, pixels01):
+    """Vote scores of the binary-format ensemble (float64, like the Python model)."""
     x = (np.asarray(pixels01, dtype=np.float64) - spec["preprocess"]["mean"]) / (
         spec["preprocess"]["std"] + spec["preprocess"]["eps"]
     )
     scores = np.zeros((len(x), len(spec["classes"])))
     for tree, a in zip(spec["trees"], spec["alphas"], strict=True):
-        for i, row in enumerate(x):
-            node = 0
-            while tree["f"][node] >= 0:
-                node = (
-                    tree["l"][node] if row[tree["f"][node]] < tree["t"][node] else tree["r"][node]
-                )
-            scores[i, tree["c"][node]] += a
-    return scores / scores.sum(1, keepdims=True)
+        node = np.zeros(len(x), dtype=np.int64)
+        active = tree["f"][node] >= 0
+        while active.any():
+            idx = np.flatnonzero(active)
+            f = tree["f"][node[idx]]
+            go_left = x[idx, f] < tree["t"][node[idx]]
+            node[idx] = np.where(go_left, tree["l"][node[idx]], tree["r"][node[idx]])
+            active = tree["f"][node] >= 0
+        scores[np.arange(len(x)), tree["c"][node]] += a
+    return scores
+
+
+def adaboost_predict_binary(spec, pixels01):
+    s = adaboost_scores(spec, pixels01)
+    return s / s.sum(1, keepdims=True)

@@ -1,0 +1,11 @@
+\begin{tabular}{@{}lp{9.0cm}r@{}}
+\toprule
+Mô hình & Siêu tham số được chọn & Số cấu hình đã chạy \\
+\midrule
+Gaussian NB & \texttt{var\_smoothing=0.1} & 6 \\
+Softmax regression & \texttt{learning\_rate=0.03, l2=0.0001, epochs=39, batch\_size=128} & 6 \\
+MLP & \texttt{hidden\_sizes=(512, 256), learning\_rate=0.02, momentum=0.9, p\_drop=0.2, batch\_size=128, epochs=40} & 7 \\
+AdaBoost-SAMME & \texttt{n\_estimators=199, max\_depth=8, learning\_rate=1.0, n\_bins=32, max\_features=1.0} & 4 \\
+CNN & \texttt{channels=(16, 32), kernel\_size=3, dense=(), learning\_rate=0.01, momentum=0.9, p\_drop=0.0, batch\_size=128, epochs=20} & 4 \\
+\bottomrule
+\end{tabular}

@@ -92,8 +92,11 @@ class SoftmaxRegression(BaseClassifier):
         return X @ self.W + self.b
 
     # ------------------------------------------------------------------ training
-    def fit(self, X, y, X_val=None, y_val=None):
-        """Train. ``X_val``/``y_val`` are only *monitored* (history), never used for decisions."""
+    def fit(self, X, y, X_val=None, y_val=None, callback=None):
+        """Train. ``X_val``/``y_val`` are only *monitored* (history), never used for decisions.
+
+        ``callback(epoch, model)`` (optional, used to record training replays) is called with epoch 0
+        after initialisation and after every epoch; it must not modify the model."""
         X, y = check_Xy(X, y)
         self.classes, y_idx = np.unique(y, return_inverse=True)
         n, d = X.shape
@@ -110,6 +113,8 @@ class SoftmaxRegression(BaseClassifier):
             yv_idx = np.searchsorted(self.classes, np.asarray(y_val))
         self.history = {"loss": [], "train_acc": [], "val_loss": [], "val_acc": [], "lr": []}
         best, wait = np.inf, 0
+        if callback is not None:
+            callback(0, self)
 
         for epoch in range(self.epochs):
             lr = self.learning_rate / (1.0 + self.lr_decay * epoch)
@@ -134,6 +139,8 @@ class SoftmaxRegression(BaseClassifier):
                 msg += f" val_acc={self.history['val_acc'][-1]:.4f}"
             if self.verbose:
                 print(msg)
+            if callback is not None:
+                callback(epoch + 1, self)
             if self.tol is not None:
                 if best - loss > self.tol:
                     best, wait = loss, 0

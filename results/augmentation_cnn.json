@@ -1,0 +1,525 @@
+{
+ "schema": 2,
+ "model": "cnn",
+ "params": {
+  "channels": [
+   16,
+   32
+  ],
+  "kernel_size": 3,
+  "dense": [
+   64
+  ],
+  "learning_rate": 0.01,
+  "momentum": 0.9,
+  "p_drop": 0.2,
+  "batch_size": 128,
+  "epochs": 20,
+  "seed": 42
+ },
+ "k_copies": 1,
+ "seeds": [
+  42,
+  43
+ ],
+ "defaults": {
+  "rotation": 15.0,
+  "translation": 2.0,
+  "scaling": [
+   0.9,
+   1.1
+  ],
+  "gaussian_noise": 0.1,
+  "salt_pepper": 0.02
+ },
+ "stress": {
+  "rotation": 20.0,
+  "translation": 3.0,
+  "scaling": [
+   0.8,
+   1.2
+  ],
+  "gaussian_noise": 0.2,
+  "salt_pepper": 0.05
+ },
+ "selection_rule": "mean validation accuracy over seeds; test is reported, never used to choose",
+ "conditions": {
+  "baseline": {
+   "ops": [],
+   "augmentation_time_sec": 6.288755685091019e-07,
+   "runs": [
+    {
+     "seed": 42,
+     "n_train": 50000,
+     "fit_time_sec": 266.3631253989879,
+     "stopped_epoch": 13,
+     "train_acc": 0.99396,
+     "val_acc": 0.9865,
+     "val_f1_macro": 0.9864134392733691,
+     "test_acc": 0.988,
+     "test_f1_macro": 0.9879154896729959,
+     "robust_test_acc": {
+      "rotation": 0.9746,
+      "translation": 0.8814,
+      "scaling": 0.9848,
+      "gaussian_noise": 0.9807,
+      "salt_pepper": 0.9771
+     }
+    },
+    {
+     "seed": 43,
+     "n_train": 50000,
+     "fit_time_sec": 311.64099547988735,
+     "stopped_epoch": 15,
+     "train_acc": 0.99518,
+     "val_acc": 0.987,
+     "val_f1_macro": 0.9868192433312355,
+     "test_acc": 0.9884,
+     "test_f1_macro": 0.9882686641550269,
+     "robust_test_acc": {
+      "rotation": 0.9752,
+      "translation": 0.8861,
+      "scaling": 0.984,
+      "gaussian_noise": 0.9641,
+      "salt_pepper": 0.9734
+     }
+    }
+   ],
+   "train_acc_mean": 0.99457,
+   "val_acc_mean": 0.98675,
+   "test_acc_mean": 0.9882,
+   "train_acc_std": 0.0008626702730475872,
+   "val_acc_std": 0.00035355339059323483,
+   "test_acc_std": 0.00028284271247458785,
+   "robust_test_acc_mean": {
+    "rotation": 0.9749,
+    "translation": 0.88375,
+    "scaling": 0.9843999999999999,
+    "gaussian_noise": 0.9723999999999999,
+    "salt_pepper": 0.97525
+   },
+   "val_delta_vs_baseline_mean": 0.0,
+   "val_delta_vs_baseline_sd": 0.0
+  },
+  "rotation": {
+   "ops": [
+    "rotation"
+   ],
+   "augmentation_time_sec": 3.24758614692837,
+   "runs": [
+    {
+     "seed": 42,
+     "n_train": 100000,
+     "fit_time_sec": 286.47761225583963,
+     "stopped_epoch": 20,
+     "train_acc": 0.99792,
+     "val_acc": 0.9887,
+     "val_f1_macro": 0.9886168233324895,
+     "test_acc": 0.9909,
+     "test_f1_macro": 0.9908223646078806,
+     "robust_test_acc": {
+      "rotation": 0.9847,
+      "translation": 0.9019,
+      "scaling": 0.9881,
+      "gaussian_noise": 0.9794,
+      "salt_pepper": 0.9658
+     }
+    },
+    {
+     "seed": 43,
+     "n_train": 100000,
+     "fit_time_sec": 227.15104937297292,
+     "stopped_epoch": 16,
+     "train_acc": 0.99762,
+     "val_acc": 0.9894,
+     "val_f1_macro": 0.9893040652490022,
+     "test_acc": 0.9925,
+     "test_f1_macro": 0.9924473250040082,
+     "robust_test_acc": {
+      "rotation": 0.9863,
+      "translation": 0.9053,
+      "scaling": 0.9888,
+      "gaussian_noise": 0.9759,
+      "salt_pepper": 0.9741
+     }
+    }
+   ],
+   "train_acc_mean": 0.99777,
+   "val_acc_mean": 0.98905,
+   "test_acc_mean": 0.9917,
+   "train_acc_std": 0.00021213203435601938,
+   "val_acc_std": 0.0004949747468305288,
+   "test_acc_std": 0.0011313708498985084,
+   "robust_test_acc_mean": {
+    "rotation": 0.9855,
+    "translation": 0.9036,
+    "scaling": 0.98845,
+    "gaussian_noise": 0.97765,
+    "salt_pepper": 0.96995
+   },
+   "val_delta_vs_baseline_mean": 0.0022999999999999687,
+   "val_delta_vs_baseline_sd": 0.00014142135623729392
+  },
+  "translation": {
+   "ops": [
+    "translation"
+   ],
+   "augmentation_time_sec": 2.4085604220163077,
+   "runs": [
+    {
+     "seed": 42,
+     "n_train": 100000,
+     "fit_time_sec": 2617.233629439026,
+     "stopped_epoch": 13,
+     "train_acc": 0.99596,
+     "val_acc": 0.9885,
+     "val_f1_macro": 0.9884490156761739,
+     "test_acc": 0.9921,
+     "test_f1_macro": 0.9920674414286085,
+     "robust_test_acc": {
+      "rotation": 0.9786,
+      "translation": 0.969,
+      "scaling": 0.99,
+      "gaussian_noise": 0.9515,
+      "salt_pepper": 0.9543
+     }
+    },
+    {
+     "seed": 43,
+     "n_train": 100000,
+     "fit_time_sec": 336.08011221908964,
+     "stopped_epoch": 16,
+     "train_acc": 0.99708,
+     "val_acc": 0.9894,
+     "val_f1_macro": 0.9893383448508176,
+     "test_acc": 0.9914,
+     "test_f1_macro": 0.9913368871720529,
+     "robust_test_acc": {
+      "rotation": 0.9813,
+      "translation": 0.9711,
+      "scaling": 0.9892,
+      "gaussian_noise": 0.9494,
+      "salt_pepper": 0.9667
+     }
+    }
+   ],
+   "train_acc_mean": 0.99652,
+   "val_acc_mean": 0.98895,
+   "test_acc_mean": 0.9917499999999999,
+   "train_acc_std": 0.0007919595949289402,
+   "val_acc_std": 0.0006363961030678226,
+   "test_acc_std": 0.0004949747468306073,
+   "robust_test_acc_mean": {
+    "rotation": 0.97995,
+    "translation": 0.97005,
+    "scaling": 0.9896,
+    "gaussian_noise": 0.95045,
+    "salt_pepper": 0.9605
+   },
+   "val_delta_vs_baseline_mean": 0.0021999999999999797,
+   "val_delta_vs_baseline_sd": 0.00028284271247458785
+  },
+  "scaling": {
+   "ops": [
+    "scaling"
+   ],
+   "augmentation_time_sec": 2.133815655950457,
+   "runs": [
+    {
+     "seed": 42,
+     "n_train": 100000,
+     "fit_time_sec": 198.99393843882717,
+     "stopped_epoch": 19,
+     "train_acc": 0.99846,
+     "val_acc": 0.9885,
+     "val_f1_macro": 0.9883879006876221,
+     "test_acc": 0.9898,
+     "test_f1_macro": 0.9896808338157446,
+     "robust_test_acc": {
+      "rotation": 0.9752,
+      "translation": 0.9074,
+      "scaling": 0.9872,
+      "gaussian_noise": 0.9727,
+      "salt_pepper": 0.9706
+     }
+    },
+    {
+     "seed": 43,
+     "n_train": 100000,
+     "fit_time_sec": 208.1715387001168,
+     "stopped_epoch": 20,
+     "train_acc": 0.99886,
+     "val_acc": 0.9889,
+     "val_f1_macro": 0.9887964741459511,
+     "test_acc": 0.9914,
+     "test_f1_macro": 0.9913117036330611,
+     "robust_test_acc": {
+      "rotation": 0.9797,
+      "translation": 0.9036,
+      "scaling": 0.9884,
+      "gaussian_noise": 0.9746,
+      "salt_pepper": 0.9697
+     }
+    }
+   ],
+   "train_acc_mean": 0.99866,
+   "val_acc_mean": 0.9887,
+   "test_acc_mean": 0.9905999999999999,
+   "train_acc_std": 0.00028284271247458785,
+   "val_acc_std": 0.00028284271247458785,
+   "test_acc_std": 0.0011313708498984299,
+   "robust_test_acc_mean": {
+    "rotation": 0.9774499999999999,
+    "translation": 0.9055,
+    "scaling": 0.9878,
+    "gaussian_noise": 0.97365,
+    "salt_pepper": 0.9701500000000001
+   },
+   "val_delta_vs_baseline_mean": 0.0019500000000000073,
+   "val_delta_vs_baseline_sd": 7.071067811864696e-05
+  },
+  "gaussian_noise": {
+   "ops": [
+    "gaussian_noise"
+   ],
+   "augmentation_time_sec": 1.260751330992207,
+   "runs": [
+    {
+     "seed": 42,
+     "n_train": 100000,
+     "fit_time_sec": 210.53273235005327,
+     "stopped_epoch": 20,
+     "train_acc": 0.99894,
+     "val_acc": 0.9898,
+     "val_f1_macro": 0.989763206835016,
+     "test_acc": 0.989,
+     "test_f1_macro": 0.9889412796097947,
+     "robust_test_acc": {
+      "rotation": 0.9763,
+      "translation": 0.9034,
+      "scaling": 0.9871,
+      "gaussian_noise": 0.9818,
+      "salt_pepper": 0.9731
+     }
+    },
+    {
+     "seed": 43,
+     "n_train": 100000,
+     "fit_time_sec": 208.61193485185504,
+     "stopped_epoch": 20,
+     "train_acc": 0.9986,
+     "val_acc": 0.9875,
+     "val_f1_macro": 0.9873673989979282,
+     "test_acc": 0.9923,
+     "test_f1_macro": 0.9921967945207293,
+     "robust_test_acc": {
+      "rotation": 0.978,
+      "translation": 0.9013,
+      "scaling": 0.9894,
+      "gaussian_noise": 0.9851,
+      "salt_pepper": 0.9823
+     }
+    }
+   ],
+   "train_acc_mean": 0.99877,
+   "val_acc_mean": 0.98865,
+   "test_acc_mean": 0.99065,
+   "train_acc_std": 0.0002404163056034311,
+   "val_acc_std": 0.0016263455967290372,
+   "test_acc_std": 0.0023334523779155853,
+   "robust_test_acc_mean": {
+    "rotation": 0.97715,
+    "translation": 0.90235,
+    "scaling": 0.98825,
+    "gaussian_noise": 0.9834499999999999,
+    "salt_pepper": 0.9777
+   },
+   "val_delta_vs_baseline_mean": 0.0019000000000000128,
+   "val_delta_vs_baseline_sd": 0.001979898987322272
+  },
+  "salt_pepper": {
+   "ops": [
+    "salt_pepper"
+   ],
+   "augmentation_time_sec": 1.2796139719430357,
+   "runs": [
+    {
+     "seed": 42,
+     "n_train": 100000,
+     "fit_time_sec": 208.21015556599014,
+     "stopped_epoch": 20,
+     "train_acc": 0.99882,
+     "val_acc": 0.9886,
+     "val_f1_macro": 0.9885028785376555,
+     "test_acc": 0.9893,
+     "test_f1_macro": 0.9891854570069594,
+     "robust_test_acc": {
+      "rotation": 0.9768,
+      "translation": 0.9015,
+      "scaling": 0.986,
+      "gaussian_noise": 0.9851,
+      "salt_pepper": 0.9863
+     }
+    },
+    {
+     "seed": 43,
+     "n_train": 100000,
+     "fit_time_sec": 289.79877080209553,
+     "stopped_epoch": 15,
+     "train_acc": 0.99764,
+     "val_acc": 0.9883,
+     "val_f1_macro": 0.9881602870611041,
+     "test_acc": 0.9906,
+     "test_f1_macro": 0.9904735487020778,
+     "robust_test_acc": {
+      "rotation": 0.9783,
+      "translation": 0.8935,
+      "scaling": 0.9856,
+      "gaussian_noise": 0.9823,
+      "salt_pepper": 0.9875
+     }
+    }
+   ],
+   "train_acc_mean": 0.99823,
+   "val_acc_mean": 0.98845,
+   "test_acc_mean": 0.98995,
+   "train_acc_std": 0.0008343860018001755,
+   "val_acc_std": 0.00021213203435601938,
+   "test_acc_std": 0.0009192388155425676,
+   "robust_test_acc_mean": {
+    "rotation": 0.9775499999999999,
+    "translation": 0.8975,
+    "scaling": 0.9858,
+    "gaussian_noise": 0.9837,
+    "salt_pepper": 0.9869
+   },
+   "val_delta_vs_baseline_mean": 0.0016999999999999793,
+   "val_delta_vs_baseline_sd": 0.0005656854249492542
+  },
+  "geometric": {
+   "ops": [
+    "rotation",
+    "translation",
+    "scaling"
+   ],
+   "augmentation_time_sec": 2.4597225240431726,
+   "runs": [
+    {
+     "seed": 42,
+     "n_train": 100000,
+     "fit_time_sec": 174.12468009791337,
+     "stopped_epoch": 14,
+     "train_acc": 0.99608,
+     "val_acc": 0.9879,
+     "val_f1_macro": 0.9878483764898448,
+     "test_acc": 0.9918,
+     "test_f1_macro": 0.9917354816390642,
+     "robust_test_acc": {
+      "rotation": 0.9851,
+      "translation": 0.9723,
+      "scaling": 0.9894,
+      "gaussian_noise": 0.9209,
+      "salt_pepper": 0.9391
+     }
+    },
+    {
+     "seed": 43,
+     "n_train": 100000,
+     "fit_time_sec": 164.47500061779283,
+     "stopped_epoch": 13,
+     "train_acc": 0.99574,
+     "val_acc": 0.9906,
+     "val_f1_macro": 0.9905424222367628,
+     "test_acc": 0.9923,
+     "test_f1_macro": 0.9922464537173512,
+     "robust_test_acc": {
+      "rotation": 0.9855,
+      "translation": 0.9711,
+      "scaling": 0.9895,
+      "gaussian_noise": 0.9515,
+      "salt_pepper": 0.9603
+     }
+    }
+   ],
+   "train_acc_mean": 0.99591,
+   "val_acc_mean": 0.98925,
+   "test_acc_mean": 0.99205,
+   "train_acc_std": 0.0002404163056034311,
+   "val_acc_std": 0.0019091883092037035,
+   "test_acc_std": 0.00035355339059323483,
+   "robust_test_acc_mean": {
+    "rotation": 0.9853000000000001,
+    "translation": 0.9717,
+    "scaling": 0.9894499999999999,
+    "gaussian_noise": 0.9362,
+    "salt_pepper": 0.9497
+   },
+   "val_delta_vs_baseline_mean": 0.0025000000000000022,
+   "val_delta_vs_baseline_sd": 0.0015556349186104687
+  },
+  "all": {
+   "ops": [
+    "rotation",
+    "translation",
+    "scaling",
+    "gaussian_noise",
+    "salt_pepper"
+   ],
+   "augmentation_time_sec": 2.8789059100672603,
+   "runs": [
+    {
+     "seed": 42,
+     "n_train": 100000,
+     "fit_time_sec": 353.5414332340006,
+     "stopped_epoch": 20,
+     "train_acc": 0.99742,
+     "val_acc": 0.9897,
+     "val_f1_macro": 0.9896237685897764,
+     "test_acc": 0.9928,
+     "test_f1_macro": 0.9927635791373619,
+     "robust_test_acc": {
+      "rotation": 0.9843,
+      "translation": 0.9731,
+      "scaling": 0.9905,
+      "gaussian_noise": 0.9897,
+      "salt_pepper": 0.9885
+     }
+    },
+    {
+     "seed": 43,
+     "n_train": 100000,
+     "fit_time_sec": 328.0860677990131,
+     "stopped_epoch": 13,
+     "train_acc": 0.99508,
+     "val_acc": 0.9901,
+     "val_f1_macro": 0.9900899402251797,
+     "test_acc": 0.9922,
+     "test_f1_macro": 0.9921063468517076,
+     "robust_test_acc": {
+      "rotation": 0.9854,
+      "translation": 0.9651,
+      "scaling": 0.9893,
+      "gaussian_noise": 0.9879,
+      "salt_pepper": 0.9889
+     }
+    }
+   ],
+   "train_acc_mean": 0.99625,
+   "val_acc_mean": 0.9899,
+   "test_acc_mean": 0.9924999999999999,
+   "train_acc_std": 0.0016546298679765274,
+   "val_acc_std": 0.00028284271247458785,
+   "test_acc_std": 0.0004242640687119603,
+   "robust_test_acc_mean": {
+    "rotation": 0.98485,
+    "translation": 0.9691,
+    "scaling": 0.9899,
+    "gaussian_noise": 0.9888,
+    "salt_pepper": 0.9887
+   },
+   "val_delta_vs_baseline_mean": 0.003149999999999986,
+   "val_delta_vs_baseline_sd": 7.071067811864696e-05
+  }
+ },
+ "selected_by_validation": "all"
+}

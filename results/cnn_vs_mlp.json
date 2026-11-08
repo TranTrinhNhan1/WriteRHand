@@ -1,0 +1,64 @@
+{
+ "dataset": "mnist",
+ "rows": [
+  {
+   "id": "mlp",
+   "n_parameters": 535818,
+   "onnx_bytes": null,
+   "train_time_sec": 11.020775095093995,
+   "latency_ms": 0.04246947355568409,
+   "predict_time_10k_sec": 0.05051896697841585,
+   "epochs": 14,
+   "accuracy": {
+    "train": 0.99868,
+    "val": 0.9818,
+    "test": 0.9824
+   },
+   "precision_macro": 0.9823499581225782,
+   "recall_macro": 0.982298306416204,
+   "f1_macro": 0.9823122541446068,
+   "generalization_gap": 0.01627999999999996,
+   "robust": {
+    "clean": 0.9824,
+    "rotation": 0.96,
+    "translation": 0.7286,
+    "scaling": 0.9671,
+    "gaussian_noise": 0.9731,
+    "salt_pepper": 0.9756
+   }
+  },
+  {
+   "id": "cnn",
+   "n_parameters": 56714,
+   "onnx_bytes": null,
+   "train_time_sec": 143.00712883402593,
+   "latency_ms": 0.31528936233371496,
+   "predict_time_10k_sec": 1.1629740709904581,
+   "epochs": 13,
+   "accuracy": {
+    "train": 0.99396,
+    "val": 0.9865,
+    "test": 0.988
+   },
+   "precision_macro": 0.9879416602929301,
+   "recall_macro": 0.9879038874659585,
+   "f1_macro": 0.9879154896729959,
+   "generalization_gap": 0.005959999999999965,
+   "robust": {
+    "clean": 0.988,
+    "rotation": 0.9746,
+    "translation": 0.8814,
+    "scaling": 0.9848,
+    "gaussian_noise": 0.9807,
+    "salt_pepper": 0.9771
+   }
+  }
+ ],
+ "mcnemar": {
+  "only_mlp": 64,
+  "only_cnn": 120,
+  "p": 4.4273647819452346e-05
+ },
+ "stress": "fixed perturbations of the test images (augment.STRESS, seed 999); reporting only",
+ "interpretability_note": "Both models are inspected with the same tool (execution explorer). MLP first-layer neurons have one weight per pixel and can be drawn as 28x28 maps; CNN kernels are small (k x k) and shared across positions, so their weights are easy to draw but a single kernel says little about the final decision without the following stages. This is a qualitative statement, not a measured score."
+}

@@ -6,6 +6,7 @@
     baselines   train the scikit-learn counterparts under the same protocol
     export      ONNX / JSON export + validation against the Python model
     augment     optional study: MLP with vs without data augmentation (3 seeds)
+    replay      record training replays (real checkpoints + metrics) for the explorer
     report      tables and figures from results/
     upload      push the artifacts to the Hugging Face Hub
 
@@ -19,9 +20,10 @@ from pathlib import Path
 
 import numpy as np
 
-from src.experiments.search import CLASS_NAME, SMOKE, SPECS, subset, tune
+from src.experiments.search import BASELINE_MODELS, CLASS_NAME, SMOKE, SPECS, subset, tune
 from src.experiments.tracking import Tracker
-from src.utils.paths import ARTIFACTS_DIR, RESULTS_DIR
+from src.preprocessing.preprocess import DATASETS
+from src.utils.paths import dataset_dirs
 
 MODEL_CHOICES = [*SPECS, "all"]
 
@@ -30,10 +32,23 @@ def _models(arg):
     return list(SPECS) if arg == "all" else [arg]
 
 
-def _load(smoke=False):
+def _dataset(args):
+    return getattr(args, "dataset", "mnist") or "mnist"
+
+
+def _dirs(args):
+    """Results / artifacts directories: explicit flags win, otherwise per-dataset defaults."""
+    rd, ad = dataset_dirs(_dataset(args))
+    return (
+        Path(args.results_dir) if args.results_dir else rd,
+        Path(args.artifacts_dir) if args.artifacts_dir else ad,
+    )
+
+
+def _load(smoke=False, dataset="mnist"):
     from src.preprocessing.preprocess import load_dataset
 
-    data, meta = load_dataset()
+    data, meta = load_dataset(name=dataset)
     if smoke:
         data = subset(data, SMOKE["n_train"], SMOKE["n_val"])
         data["X_test"], data["y_test"] = data["X_test"][:1000], data["y_test"][:1000]
@@ -41,29 +56,31 @@ def _load(smoke=False):
 
 
 def cmd_prepare(args):
-    data, meta = _load()
+    data, meta = _load(dataset=_dataset(args))
     print(json.dumps(meta, indent=2))
     print({k: v.shape for k, v in data.items()})
 
 
 def cmd_tune(args):
-    data, _ = _load()
+    data, _ = _load(dataset=_dataset(args))
+    rd, _ad = _dirs(args)
     # the test split is deliberately not handed to the search
     data = {k: v for k, v in data.items() if not k.endswith("_test")}
-    tracker = Tracker(args.wandb)
+    tracker = Tracker(args.wandb, dataset=_dataset(args))
     for m in _models(args.model):
         tune(
             m,
             data,
             tracker=tracker,
             smoke=args.smoke,
-            out_dir=Path(args.results_dir) / "tuning" if args.results_dir else None,
+            out_dir=rd / "tuning",
+            light=_dataset(args) != "mnist" and args.light,
         )
     print("tracking mode:", tracker.mode, "| runs:", len(tracker.runs))
 
 
 def _best_params(model_key, results_dir):
-    path = Path(results_dir or RESULTS_DIR) / "tuning" / f"{CLASS_NAME[model_key]}.json"
+    path = Path(results_dir) / "tuning" / f"{CLASS_NAME[model_key]}.json"
     if not path.is_file():
         raise SystemExit(f"{path} not found - run `tune --model {model_key}` first.")
     return json.loads(path.read_text(encoding="utf-8"))["best_params"]
@@ -72,10 +89,9 @@ def _best_params(model_key, results_dir):
 def cmd_train(args):
     from src.experiments.final import train_final
 
-    data, meta = _load(args.smoke)
-    tracker = Tracker(args.wandb)
-    rd = Path(args.results_dir) if args.results_dir else RESULTS_DIR
-    ad = Path(args.artifacts_dir) if args.artifacts_dir else ARTIFACTS_DIR
+    data, meta = _load(args.smoke, _dataset(args))
+    tracker = Tracker(args.wandb, dataset=_dataset(args))
+    rd, ad = _dirs(args)
     for m in _models(args.model):
         params = _best_params(m, rd)
         train_final(
@@ -91,14 +107,18 @@ def cmd_train(args):
     print("tracking mode:", tracker.mode, "| runs:", len(tracker.runs))
 
 
+def _baseline_models(arg):
+    return list(BASELINE_MODELS) if arg == "all" else [arg]
+
+
 def cmd_baselines(args):
     from src.experiments.final import run_baseline
 
-    data, _ = _load(args.smoke)
-    rd = Path(args.results_dir) if args.results_dir else RESULTS_DIR
+    data, _ = _load(args.smoke, _dataset(args))
+    rd, _ad = _dirs(args)
     out = rd / "baselines"
     out.mkdir(parents=True, exist_ok=True)
-    for m in _models(args.model):
+    for m in _baseline_models(args.model):
         res = run_baseline(m, _best_params(m, rd), data, repeats=2 if args.smoke else 5)
         preds = res.pop("predictions")
         np.savez_compressed(out / f"sklearn_{CLASS_NAME[m]}_predictions.npz", **preds)
@@ -111,39 +131,124 @@ def cmd_baselines(args):
 
 
 def cmd_augment(args):
-    from src.experiments.augment import run_study, save_study
+    from src.experiments.augment import CONDITIONS, run_study_cli
 
-    data, _ = _load(args.smoke)
-    rd = Path(args.results_dir) if args.results_dir else RESULTS_DIR
-    params = _best_params("mlp", rd)
+    data, _ = _load(args.smoke, _dataset(args))
+    rd, _ad = _dirs(args)
+    params = _best_params(args.model, rd)
+    conds = CONDITIONS
+    seeds = tuple(range(42, 42 + args.seeds))
     if args.smoke:
-        params = {**params, "epochs": 3}
-    study = run_study(data, params, seeds=(42,) if args.smoke else (42, 43, 44), k=args.copies)
-    print("saved", save_study(study, rd / "augmentation.json"))
+        params = {**params, "epochs": 2}
+        seeds = (42,)
+        conds = {k: CONDITIONS[k] for k in ("baseline", "rotation", "salt_pepper")}
+    print("saved", run_study_cli(data, args.model, params, seeds, args.copies, conds, rd))
+
+
+def cmd_replay(args):
+    """Record training replays (checkpoints + metrics of the real training run) for the explorer."""
+    from src.experiments.final import load_json
+    from src.experiments.replay import adaboost_replay, record_replay, save_replay
+    from src.models.base import BaseClassifier
+
+    data, meta = _load(dataset=_dataset(args))
+    rd, ad = _dirs(args)
+    for m in (
+        _baseline_models(args.model)
+        if args.model != "all"
+        else ["softmax", "mlp", "cnn", "adaboost"]
+    ):
+        if m == "naive_bayes":
+            print("naive_bayes: closed-form fit, no iterative training to replay")
+            continue
+        cname = CLASS_NAME[m]
+        params = _best_params(m, rd)
+        path = ad / cname / "model.npz"
+        if m == "adaboost":
+            fin = load_json(rd / "final" / f"{cname}.json")
+            rep = adaboost_replay(
+                BaseClassifier.load(path), fin["history"], data, meta, _dataset(args), params
+            )
+        else:
+            rep = record_replay(m, SPECS[m]["cls"], params, data, meta, path, _dataset(args))
+        out = save_replay(rep, ad / "replay" / f"{cname}.json")
+        print(
+            f"{m}: {len(rep['snapshots'])} snapshots, final_matches_deployed={rep['final_matches_deployed']} -> {out}"
+        )
+
+
+def cmd_compare(args):
+    """CNN vs MLP table (robustness, size, speed) and the cross-dataset evaluation."""
+    from src.experiments.compare import cnn_vs_mlp, cross_eval
+    from src.utils.paths import dataset_dirs as dd
+
+    rd, ad = _dirs(args)
+    ds = _dataset(args)
+    res = cnn_vs_mlp(ds, rd, ad)
+    if res:
+        (rd / "cnn_vs_mlp.json").write_text(json.dumps(res, indent=1), encoding="utf-8")
+        print("wrote", rd / "cnn_vs_mlp.json", "McNemar", res["mcnemar"])
+    if ds == "emnist_digits":
+        out = [cross_eval("mnist", ds, dd("mnist")[1])]
+        (rd / "cross_eval.json").write_text(json.dumps(out, indent=1), encoding="utf-8")
+        print("wrote", rd / "cross_eval.json", out[0]["rows"])
 
 
 def cmd_report(args):
     from src.experiments.report import build_report
 
-    build_report(Path(args.results_dir) if args.results_dir else RESULTS_DIR)
+    rd, ad = _dirs(args)
+    build_report(rd, ad, dataset=_dataset(args))
 
 
 def cmd_export(args):
+    """Export every dataset that has trained models (or one with --dataset)."""
     from src.export.bundle import export_all
+    from src.utils.paths import ARTIFACTS_DIR
 
-    export_all(
-        Path(args.artifacts_dir) if args.artifacts_dir else ARTIFACTS_DIR,
-        Path(args.results_dir) if args.results_dir else RESULTS_DIR,
-    )
+    names = [args.dataset] if args.dataset else list(DATASETS)
+    sources = {}
+    for n in names:
+        rd, ad = dataset_dirs(n)
+        if n == "mnist":
+            rd = Path(args.results_dir) if args.results_dir else rd
+            ad = Path(args.artifacts_dir) if args.artifacts_dir else ad
+        if any((ad / c / "model.npz").is_file() for c in CLASS_NAME.values()):
+            sources[n] = (ad, rd)
+    root = Path(args.artifacts_dir) if args.artifacts_dir else ARTIFACTS_DIR
+    export_all(sources, root)
+    if args.site:
+        _sync_site(root / "bundle")
+
+
+def _sync_site(bundle):
+    """The site commits only the manifest and the measured results; models stay in the bundle (HF)."""
+    import json
+    import shutil
+
+    from src.utils.paths import ROOT
+
+    out = ROOT / "web" / "public" / "data"
+    if out.exists():
+        shutil.rmtree(out)
+    out.mkdir(parents=True)
+    man = json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
+    shutil.copy(bundle / "manifest.json", out / "manifest.json")
+    for name in man["datasets"]:
+        (out / name).mkdir()
+        shutil.copy(bundle / name / "results.json", out / name / "results.json")
+    print(f"site data -> {out} ({len(man['datasets'])} datasets)")
 
 
 def cmd_upload(args):
     from src.export.hub import upload
+    from src.utils.paths import ARTIFACTS_DIR
 
     upload(
         Path(args.artifacts_dir) if args.artifacts_dir else ARTIFACTS_DIR,
         repo_id=args.repo_id,
         dry_run=args.dry_run,
+        write_lock_file=args.write_lock,
     )
 
 
@@ -155,13 +260,20 @@ def build_parser():
     )
     sub = p.add_subparsers(dest="command", required=True)
 
-    def add(name, fn, model=False, wandb=False, smoke=False):
+    def add(name, fn, model=False, wandb=False, smoke=False, dataset=True):
         sp = sub.add_parser(name, help=fn.__doc__)
         sp.set_defaults(func=fn)
         sp.add_argument("--results-dir", default=None)
         sp.add_argument("--artifacts-dir", default=None)
         if model:
             sp.add_argument("--model", choices=MODEL_CHOICES, default="all")
+        if dataset:
+            sp.add_argument(
+                "--dataset",
+                choices=list(DATASETS),
+                default="mnist",
+                help="dataset (default: mnist); results go to results/datasets/<name> unless overridden",
+            )
         if wandb:
             sp.add_argument(
                 "--wandb",
@@ -174,16 +286,28 @@ def build_parser():
         return sp
 
     add("prepare", cmd_prepare)
-    add("tune", cmd_tune, model=True, wandb=True, smoke=True)
+    tn = add("tune", cmd_tune, model=True, wandb=True, smoke=True)
+    tn.add_argument("--light", action="store_true", help="reduced sweeps (extra datasets only)")
     add("train", cmd_train, model=True, wandb=True, smoke=True)
     add("baselines", cmd_baselines, model=True, smoke=True)
     aug = add("augment", cmd_augment, smoke=True)
-    aug.add_argument("--copies", type=int, default=2, help="augmented copies per training image")
+    aug.add_argument("--model", choices=["mlp", "cnn"], default="mlp")
+    aug.add_argument("--seeds", type=int, default=3, help="number of training seeds per condition")
+    aug.add_argument("--copies", type=int, default=1, help="augmented copies per training image")
+    add("replay", cmd_replay, model=True)
+    add("compare", cmd_compare)
     add("report", cmd_report)
-    add("export", cmd_export)
-    up = add("upload", cmd_upload)
+    ex = add("export", cmd_export, dataset=False)
+    ex.add_argument("--dataset", choices=list(DATASETS), default=None)
+    ex.add_argument(
+        "--site",
+        action="store_true",
+        help="also copy manifest.json and <dataset>/results.json into web/public/data (committed)",
+    )
+    up = add("upload", cmd_upload, dataset=False)
     up.add_argument("--repo-id", default=None, help="e.g. <user>/WriteRHand-MNIST")
     up.add_argument("--dry-run", action="store_true")
+    up.add_argument("--write-lock", action="store_true", help="write web/model-lock.json")
     return p
 
 

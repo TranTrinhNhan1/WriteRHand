@@ -20,6 +20,7 @@ import numpy as np
 from src.evaluation.classification_metrics import get_metrics
 from src.experiments.env import git_info, hardware_info
 from src.models.adaboost import AdaBoostSAMME
+from src.models.cnn import CNN
 from src.models.logistic_regression import SoftmaxRegression
 from src.models.mlp import MLP
 from src.models.naive_bayes import GaussianNB
@@ -87,8 +88,31 @@ SPECS = {
         ],
         "epoch_curve": {"param": "n_estimators", "max": 400},
     },
+    "cnn": {
+        "cls": CNN,
+        "base": {
+            "channels": (8, 16),
+            "kernel_size": 3,
+            "dense": (),
+            "learning_rate": 0.03,
+            "momentum": 0.9,
+            "p_drop": 0.0,
+            "batch_size": 128,
+            "epochs": 20,
+            "seed": SEED,
+        },
+        "sweeps": [
+            ("channels", [(4, 8), (8, 16), (16, 32)]),
+            ("kernel_size", [3, 5]),
+            ("dense", [(), (64,)]),
+            ("learning_rate", [0.01, 0.03, 0.1]),
+            ("batch_size", [64, 128, 256]),
+            ("p_drop", [0.0, 0.2]),
+        ],
+    },
 }
 CLASS_NAME = {k: v["cls"].__name__ for k, v in SPECS.items()}
+BASELINE_MODELS = [k for k in SPECS if k != "cnn"]  # models with a scikit-learn counterpart
 
 # tiny version used by CI / quick sanity runs (``--smoke``)
 SMOKE = {
@@ -99,14 +123,33 @@ SMOKE = {
         "softmax": [("learning_rate", [0.03, 0.1])],
         "mlp": [("hidden_sizes", [(16,), (32,)])],
         "adaboost": [("max_depth", [1, 2])],
+        "cnn": [("channels", [(2, 4), (4, 8)])],
     },
     "base_override": {
         "softmax": {"epochs": 3},
         "mlp": {"epochs": 3},
         "adaboost": {"n_estimators": 5},
+        "cnn": {"epochs": 2},
     },
     "curve_max": {"softmax": 6, "adaboost": 10},
 }
+
+
+# Reduced sweeps for the extra datasets (Fashion-MNIST, EMNIST Digits): same coordinate-descent
+# protocol, fewer values per hyper-parameter so that the whole study stays affordable on a CPU.
+# AdaBoost (the most expensive model) keeps a single sweep and its staged curve.
+LIGHT = {
+    "naive_bayes": [("var_smoothing", [1e-9, 1e-6, 1e-3, 1e-2, 0.1, 1.0])],
+    "softmax": [("learning_rate", [0.03, 0.1, 0.3]), ("l2", [0.0, 1e-4, 1e-3])],
+    "mlp": [
+        ("hidden_sizes", [(128,), (256,), (512,), (512, 256)]),
+        ("learning_rate", [0.02, 0.05, 0.1]),
+        ("p_drop", [0.0, 0.2]),
+    ],
+    "adaboost": [("max_depth", [4, 6, 8])],
+    "cnn": [("learning_rate", [0.01, 0.03, 0.1]), ("channels", [(8, 16), (16, 32)])],
+}
+LIGHT_CURVE = {"adaboost": 200, "softmax": 60}
 
 
 def _jsonable(v):
@@ -157,11 +200,13 @@ def subset(data, n_train=None, n_val=None):
     return d
 
 
-def tune(model_key, data, tracker=None, smoke=False, out_dir=None, log=print):
+def tune(model_key, data, tracker=None, smoke=False, out_dir=None, light=False, log=print):
     """Run the sequential sweeps. ``data`` must contain train and validation arrays only."""
     spec = SPECS[model_key]
     base = dict(spec["base"])
     sweeps = list(spec["sweeps"])
+    if light:
+        sweeps = list(LIGHT[model_key])
     if smoke:
         base.update(SMOKE["base_override"].get(model_key, {}))
         sweeps = SMOKE["sweeps"][model_key]
@@ -212,7 +257,13 @@ def tune(model_key, data, tracker=None, smoke=False, out_dir=None, log=print):
     curve_info = None
     if "epoch_curve" in spec:
         ec = spec["epoch_curve"]
-        cap = SMOKE["curve_max"][model_key] if smoke else ec["max"]
+        cap = (
+            SMOKE["curve_max"][model_key]
+            if smoke
+            else LIGHT_CURVE.get(model_key, ec["max"])
+            if light
+            else ec["max"]
+        )
         params = {**best, ec["param"]: cap}
         rec = evaluate(params, f"curve:{ec['param']}", ec["param"], cap)
         accs = rec["curve"]["val_acc"]
@@ -231,6 +282,7 @@ def tune(model_key, data, tracker=None, smoke=False, out_dir=None, log=print):
         "model": cname,
         "protocol": "sequential one-factor sweeps; selection by validation accuracy only",
         "smoke": smoke,
+        "light": light,
         "n_train": int(len(data["y_train"])),
         "n_val": int(len(data["y_val"])),
         "seed": SEED,

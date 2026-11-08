@@ -171,8 +171,11 @@ class MLP(BaseClassifier):
         self.b = [b.clone() for _, b in snap]
 
     # ------------------------------------------------------------------ training
-    def fit(self, X, y, X_val=None, y_val=None):
-        """Train. ``X_val``/``y_val`` are only *monitored* (history); they never affect training."""
+    def fit(self, X, y, X_val=None, y_val=None, callback=None):
+        """Train. ``X_val``/``y_val`` are only *monitored* (history); they never affect training.
+
+        ``callback(epoch, model)`` (optional, used to record training replays) is called with epoch 0
+        after initialisation and after every epoch; it must not modify the model."""
         X, y = check_Xy(X, y)
         self.classes, y_idx = np.unique(y, return_inverse=True)
         self.n_classes = len(self.classes)
@@ -206,6 +209,8 @@ class MLP(BaseClassifier):
         best_loss, best_snap, wait = float("inf"), None, 0
         self.best_epoch_ = 0
         n_tr = X_tr.shape[0]
+        if callback is not None:
+            callback(0, self)
 
         for epoch in range(self.epochs):
             order = torch.randperm(n_tr, generator=self.generator)
@@ -237,6 +242,8 @@ class MLP(BaseClassifier):
                 msg += f" val_acc={self.history['val_acc'][-1]:.4f}"
             if self.verbose:
                 print(msg)
+            if callback is not None:
+                callback(epoch + 1, self)
             if n_stop and wait >= self.patience:
                 break
 

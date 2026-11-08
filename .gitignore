@@ -66,3 +66,20 @@ results/_notebook_*/
 # the website ships same-origin copies of the benchmark data
 !web/public/data/
 slides/node_modules
+
+# Playwright
+web/dist-e2e/
+web/playwright-report/
+web/test-results/
+
+# Beamer build files
+slides/beamer/*.aux
+slides/beamer/*.log
+slides/beamer/*.nav
+slides/beamer/*.out
+slides/beamer/*.snm
+slides/beamer/*.toc
+slides/beamer/*.fls
+slides/beamer/*.fdb_latexmk
+slides/beamer/*.xdv
+slides/beamer/main.pdf

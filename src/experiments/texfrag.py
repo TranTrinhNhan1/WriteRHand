@@ -20,7 +20,7 @@ from pathlib import Path
 from src.experiments.report import ORDER, TITLE, load_all, sweep_points, top_confusions
 from src.utils.paths import ARTIFACTS_DIR, ROOT
 
-PREFIX = {"naive_bayes": "NB", "softmax": "SM", "mlp": "MLP", "adaboost": "ADA"}
+PREFIX = {"naive_bayes": "NB", "softmax": "SM", "mlp": "MLP", "adaboost": "ADA", "cnn": "CNN"}
 _ESC = str.maketrans({"_": r"\_", "%": r"\%", "&": r"\&", "#": r"\#"})
 
 
@@ -147,6 +147,7 @@ def write_export_check(out_dir, artifacts_dir=ARTIFACTS_DIR):
         txt = "chưa chạy bước xuất mô hình trong lần biên dịch này"
     else:
         man = json.loads(path.read_text(encoding="utf-8"))
+        man = man["datasets"]["mnist"]  # the sentence in the report is about MNIST
         parts = []
         for mid in ORDER:
             m = man["models"].get(mid)
@@ -163,42 +164,68 @@ def write_export_check(out_dir, artifacts_dir=ARTIFACTS_DIR):
     (out_dir / "export_check.tex").write_text(txt + "%\n", encoding="utf-8")
 
 
+AUG_NAME = {
+    "baseline": "Không tăng cường",
+    "rotation": "Xoay",
+    "translation": "Dịch chuyển",
+    "scaling": "Co giãn",
+    "gaussian_noise": "Nhiễu Gauss",
+    "salt_pepper": "Nhiễu muối tiêu",
+    "geometric": "Hình học (xoay, dịch, co giãn)",
+    "all": "Cả năm phép",
+}
+
+
 def write_augmentation(results_dir, out_dir):
-    path = Path(results_dir) / "augmentation.json"
-    if not path.is_file():
-        (out_dir / "augmentation.tex").write_text(
-            "\\emph{Chưa chạy thí nghiệm tăng cường dữ liệu.}\n", encoding="utf-8"
-        )
-        return
-    r = json.loads(path.read_text(encoding="utf-8"))
-    names = {"baseline": "Không tăng cường"}
-    rows = []
-    for key, c in r["conditions"].items():
-        label = names.get(key, f"Tăng cường ($\\times{key.split('x')[-1]}$ dữ liệu)")
-        n = c["runs"][0]["n_train"]
-        t = sum(x["fit_time_sec"] for x in c["runs"]) / len(c["runs"])
-        rows.append(
-            f"{label} & {n:,} & ".replace(",", "\\,")
-            + f"{_pct(c['val_acc_mean'])} $\\pm$ {_pct(c['val_acc_std'])} & "
-            f"{_pct(c['test_acc_mean'])} $\\pm$ {_pct(c['test_acc_std'])} & {t:.0f} \\\\"
-        )
-    seeds = ", ".join(str(s) for s in r["seeds"])
-    tex = [
-        r"\begin{table}[H]\centering\small",
-        r"\begin{tabular}{lrrrr}",
-        r"\toprule",
-        r"Điều kiện & Số mẫu huấn luyện & Val (\%) & Test (\%) & Thời gian fit (s) \\",
-        r"\midrule",
-        *rows,
-        r"\bottomrule",
-        r"\end{tabular}",
-        f"\\caption{{MLP với cấu hình đã chọn, huấn luyện lại với {len(r['seeds'])} seed ({seeds}); "
-        r"trung bình $\pm$ độ lệch chuẩn mẫu. Ảnh tăng cường: xoay tối đa $10^\circ$, dịch tối đa 2 pixel, "
-        f"co giãn $0.9$--$1.1$; {r['k_copies']} bản sao cho mỗi ảnh gốc, chỉ từ tập train.}}",
-        r"\label{tab:augmentation}",
-        r"\end{table}",
-    ]
-    (out_dir / "augmentation.tex").write_text("\n".join(tex) + "\n", encoding="utf-8")
+    """One table per model (``augmentation_mlp.tex``, ``augmentation_cnn.tex``)."""
+    from src.experiments.augment import TRANSFORMS
+
+    for kind in ("mlp", "cnn"):
+        path = Path(results_dir) / f"augmentation_{kind}.json"
+        target = out_dir / f"augmentation_{kind}.tex"
+        if not path.is_file():
+            target.write_text(
+                f"\\emph{{Chưa chạy thí nghiệm tăng cường dữ liệu cho {kind.upper()}.}}\n",
+                encoding="utf-8",
+            )
+            continue
+        r = json.loads(path.read_text(encoding="utf-8"))
+        rows = []
+        for key, c in r["conditions"].items():
+            n = c["runs"][0]["n_train"]
+            d = c.get("val_delta_vs_baseline_mean", 0.0)
+            sd = c.get("val_delta_vs_baseline_sd", 0.0)
+            rob = c["robust_test_acc_mean"]
+            rows.append(
+                f"{AUG_NAME.get(key, _tex(key))} & {f'{n:,}'.replace(',', chr(92) + ',')} & "
+                + f"{_pct(c['val_acc_mean'])} $\\pm$ {_pct(c['val_acc_std'])} & "
+                f"{100 * d:+.2f} $\\pm$ {100 * sd:.2f} & "
+                f"{_pct(c['test_acc_mean'])} & "
+                + " & ".join(_pct(rob[t], 1) for t in TRANSFORMS)
+                + " \\\\"
+            )
+        seeds = ", ".join(str(s) for s in r["seeds"])
+        tex = [
+            r"\begin{table}[H]\centering\scriptsize",
+            r"\setlength{\tabcolsep}{3pt}",
+            r"\begin{tabular}{lrrrrrrrrr}",
+            r"\toprule",
+            r" & & \multicolumn{2}{c}{Validation} & Test & \multicolumn{5}{c}{Test sau nhiễu (\%)} \\",
+            r"\cmidrule(lr){3-4}\cmidrule(lr){6-10}",
+            r"Điều kiện & Số mẫu & Acc (\%) & $\Delta$ so với gốc & Acc (\%) & Xoay & Dịch & Co giãn & Gauss & Muối tiêu \\",
+            r"\midrule",
+            *rows,
+            r"\bottomrule",
+            r"\end{tabular}",
+            f"\\caption{{{kind.upper()} với cấu hình đã chọn, huấn luyện lại với {len(r['seeds'])} seed ({seeds}) "
+            f"cho mỗi điều kiện; $\\Delta$ là hiệu validation accuracy so với điều kiện gốc \\emph{{cùng seed}} "
+            f"(trung bình $\\pm$ độ lệch chuẩn mẫu). {r['k_copies']} bản sao biến đổi cho mỗi ảnh train; điều kiện "
+            f"được chọn chỉ theo validation (\\texttt{{{_tex(r['selected_by_validation'])}}}). Các cột ``Test sau nhiễu'' "
+            f"đo độ bền trên tập test bị biến đổi ở mức mạnh hơn mức huấn luyện, chỉ để báo cáo.}}",
+            f"\\label{{tab:augmentation-{kind}}}",
+            r"\end{table}",
+        ]
+        target.write_text("\n".join(tex) + "\n", encoding="utf-8")
 
 
 def write_confusions(data, out_dir):

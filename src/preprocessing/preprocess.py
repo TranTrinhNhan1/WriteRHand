@@ -16,7 +16,6 @@ import json
 
 import numpy as np
 import torch
-from torchvision.datasets import MNIST
 
 from src.utils.paths import DATA_DIR, PROCESSED_PATH, SEED
 
@@ -26,14 +25,91 @@ N_FEATURES = 784
 N_CLASSES = 10
 
 
-def load_mnist(root=DATA_DIR):
+# ------------------------------------------------------------------ datasets
+# Every dataset is 28x28 grayscale with 10 classes, so every model keeps the same input and output
+# size; what differs is the *meaning* of the 10 labels (``class_names``) and the pool of images.
+DATASETS = {
+    "mnist": {
+        "title": "MNIST",
+        "short": "MNIST",
+        "classes": [str(i) for i in range(10)],
+        "kind": "digits",
+        "source": "LeCun et al. (1998); torchvision.datasets.MNIST",
+    },
+    "fashion_mnist": {
+        "title": "Fashion-MNIST",
+        "short": "Fashion",
+        "classes": [
+            "T-shirt/top",
+            "Trouser",
+            "Pullover",
+            "Dress",
+            "Coat",
+            "Sandal",
+            "Shirt",
+            "Sneaker",
+            "Bag",
+            "Ankle boot",
+        ],
+        "kind": "clothing",
+        "source": "Xiao et al. (2017); torchvision.datasets.FashionMNIST",
+    },
+    "emnist_digits": {
+        "title": "EMNIST Digits",
+        "short": "EMNIST",
+        "classes": [str(i) for i in range(10)],
+        "kind": "digits",
+        "source": "Cohen et al. (2017); torchvision.datasets.EMNIST(split='digits')",
+    },
+}
+DEFAULT_DATASET = "mnist"
+N_VAL = 10_000
+
+
+def check_dataset(name):
+    if name not in DATASETS:
+        raise ValueError(f"Unknown dataset {name!r}; choose one of {list(DATASETS)}.")
+    return name
+
+
+def load_raw(name=DEFAULT_DATASET, root=DATA_DIR):
     """Return ``(X_train_raw, y_train, X_test_raw, y_test)`` as torch tensors (uint8 images)."""
+    check_dataset(name)
     try:
-        train = MNIST(root=str(root), train=True, download=True)
-        test = MNIST(root=str(root), train=False, download=True)
+        if name == "mnist":
+            from torchvision.datasets import MNIST as DS
+
+            train, test = (
+                DS(str(root), train=True, download=True),
+                DS(str(root), train=False, download=True),
+            )
+            return train.data, train.targets, test.data, test.targets
+        if name == "fashion_mnist":
+            from torchvision.datasets import FashionMNIST as DS
+
+            train, test = (
+                DS(str(root), train=True, download=True),
+                DS(str(root), train=False, download=True),
+            )
+            return train.data, train.targets, test.data, test.targets
+        from torchvision.datasets import EMNIST
+
+        train = EMNIST(str(root), split="digits", train=True, download=True)
+        test = EMNIST(str(root), split="digits", train=False, download=True)
+        # EMNIST images are stored transposed relative to MNIST; undo it so digits are upright
+        return (
+            train.data.transpose(1, 2).contiguous(),
+            train.targets,
+            test.data.transpose(1, 2).contiguous(),
+            test.targets,
+        )
     except Exception as e:  # network / disk problems
-        raise RuntimeError(f"Cannot load MNIST from {root}: {type(e).__name__}: {e}") from e
-    return train.data, train.targets, test.data, test.targets
+        raise RuntimeError(f"Cannot load {name} from {root}: {type(e).__name__}: {e}") from e
+
+
+def load_mnist(root=DATA_DIR):
+    """Backward-compatible alias: MNIST only."""
+    return load_raw("mnist", root)
 
 
 def flatten(X_raw):
@@ -124,9 +200,19 @@ def prepare_mnist(
     return X_train, ytr_raw, X_test, yte_raw, mean, std
 
 
-def build_dataset(root=DATA_DIR, seed=SEED, n_train=N_TRAIN):
-    """Full pipeline -> dict of numpy arrays (float32 features, int64 labels) + metadata."""
-    Xtr_raw, ytr_raw, Xte_raw, yte_raw = load_mnist(root)
+def build_dataset(root=DATA_DIR, seed=SEED, n_train=N_TRAIN, name=DEFAULT_DATASET, n_val=N_VAL):
+    """Full pipeline -> dict of numpy arrays (float32 features, int64 labels) + metadata.
+
+    The official training set is split (stratified, seeded) into ``n_train`` / ``n_val`` images; if
+    the official set is larger than ``n_train + n_val`` (EMNIST Digits has 240 000) a stratified
+    pool of that size is drawn first, so every dataset is trained with the same budget. The
+    official test set is used whole and only for final reporting.
+    """
+    Xtr_raw, ytr_raw, Xte_raw, yte_raw = load_raw(name, root)
+    pool = None
+    if len(Xtr_raw) > n_train + n_val:
+        _, pool = stratified_split_indices(ytr_raw, n_train + n_val, seed)
+        Xtr_raw, ytr_raw = Xtr_raw[torch.from_numpy(pool)], ytr_raw[torch.from_numpy(pool)]
     n_val = len(Xtr_raw) - n_train
     tr_idx, va_idx = stratified_split_indices(ytr_raw, n_val, seed)
     X_all = flatten(Xtr_raw).numpy()
@@ -140,6 +226,13 @@ def build_dataset(root=DATA_DIR, seed=SEED, n_train=N_TRAIN):
     meta = {
         "preprocess_version": PREPROCESS_VERSION,
         "seed": seed,
+        **(
+            {}
+            if name == DEFAULT_DATASET
+            else {"dataset": name, "pool_fingerprint": split_fingerprint(pool, pool)}
+            if pool is not None
+            else {"dataset": name}
+        ),
         "n_train": int(len(tr_idx)),
         "n_val": int(len(va_idx)),
         "n_test": int(len(yte_raw)),
@@ -158,17 +251,26 @@ def build_dataset(root=DATA_DIR, seed=SEED, n_train=N_TRAIN):
     return data, meta
 
 
-def save_processed_data(root=PROCESSED_PATH, seed=SEED, n_train=N_TRAIN):
-    root.mkdir(parents=True, exist_ok=True)
-    data, meta = build_dataset(seed=seed, n_train=n_train)
-    np.savez_compressed(root / "mnist.npz", **data)
-    (root / "meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
+def _cache_paths(root, name):
+    """MNIST keeps its historical file names; other datasets live in their own sub-directory."""
+    if name == DEFAULT_DATASET:
+        return root / "mnist.npz", root / "meta.json"
+    return root / name / "data.npz", root / name / "meta.json"
+
+
+def save_processed_data(root=PROCESSED_PATH, seed=SEED, n_train=N_TRAIN, name=DEFAULT_DATASET):
+    npz, meta_path = _cache_paths(root, name)
+    npz.parent.mkdir(parents=True, exist_ok=True)
+    data, meta = build_dataset(seed=seed, n_train=n_train, name=name)
+    np.savez_compressed(npz, **data)
+    meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
     return meta
 
 
-def load_dataset(root=PROCESSED_PATH, seed=SEED, n_train=N_TRAIN):
+def load_dataset(root=PROCESSED_PATH, seed=SEED, n_train=N_TRAIN, name=DEFAULT_DATASET):
     """Load (building and caching if necessary) the processed split. Returns ``(data, meta)``."""
-    npz, meta_path = root / "mnist.npz", root / "meta.json"
+    check_dataset(name)
+    npz, meta_path = _cache_paths(root, name)
     meta = None
     if npz.is_file() and meta_path.is_file():
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
@@ -179,9 +281,10 @@ def load_dataset(root=PROCESSED_PATH, seed=SEED, n_train=N_TRAIN):
         ):
             meta = None  # stale cache
     if meta is None:
-        meta = save_processed_data(root, seed, n_train)
+        meta = save_processed_data(root, seed, n_train, name)
     with np.load(npz) as f:
         data = {k: f[k] for k in f.files}
+    meta.setdefault("dataset", name)
     return data, meta
 
 

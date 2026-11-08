@@ -83,8 +83,9 @@ class WandbRun(NullRun):
 
 
 class Tracker:
-    def __init__(self, mode="auto", project=PROJECT, entity=None, directory=None):
+    def __init__(self, mode="auto", project=PROJECT, entity=None, directory=None, dataset="mnist"):
         self.mode = resolve_mode(mode)
+        self.dataset = dataset
         self.project = project
         self.entity = entity or os.environ.get("WANDB_ENTITY")
         if directory is None:
@@ -103,14 +104,18 @@ class Tracker:
             return
         import wandb
 
+        config = {"dataset": self.dataset, **(config or {})}
+        tags = [*(tags or []), f"dataset:{self.dataset}"]
+        if group and self.dataset != "mnist":
+            group = f"{self.dataset}/{group}"
         r = wandb.init(
             project=self.project,
             entity=self.entity,
             name=name,
             group=group,
             job_type=job_type,
-            config=config or {},
-            tags=tags or [],
+            config=config,
+            tags=tags,
             mode=self.mode,
             dir=self.directory,
             reinit=True,
