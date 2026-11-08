@@ -123,7 +123,7 @@ web/                 website demo (src/engine, src/components/explorer, e2e/)   
 ```
 
 ## Thành viên
-Trần Trinh Nhân (24280088) và Lâm Nhật Tiến (24280029), đóng góp 50%/50% (nhóm tự thống nhất); chi tiết ở mục 9 của báo cáo. Phần hoàn thiện đồ án được thực hiện **với sự hỗ trợ của
+Trần Trinh Nhân (24280088) và Lâm Nhật Tiến (24280027), đóng góp 50%/50% (nhóm tự thống nhất); chi tiết ở mục 9 của báo cáo. Phần hoàn thiện đồ án được thực hiện **với sự hỗ trợ của
 trợ lý lập trình AI (Claude Code)** theo đúng công bố trong báo cáo. Quy trình nhóm: [WORKFLOW.md](WORKFLOW.md).
 
 ## Tài liệu / nguồn
