@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
-import { Moon, Sun } from '@phosphor-icons/react'
+import { GithubLogo, Moon, Sun } from '@phosphor-icons/react'
 import { loadBundle, type Booted } from './engine/boot'
 import { BundleContext, type Bundle } from './engine/react'
 import { ModelRegistry } from './engine/store'
@@ -18,12 +18,14 @@ import Recognise from './pages/Recognise'
 const Models = lazy(() => import('./pages/Models'))
 const Results = lazy(() => import('./pages/Results'))
 const About = lazy(() => import('./pages/About'))
+const Documents = lazy(() => import('./pages/Documents'))
 
 const TITLE_KEY: Record<Route, Key> = {
   recognise: 'meta.title.recognise',
   models: 'meta.title.models',
   results: 'meta.title.results',
   about: 'meta.title.about',
+  documents: 'meta.title.documents',
 }
 
 function PageSkeleton() {
@@ -63,6 +65,16 @@ function ThemeToggle() {
   )
 }
 
+function GitHubLink() {
+  const { t } = useI18n()
+  const label = t('nav.github')
+  return (
+    <a className="theme-toggle header-github" href={REPO_URL} target="_blank" rel="noopener noreferrer" aria-label={label} title={label}>
+      <GithubLogo size={18} weight="regular" aria-hidden="true" />
+    </a>
+  )
+}
+
 function Header({ route }: { route: Route }) {
   const { t } = useI18n()
   return (
@@ -70,7 +82,7 @@ function Header({ route }: { route: Route }) {
       <div className="wrap site-header__inner">
         <a className="wordmark" href="#/" aria-label={t('nav.home')}>
           <span className="wordmark__mark" aria-hidden="true" />
-          WriteRHand
+          <span className="wordmark__text">WriteRHand</span>
         </a>
         <nav aria-label={t('nav.label')} className="site-nav">
           <ul className="nav">
@@ -86,6 +98,7 @@ function Header({ route }: { route: Route }) {
         <div className="header-tools">
           <LangSwitch />
           <ThemeToggle />
+          <GitHubLink />
         </div>
       </div>
     </header>
@@ -183,8 +196,22 @@ export default function App() {
     mainRef.current?.focus({ preventScroll: true })
   }, [route])
 
+  const pageFallback = (
+    <div className="wrap">
+      <PageSkeleton />
+    </div>
+  )
   let body: React.ReactNode
-  if (error) {
+  if (route === 'documents') {
+    // the deliverables do not depend on the model data, so they stay reachable even if it fails to load
+    body = (
+      <Suspense fallback={pageFallback}>
+        <div className="wrap">
+          <Documents />
+        </div>
+      </Suspense>
+    )
+  } else if (error) {
     body = (
       <div className="wrap">
         <div className="fatal sheet" role="alert">

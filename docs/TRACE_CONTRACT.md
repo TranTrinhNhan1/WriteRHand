@@ -2,7 +2,7 @@
 
 The **Model Execution Explorer** of the website draws only what this contract describes. Python
 generates it from the *fitted model object* (`src/export/tracespec.py`); the frontend validates it
-(`web/src/lib/contract.ts`) and refuses to draw a model whose files do not match their hashes or
+(`web/src/engine/contract.ts`) and refuses to draw a model whose files do not match their hashes or
 whose shapes disagree with the graph. Nothing about depth, widths, kernel sizes, channel counts or
 the number of boosting rounds is hard-coded in the frontend.
 

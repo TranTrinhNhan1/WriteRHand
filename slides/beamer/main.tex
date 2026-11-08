@@ -19,270 +19,290 @@
 \definecolor{navy}{HTML}{1F3A5F}
 \setbeamercolor{structure}{fg=navy}
 \setbeamercolor{frametitle}{fg=navy,bg=white}
-\setbeamercolor{block title}{fg=navy,bg=navy!10}
-\setbeamercolor{block body}{fg=black,bg=navy!4}
-\setbeamerfont{frametitle}{size=\large,series=\bfseries}
+\setbeamercolor{block title}{fg=navy,bg=white}
+\setbeamercolor{block body}{fg=black,bg=white}
+\setbeamerfont{frametitle}{size=\normalsize,series=\bfseries}
 \setbeamertemplate{navigation symbols}{}
 \setbeamertemplate{itemize item}{\small\raise0.2ex\hbox{$\blacktriangleright$}}
 \setbeamertemplate{frametitle}{\vskip1ex\insertframetitle\par\vskip0.6ex{\color{navy}\hrule height 0.5pt}}
 \setbeamertemplate{footline}{\vskip-2pt{\color{navy}\hrule height 0.4pt}\vskip3pt
-  \hbox to\paperwidth{\hspace{1.2em}\scriptsize\color{black!70}Trần Trinh Nhân, Lâm Nhật Tiến\hfill Nhận dạng chữ số MNIST\hfill\insertframenumber\,/\,\inserttotalframenumber\hspace{1.2em}}\vskip4pt}
+  \hbox to\paperwidth{\hspace{1.2em}\scriptsize\color{black!70}Trần Trinh Nhân, Lâm Nhật Tiến\hfill Nhận dạng chữ số viết tay MNIST\hfill\insertframenumber\,/\,\inserttotalframenumber\hspace{1.2em}}\vskip4pt}
 \providecommand{\R}{\mathbb{R}}
 \input{../../report/generated/numbers}
+\input{../../report/generated/mcnemar}
 \input{../../report/generated/cross_eval_numbers}
+\input{../../report/generated/eda_stats}
 \newcommand{\fig}[2][\linewidth]{\includegraphics[width=#1]{#2}}
-\newcommand{\maybefig}[2][\linewidth]{\IfFileExists{../../results/figures/#2.png}{\includegraphics[width=#1]{#2.png}}{\emph{(hình chưa được sinh)}}}
 
-\title{Nhận dạng chữ số viết tay MNIST}
-\subtitle{Bốn bộ phân lớp tự cài đặt, một mạng tích chập nhỏ, đo trên cùng một giao thức}
+\title{So sánh các bộ phân lớp tự cài đặt trên MNIST}
 \author{Trần Trinh Nhân (24280088) \and Lâm Nhật Tiến (24280029)}
-\date{Nhận dạng mẫu -- Đồ án giữa kỳ}
+\date{Nhận dạng -- Đồ án giữa kỳ}
+\newcommand{\bul}{\begin{itemize}\setlength{\itemsep}{4pt}}
+\newcommand{\eul}{\end{itemize}}
 
 \begin{document}
 
+% 1
 \begin{frame}[plain]
   \vfill\centering
-  {\Large\bfseries\color{navy} Nhận dạng chữ số viết tay MNIST}\par\medskip
-  {\normalsize Bốn bộ phân lớp tự cài đặt, một mạng tích chập nhỏ,\\đo trên cùng một giao thức và đối chiếu với scikit-learn}\par\bigskip
+  {\Large\bfseries\color{navy} So sánh các bộ phân lớp tự cài đặt\\ trên bài toán nhận dạng chữ số viết tay MNIST}\par\medskip
+  {\normalsize Gaussian Naïve Bayes, hồi quy softmax, MLP, AdaBoost-SAMME và một CNN nhỏ}\par\bigskip
   {\color{navy}\hrule height 0.5pt}\bigskip
   Trần Trinh Nhân (24280088) \quad Lâm Nhật Tiến (24280029)\par\smallskip
-  {\small Nhận dạng mẫu -- Đồ án giữa kỳ}
+  {\small Môn Nhận dạng, Khoa Toán -- Tin học, Trường Đại học Khoa học Tự nhiên, ĐHQG-HCM\\ Đồ án giữa kỳ}
   \vfill
 \end{frame}
 
-\begin{frame}{Đọc một chữ số $28\times28$ và trả lời nó là số nào}
+% 2
+\begin{frame}{Các giả thiết khác nhau về chữ số cho kết quả khác nhau đến mức nào?}
   \begin{columns}[T]
-    \column{0.5\linewidth}
-    \begin{itemize}\setlength{\itemsep}{6pt}
-      \item MNIST: 60\,000 ảnh huấn luyện, 10\,000 ảnh test, 10 lớp; mỗi ảnh có 784 pixel xám.
-      \item Câu hỏi: các họ phương pháp khác nhau cho kết quả ra sao khi cùng làm một bài và cùng đo một cách?
-      \item Mở rộng: Fashion-MNIST, EMNIST Digits, tăng cường dữ liệu, một CNN nhỏ và một trình khám phá quá trình tính toán trong trình duyệt.
-    \end{itemize}
-    \column{0.48\linewidth}
-    \fig{eda_overview.png}
-  \end{columns}
-\end{frame}
-
-\begin{frame}{Giao thức: không rò rỉ dữ liệu, chạy lại được bằng một lệnh}
-  \begin{columns}[T]
-    \column{0.5\linewidth}
-    \begin{block}{Ba tập, ba vai}
-      Train để học, validation để chọn, test để báo cáo. Hàm tìm siêu tham số không nhận tập test; một kiểm thử tự động giữ điều đó.
-    \end{block}
-    \begin{block}{Chuẩn hóa chỉ từ train}
-      Trung bình và độ lệch chuẩn tính trên 50\,000 ảnh train, dùng lại nguyên si cho validation, test và trình duyệt.
-    \end{block}
-    \column{0.46\linewidth}
-    \small\ttfamily
-    prepare $\to$ chia 50\,000/10\,000\\
-    tune $\to$ chọn trên validation\\
-    train $\to$ huấn luyện lại\\
-    evaluate $\to$ test, một lần\\
-    export $\to$ ONNX + kiểm tra số\\
-    report $\to$ bảng, hình
-  \end{columns}
-\end{frame}
-
-\begin{frame}{Năm mô hình, năm cách nhìn khác nhau về chữ số}
-  \small
-  \begin{tabular}{@{}p{4.1cm}p{8.8cm}@{}}
-    \toprule
-    \textbf{Gaussian Naïve Bayes} & mỗi pixel là một phân phối chuẩn riêng theo lớp, các pixel độc lập \\
-    \textbf{Hồi quy softmax} & một mẫu $\bm{w}_k$ cho mỗi lớp, học bằng gradient descent trên cross-entropy \\
-    \textbf{MLP} & hai lớp ẩn ReLU, lan truyền ngược viết tay, momentum, dừng sớm \\
-    \textbf{AdaBoost-SAMME} & hàng trăm cây quyết định có trọng số; cây sau tập trung vào ảnh cây trước làm sai \\
-    \textbf{CNN nhỏ} & hai khối tích chập + max-pool + ReLU, rồi lớp dày đặc; im2col và gradient viết tay \\
-    \bottomrule
-  \end{tabular}
-\end{frame}
-
-\begin{frame}{Phần lõi tự viết, thư viện chỉ để kiểm tra}
-  \begin{columns}[T]
-    \column{0.55\linewidth}
-    \begin{itemize}\setlength{\itemsep}{5pt}
-      \item Ước lượng tham số, loss, gradient và cập nhật viết tay bằng NumPy; MLP và CNN dùng PyTorch \emph{chỉ làm kho tensor}: không autograd, không \texttt{nn.Module}, không \texttt{optim}, không \texttt{F.conv2d}, không \texttt{F.max\_pool2d}.
-      \item scikit-learn chỉ để đối chiếu.
-    \end{itemize}
-    \column{0.42\linewidth}
-    \begin{block}{\input{../../report/generated/ntests} kiểm thử tự động}
-      Gradient giải tích khớp sai phân hữu hạn; backprop và gradient CNN khớp autograd; convolution khớp vòng lặp ngây thơ; cây có trọng số khớp \texttt{DecisionTreeClassifier}.
-    \end{block}
-  \end{columns}
-\end{frame}
-
-\begin{frame}{Chọn siêu tham số: quét từng tham số một, chọn bằng validation}
-  \begin{columns}[T]
-    \column{0.5\linewidth}
-    \fig{sweep_mlp.png}
-    \column{0.48\linewidth}
-    \small
-    \begin{itemize}\setlength{\itemsep}{4pt}
-      \item Công cụ: \textbf{tự viết}, không dùng Optuna. Mỗi tham số được quét riêng theo từng bước (coordinate descent), chi phí là tổng số giá trị thay vì tích.
-      \item Chọn theo accuracy trên validation; mọi lần chạy được ghi lại bằng Weights \& Biases.
-      \item Đồ thị trái chính là hình ``đổi một siêu tham số, giữ nguyên phần còn lại'' mà đề bài yêu cầu.
-      \item Giới hạn: không xét tương tác giữa các siêu tham số.
-    \end{itemize}
-  \end{columns}
-\end{frame}
-
-\begin{frame}{Kết quả trên tập test}
-  \begin{columns}[T]
-    \column{0.45\linewidth}
-    \small
-    \begin{tabular}{@{}lr@{}}
-      \toprule
-      Mô hình & Test accuracy \\
-      \midrule
-      Gaussian NB & \accTestNB\,\% \\
-      Softmax & \accTestSM\,\% \\
-      MLP & \accTestMLP\,\% \\
-      AdaBoost-SAMME & \accTestADA\,\% \\
-      CNN nhỏ & \accTestCNN\,\% \\
-      \bottomrule
-    \end{tabular}\par\medskip
-    \footnotesize Một seed (42), 10\,000 ảnh test. Khoảng tin cậy 95\% mỗi số rộng cỡ $\pm0.3$ điểm; so sánh cặp bằng kiểm định McNemar chính xác.
     \column{0.52\linewidth}
-    \fig{benchmark.png}
+    \small
+    \textbf{Bài toán.} Ảnh xám $28\times28$, 10 lớp; $60\,000$ ảnh huấn luyện và $10\,000$ ảnh test chính thức.\par\medskip
+    \textbf{Câu hỏi nghiên cứu}
+    \begin{description}\setlength{\itemsep}{2pt}\setlength{\leftmargin}{2em}
+      \item[RQ1] So sánh bốn phương pháp dưới cùng một giao thức.
+      \item[RQ2] Độ phức tạp ảnh hưởng thế nào đến độ chính xác, chi phí và khả năng tổng quát hóa?
+      \item[RQ3] CNN khác MLP ở điểm nào?
+      \item[RQ4] Tăng cường dữ liệu ảnh hưởng thế nào đến độ bền?
+      \item[RQ5] Kết quả có nhất quán trên Fashion-MNIST và EMNIST Digits?
+    \end{description}
+    \column{0.44\linewidth}
+    \fig{eda_overview.png}\par\smallskip
+    {\footnotesize Mẫu ngẫu nhiên, ảnh trung bình lớp 3 và 8, các pixel có phương sai 0 (đen), ảnh trung bình toàn tập.}
   \end{columns}
 \end{frame}
 
-\begin{frame}{Độ chính xác không đi cùng thời gian}
-  \small
-  \begin{tabular}{@{}lrrr@{}}
-    \toprule
-    Mô hình & Test (\%) & Huấn luyện (s) & Một ảnh (ms) \\
-    \midrule
-    Gaussian NB & \accTestNB & \fitNB & \latNB \\
-    Softmax & \accTestSM & \fitSM & \latSM \\
-    MLP & \accTestMLP & \fitMLP & \latMLP \\
-    AdaBoost-SAMME & \accTestADA & \fitADA & \latADA \\
-    CNN nhỏ & \accTestCNN & \fitCNN & \latCNN \\
-    \bottomrule
-  \end{tabular}\par\medskip
-  \footnotesize Toàn bộ trên CPU (không dùng GPU): các phép tính dùng BLAS đa luồng của NumPy/PyTorch; GPU không dùng vì bản PyTorch cài là bản CPU. AdaBoost duyệt hàng trăm cây cho mỗi ảnh nên chậm nhất.
-\end{frame}
-
-\begin{frame}{Lỗi tập trung ở các cặp có nét giống nhau}
-  \centering\fig[0.82\linewidth]{confusion_all.png}
-\end{frame}
-
-\begin{frame}{Cùng siêu tham số, kết quả sát scikit-learn}
-  \small
-  \begin{tabular}{@{}lrrr@{}}
-    \toprule
-    Mô hình & Bản của nhóm & scikit-learn & Chênh \\
-    \midrule
-    Gaussian NB & \accTestNB & \accTestSkNB & \diffSkNB \\
-    Softmax & \accTestSM & \accTestSkSM & \diffSkSM \\
-    MLP & \accTestMLP & \accTestSkMLP & \diffSkMLP \\
-    AdaBoost-SAMME & \accTestADA & \accTestSkADA & \diffSkADA \\
-    \bottomrule
-  \end{tabular}\par\medskip
-  \footnotesize Softmax chênh vì L-BFGS của scikit-learn chạm giới hạn vòng lặp, không dừng sớm như bản của nhóm. Thời gian AdaBoost không so trực tiếp được vì hai bên chia ngưỡng khác nhau.
-\end{frame}
-
-\begin{frame}{Mô hình học được gì: có cái đọc được bằng mắt, có cái thì không}
-  \centering\fig[0.78\linewidth]{interpretability.png}
-\end{frame}
-
-\begin{frame}{Mở rộng 1: Fashion-MNIST và EMNIST Digits}
+% 3
+\begin{frame}{MNIST được chia 50\,000/10\,000/10\,000; validation để chọn, test chỉ để báo cáo}
   \begin{columns}[T]
     \column{0.5\linewidth}
-    \begin{itemize}\setlength{\itemsep}{5pt}
-      \item Cùng mã, cùng giao thức, cùng bộ đánh giá; chia train/val/test riêng cho từng tập và báo cáo tách biệt.
-      \item Tên lớp khác nhau (áo, giày\ldots{} so với chữ số), nên mô hình huấn luyện trên một tập \emph{không} được đánh giá trên tập khác nếu định nghĩa lớp khác nhau; chương trình từ chối phép đó.
-      \item Chỉ có một phép kiểm tra chéo hợp lệ: MNIST $\to$ EMNIST Digits (cùng 10 chữ số), báo cáo riêng cho mô hình huấn luyện trên MNIST: Naïve Bayes \crossNB\,\% (so với \ownEmnistNB\,\% khi huấn luyện trên EMNIST), CNN \crossCNN\,\% (so với \ownEmnistCNN\,\%).
-    \end{itemize}
+    \small
+    \bul
+      \item Chia phân tầng, seed 42, từ $60\,000$ ảnh huấn luyện; test chính thức giữ riêng.
+      \item Chuẩn hóa bằng một cặp vô hướng $(\bar x,s)=(0.1306,0.3081)$ tính \emph{chỉ trên train}, áp lại cho validation, test và trình duyệt.
+      \item Hàm tìm siêu tham số không nhận tập test.
+      \item Tìm siêu tham số: quét từng tham số một (tự viết, không dùng Optuna); không xét tương tác.
+      \item Độ đo: accuracy, macro precision/recall/F1, ma trận nhầm lẫn trên cả ba tập; so sánh cặp bằng McNemar chính xác.
+    \eul
     \column{0.48\linewidth}
-    \fig{datasets_accuracy.png}\par\smallskip
-    {\footnotesize Siêu tham số của Fashion-MNIST và EMNIST Digits chọn bằng quét rút gọn một seed; chênh lệch nhỏ giữa MLP và CNN ở đó chưa đủ để kết luận.}
+    \footnotesize
+    \begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.9cm}>{\raggedright\arraybackslash}p{3.7cm}@{}}
+      \toprule
+      \textbf{Tự viết} & \textbf{Thư viện} \\
+      \midrule
+      Phần tính toán lõi, chỉ số, chia tập & scikit-learn, chỉ để đối chiếu \\[3pt]
+      MLP, CNN: lan truyền tiến và ngược, SGD momentum, im2col & PyTorch chỉ làm tensor và phép nhân ma trận; không dùng autograd, lớp dựng sẵn hay bộ tối ưu \\
+      \bottomrule
+    \end{tabular}
   \end{columns}
 \end{frame}
 
-\begin{frame}{Mở rộng 2: tăng cường dữ liệu, thí nghiệm có đối chứng}
+% 4
+\begin{frame}{Naïve Bayes giả thiết pixel độc lập; softmax giả thiết biên quyết định tuyến tính}
+  \small
+  \textbf{Gaussian Naïve Bayes}
+  \[
+    \hat y=\arg\max_k\Big[\log\pi_k-\tfrac12\sum_{j=1}^{784}\Big(\log(2\pi\sigma_{kj}^2)+\frac{(x_j-\mu_{kj})^2}{\sigma_{kj}^2}\Big)\Big]
+  \]
+  \vspace{-4pt}
+  \bul
+    \item Hệ số tương quan trung bình giữa hai pixel kề nhau trong cùng lớp là $\corrAdj$: giả thiết độc lập không đúng.
+    \item Validation: $56.05\%$ ở \texttt{var\_smoothing}=$10^{-9}$, $79.67\%$ ở $0.1$; train và validation gần trùng nhau.
+  \eul
+  \medskip
+  \textbf{Hồi quy softmax}, mini-batch gradient descent
+  \[
+    p_k=\frac{e^{z_k}}{\sum_m e^{z_m}},\quad z=W^{\top}x+b,\qquad \nabla_W L=\tfrac1B X^{\top}(P-Y)+\lambda W
+  \]
+  \vspace{-4pt}
+  \bul
+    \item Accuracy trên chính tập train chỉ đạt $93.62\%$: mô hình bị giới hạn bởi dung lượng, không phải do overfitting.
+  \eul
+\end{frame}
+
+% 5
+\begin{frame}{MLP học biên phi tuyến bằng lan truyền ngược viết tay}
   \begin{columns}[T]
+    \column{0.58\linewidth}
+    \small
+    \[
+      z_l=a_{l-1}W_l+b_l,\quad a_l=\mathrm{ReLU}(z_l)\odot m_l
+    \]
+    \[
+      \delta_L=\tfrac1B(\mathrm{softmax}(z_L)-Y)
+    \]
+    \[
+      \delta_{l-1}=(\delta_l W_l^{\top})\odot\mathbb 1[a_{l-1}>0]\odot m_{l-1}
+    \]
+    \[
+      \nabla_{W_l}=a_{l-1}^{\top}\delta_l,\quad v\leftarrow\mu v+g,\quad\theta\leftarrow\theta-\eta v
+    \]
     \column{0.4\linewidth}
     \small
-    \begin{itemize}\setlength{\itemsep}{4pt}
-      \item Năm phép: xoay, dịch, co giãn, nhiễu Gauss, nhiễu muối tiêu; chỉ tác động lên tập train.
-      \item Điều kiện: gốc, từng phép riêng lẻ, nhóm hình học, cả năm; nhiều seed ghép cặp.
-      \item Chọn điều kiện \emph{chỉ} theo validation; test dùng để báo cáo và đo độ bền với nhiễu mạnh hơn lúc huấn luyện.
-    \end{itemize}
-    \column{0.58\linewidth}
-    \includegraphics[height=0.78\textheight,keepaspectratio]{augmentation_examples.png}
+    \bul
+      \item Cấu hình chọn trên validation: hai lớp ẩn $(512,256)$, $\eta=0.05$, $\mu=0.9$, batch $128$; $535\,818$ tham số.
+      \item Khởi tạo He, dropout inverted, dừng sớm: dừng ở epoch 14, khôi phục epoch 9.
+      \item Kiểm thử: gradient khớp sai phân hữu hạn và autograd (chỉ dùng trong kiểm thử).
+    \eul
   \end{columns}
 \end{frame}
 
-\begin{frame}{Tăng cường dữ liệu: phép nào giúp, phép nào hại}
-  \centering
-  \fig[0.93\linewidth]{augmentation_mlp.png}\par\smallskip
-  \footnotesize MLP, 3 seed. Mọi phép cho validation cao hơn gốc nhưng cùng bậc với độ lệch chuẩn của hiệu ghép cặp; tác dụng rõ nhất là độ bền với \emph{đúng loại} biến đổi (ví dụ dịch). ``Cả năm phép'' không hơn các phép riêng lẻ.
+% 6
+\begin{frame}{AdaBoost-SAMME cộng các cây sâu có trọng số: chính xác nhưng đắt}
+  \small
+  \[
+    \alpha_t=\nu\Big(\ln\frac{1-\mathrm{err}_t}{\mathrm{err}_t}+\ln(K-1)\Big),\quad
+    w_i\leftarrow\frac{w_i\,e^{\alpha_t\mathbb 1[h_t(x_i)\ne y_i]}}{Z_t},\quad
+    H(x)=\arg\max_k\sum_t\alpha_t\mathbb 1[h_t(x)=k]
+  \]
+  \vspace{-4pt}
+  \bul
+    \item Bộ học yếu: cây CART có trọng số, tạp chất Gini, dựng bằng histogram $32$ bin (tự viết bằng NumPy).
+    \item Cấu hình: $393$ cây, độ sâu $10$, $\nu=0.1$, mỗi cây xét một nửa số đặc trưng.
+    \item Chi phí: \fitADA\,s huấn luyện, \latADA\,ms mỗi ảnh (vòng lặp Python trên các cây), tệp xuất $9.2$\,MiB.
+    \item Điểm số là tỉ lệ phiếu có trọng số, chưa hiệu chỉnh thành xác suất.
+    \item Chưa có baseline một cây đơn, nên chưa định lượng được lợi ích riêng của việc kết hợp nhiều cây.
+  \eul
 \end{frame}
 
-\begin{frame}{Tăng cường dữ liệu cho CNN: có phép làm giảm độ bền}
-  \centering
-  \fig[0.93\linewidth]{augmentation_cnn.png}\par\smallskip
-  \footnotesize CNN, 2 seed (độ lệch chuẩn kém tin cậy). Cả năm phép được chọn theo validation. Chỉ dịch hoặc nhóm hình học làm CNN kém bền hơn với nhiễu Gauss và muối tiêu. Mỗi điều kiện có dữ liệu gấp đôi nên loại biến đổi và lượng dữ liệu bị trộn lẫn.
-\end{frame}
-
-\begin{frame}{Mở rộng 3: CNN nhỏ so với MLP}
-  \centering
-  \IfFileExists{../../results/figures/cnn_vs_mlp.png}{\fig[0.95\linewidth]{cnn_vs_mlp.png}}{\emph{Hình so sánh CNN và MLP được sinh sau khi hoàn tất thí nghiệm.}}\par\smallskip
-  \footnotesize CNN: \accTestCNN\,\% so với MLP \accTestMLP\,\%. Kích thước, kênh, kernel và lớp dày đặc đều lấy từ \texttt{CNN.describe()} của mô hình thật; mọi tham số đã quét được ghi lại.
-\end{frame}
-
-\begin{frame}{Trình khám phá quá trình tính toán chạy trong trình duyệt}
+% 7
+\begin{frame}{CNN và MLP dẫn đầu; thứ tự MLP--AdaBoost chưa chắc chắn}
   \begin{columns}[T]
-    \column{0.5\linewidth}
+    \column{0.52\linewidth}
     \small
-    \begin{itemize}\setlength{\itemsep}{4pt}
-      \item Python sinh một \emph{hợp đồng vết} (\texttt{writerhand.trace/1}) từ chính mô hình đã huấn luyện: đồ thị lớp, hình dạng tensor, tiền xử lý, tham số, mã băm.
-      \item Trình duyệt chạy ONNX Runtime Web trên ảnh vừa vẽ và vẽ sơ đồ \emph{từ metadata}, không có kiến trúc nào được gõ cứng; đổi mô hình hay ảnh thì kết quả cũ bị loại.
-      \item Mỗi phép tính trung gian được tái dựng từ tham số và đối chiếu với giá trị ONNX.
-    \end{itemize}
-    \column{0.48\linewidth}
+    \begin{tabular}{@{}lrrrr@{}}
+      \toprule
+      Mô hình & Train & Val & Test & F1$_\text{macro}$ \\
+      \midrule
+      Gaussian NB & \accTrainNB & \accValNB & \accTestNB & \foneNB \\
+      Softmax & \accTrainSM & \accValSM & \accTestSM & \foneSM \\
+      MLP & \accTrainMLP & \accValMLP & \accTestMLP & \foneMLP \\
+      AdaBoost & \accTrainADA & \accValADA & \accTestADA & \foneADA \\
+      CNN & \accTrainCNN & \accValCNN & \accTestCNN & \foneCNN \\
+      \bottomrule
+    \end{tabular}\par\smallskip
+    {\footnotesize Một seed (42); accuracy theo \%. Khoảng tin cậy 95\% của mỗi accuracy gần 98\% rộng cỡ $\pm0.3$ điểm.}
+    \column{0.45\linewidth}
+    \footnotesize
+    \bul
+      \item McNemar: CNN--MLP $120$ so với $64$ ảnh ($p=4.4\times10^{-5}$); MLP--AdaBoost \mcOnlyMLP{} so với \mcOnlyADA{} ảnh ($p=$ \mcP).
+      \item McNemar chỉ phản ánh sai số lấy mẫu test, không phản ánh biến thiên theo seed.
+      \item MLP, 3 seed: $98.24$, $98.14$, $97.69$ (trung bình $98.02$, độ lệch chuẩn $0.29$); CNN, 2 seed: $98.80$, $98.84$.
+      \item CNN trên MLP ổn định qua các seed; MLP trên AdaBoost thu từ $0.64$ còn $0.42$ điểm theo trung bình seed.
+      \item Khớp scikit-learn (cùng siêu tham số): chênh $0.00$--$0.66$ điểm, mỗi chênh lệch đã được giải thích trong báo cáo.
+    \eul
+  \end{columns}
+\end{frame}
+
+% 8
+\begin{frame}{Mỗi mô hình phản ứng khác nhau với dung lượng và tốc độ học}
+  \centering
+  \fig[0.8\linewidth]{key_sweeps.png}\par\smallskip
+  {\footnotesize Vòng tròn: giá trị được chọn. AdaBoost (độ sâu 10) và CNN (kênh $(16,32)$) đạt tốt nhất ở mép khoảng đã quét, nên có thể chưa được tinh chỉnh hết.}
+\end{frame}
+
+% 9
+\begin{frame}{AdaBoost đắt nhất khi huấn luyện và suy luận}
+  \centering
+  \fig[0.97\linewidth]{tradeoff.png}\par\smallskip
+  {\footnotesize CPU, một máy; thời gian có thể chênh tới gấp đôi giữa các lần chạy (CNN: \fitCNN\,s đến 312\,s). Độ trễ của AdaBoost gồm cả chi phí vòng lặp Python trên $393$ cây.}
+\end{frame}
+
+% 10
+\begin{frame}{Các mô hình nhầm nhiều nhất ở những cặp có nét chung: $4\to9$, $7\to9$, $5\to3$}
+  \centering
+  \begin{tabular}{@{}ccc@{}}
+    \includegraphics[width=0.31\linewidth]{confusion_naive_bayes.png} &
+    \includegraphics[width=0.31\linewidth]{confusion_mlp.png} &
+    \includegraphics[width=0.31\linewidth]{confusion_cnn.png}
+  \end{tabular}\par\smallskip
+  {\footnotesize Lỗi trên test: Naïve Bayes \errorsNB{} (cặp $4\to9$: 284), MLP \errorsMLP{}, CNN \errorsCNN{}; softmax \errorsSM{}, AdaBoost \errorsADA{}.}
+\end{frame}
+
+% 11
+\begin{frame}{CNN chính xác hơn MLP với ít tham số hơn $9.4$ lần}
+  \begin{columns}[T]
+    \column{0.36\linewidth}
+    \footnotesize
+    $1{\times}28{\times}28\to16{\times}26{\times}26\to16{\times}13{\times}13\to32{\times}11{\times}11\to32{\times}5{\times}5\to800\to64\to10$\par\smallskip
+    $56\,714$ tham số (MLP: $535\,818$); kích thước đọc từ \texttt{CNN.describe()}.\par\medskip
+    \bul
+      \item Test: $98.80$ so với $98.24\%$; train $-$ test: $0.60$ so với $1.63$ điểm.
+      \item Ảnh dịch $3$ pixel: $88.14$ so với $72.86\%$.
+      \item Thời gian huấn luyện \fitCNN\,s so với \fitMLP\,s; \latCNN\,ms so với \latMLP\,ms mỗi ảnh.
+      \item Chưa tách riêng vai trò của trọng số dùng chung và gộp cực đại.
+    \eul
+    \column{0.62\linewidth}
+    \fig{cnn_vs_mlp.png}
+  \end{columns}
+\end{frame}
+
+% 12
+\begin{frame}{Tăng cường dữ liệu tăng độ bền với đúng loại biến đổi}
+  \centering
+  \fig[0.9\linewidth]{augmentation_cnn.png}\par\smallskip
+  \footnotesize
+  \begin{minipage}{0.92\linewidth}
+    CNN, 2 seed. Mỗi điều kiện có $100\,000$ ảnh (gấp đôi điều kiện gốc), chọn theo validation (cả năm phép: test $99.25\%$ so với $98.82\%$). Chỉ dịch hoặc nhóm hình học làm CNN kém bền hơn với nhiễu Gauss ($97.2\to95.0$ và $93.6\%$). MLP, 3 seed: mức tăng validation ($+0.09$ đến $+0.57$) nằm trong độ lệch chuẩn ghép cặp ($0.33$--$0.55$); phép dịch nâng accuracy trên ảnh bị dịch từ $72.1$ lên $94.5\%$.
+  \end{minipage}
+\end{frame}
+
+% 13
+\begin{frame}{Thứ hạng giữ nguyên ở hai bộ chữ số, đổi ở Fashion-MNIST}
+  \centering
+  \small
+  \input{../../report/generated/slide_datasets}\par\medskip
+  \begin{minipage}{0.92\linewidth}
+    \footnotesize
+    Test accuracy (\%). Mỗi bộ dữ liệu có phép chia, hằng số chuẩn hóa và siêu tham số riêng (quét rút gọn, một seed). Cột cuối: mô hình huấn luyện trên MNIST, đánh giá trên $40\,000$ ảnh test của EMNIST Digits; đây là các mô hình khác với cột EMNIST Digits. Fashion-MNIST gán 10 loại quần áo cho cùng các chỉ số $0$--$9$ nên không có phép kiểm tra chéo hợp lệ với bộ chữ số. Trên Fashion-MNIST, MLP và CNN chênh $0.10$ điểm, chưa đủ để kết luận.
+  \end{minipage}
+\end{frame}
+
+% 14
+\begin{frame}{Bản chạy thử vẽ lại phép tính của chính mô hình đã triển khai}
+  \begin{columns}[T]
+    \column{0.45\linewidth}
+    \footnotesize
+    \bul
+      \item Năm mô hình, ba bộ dữ liệu, chạy trong trình duyệt (ONNX Runtime Web); mô hình tải từ Hugging Face theo revision ghim.
+      \item Python sinh metadata (đồ thị lớp, hình dạng, tham số, mã băm); giao diện vẽ sơ đồ từ metadata và đối chiếu với đầu ra ONNX.
+      \item Đây là trực quan hóa phép \emph{tính}. Một bản đồ kích hoạt không chứng minh pixel hay bộ lọc đó gây ra quyết định.
+      \item Điểm số của AdaBoost là tỉ lệ phiếu, không phải xác suất.
+    \eul
+    \column{0.53\linewidth}
     \fig{explorer_crop.png}
   \end{columns}
 \end{frame}
 
-\begin{frame}{Trực quan hóa tính toán không phải là giải thích quyết định}
-  \begin{block}{Phân biệt}
-    Bản đồ kích hoạt của một lớp cho thấy lớp đó \emph{tính ra gì} với ảnh này; nó không chứng minh pixel hay bộ lọc nào \emph{gây ra} quyết định. Với softmax và Naïve Bayes, phân rã $x_iW_{ik}$ hay log-likelihood theo pixel là chính xác (mô hình tuyến tính/cộng tính), và được ghi nhãn như vậy.
-  \end{block}
-  \begin{block}{AdaBoost}
-    Các con số cộng dồn là \emph{tỉ lệ phiếu có trọng số}, không phải xác suất đã hiệu chỉnh.
-  \end{block}
-\end{frame}
-
-\begin{frame}{Kết luận}
+% 15
+\begin{frame}{Kết luận và giới hạn}
   \begin{columns}[T]
-    \column{0.5\linewidth}
-    \textbf{Điều rút ra}
-    \begin{itemize}\setlength{\itemsep}{4pt}
-      \item CNN cho kết quả tốt nhất trên MNIST và EMNIST Digits (khoảng một phần mười số tham số của MLP); trên Fashion-MNIST CNN và MLP ngang nhau.
-      \item AdaBoost sát nhưng đắt gấp hàng chục lần khi suy luận.
-      \item Chọn cấu hình có kỷ luật quan trọng ngang chọn thuật toán.
-    \end{itemize}
-    \column{0.46\linewidth}
+    \column{0.52\linewidth}
+    \small
+    \textbf{Điều có thể kết luận}
+    \bul
+      \item MNIST: CNN \accTestCNN\%, MLP \accTestMLP\%, AdaBoost \accTestADA\%, softmax \accTestSM\%, Naïve Bayes \accTestNB\%.
+      \item CNN hơn MLP ở mọi cặp seed, với ít tham số hơn $9.4$ lần; thứ tự MLP--AdaBoost chưa chắc chắn.
+      \item Tăng cường dữ liệu chủ yếu cải thiện độ bền với đúng loại biến đổi.
+      \item Mô hình rời bộ dữ liệu huấn luyện mất nhiều độ chính xác, nhiều nhất ở softmax và Naïve Bayes.
+    \eul
+    \column{0.44\linewidth}
+    \small
     \textbf{Giới hạn}
-    \begin{itemize}\setlength{\itemsep}{4pt}
-      \item Một seed cho các mô hình chính.
-      \item Quét tuần tự chưa xét tương tác siêu tham số.
+    \bul
+      \item Một seed cho mô hình chính.
+      \item Quét từng tham số, một số giá trị tốt nhất ở mép khoảng quét.
+      \item Tăng cường dữ liệu thiếu đối chứng cùng lượng dữ liệu.
       \item Thời gian đo trên một máy CPU.
-      \item Kết quả chỉ nói về các tập đã đo, không phải chữ viết tay nói chung.
-    \end{itemize}
+      \item Chưa đo độ chính xác trên nét vẽ của người dùng.
+    \eul
   \end{columns}
-\end{frame}
-
-\begin{frame}{Đóng góp, công bố sử dụng AI, liên kết}
-  \small
-  \begin{itemize}\setlength{\itemsep}{5pt}
-    \item Đóng góp 50\,\%/50\,\% (Trần Trinh Nhân, Lâm Nhật Tiến), do hai thành viên thống nhất.
-    \item Phần hoàn thiện sau commit \texttt{f9a602b} được viết với sự hỗ trợ của Claude Code; số liệu trong báo cáo, bảng và slide đều sinh từ tệp kết quả do chương trình ghi ra.
-    \item Mã nguồn: \url{https://github.com/TranTrinhNhan1/WriteRHand}
-    \item Demo: \url{https://trantrinhnhan1.github.io/WriteRHand/}
-    \item Mô hình: \url{https://huggingface.co/TranTrinhNhan1111/WriteRHand-MNIST}
-  \end{itemize}
-  \vfill\centering\large Cảm ơn thầy cô và các bạn đã lắng nghe.
+  \vfill
+  \footnotesize\raggedright
+  Phân công: Trần Trinh Nhân 50\%, Lâm Nhật Tiến 50\%. Việc dùng trợ lý lập trình AI được công bố trong báo cáo (mục 9).\\[2pt]
+  Mã nguồn: \url{https://github.com/TranTrinhNhan1/WriteRHand} (kho hiện ở chế độ riêng tư)\\
+  Demo: \url{https://trantrinhnhan1.github.io/WriteRHand/}\\
+  Mô hình: \url{https://huggingface.co/TranTrinhNhan1111/WriteRHand-MNIST}
 \end{frame}
 \end{document}

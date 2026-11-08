@@ -1,0 +1,168 @@
+/* Documents page: the report, the slides, the code and the model artifacts. Same tokens and radii as the rest. */
+
+.docs__body > section {
+  gap: 18px;
+}
+
+.docsec .h2 {
+  margin-bottom: 2px;
+}
+
+/* a deliverable: one panel (radius 10) with the file glyph, title, one sentence, a mono readout and two actions */
+.doccard {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 18px;
+  padding: clamp(16px, 3vw, 24px);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--raised);
+}
+
+.doccard__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--sunken);
+  color: var(--accent);
+}
+
+.doccard__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  min-width: 0;
+}
+
+.doccard__name {
+  font-size: 1.125rem;
+  text-wrap: balance;
+}
+
+.doccard__text {
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+  max-width: 62ch;
+}
+
+.doccard__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  min-height: 1.6em;
+  font: 500 0.8125rem/1.6 var(--mono);
+  color: var(--ink-3);
+}
+
+.doccard__meta--error {
+  font-weight: 400;
+}
+
+.doccard__skel {
+  display: block;
+  width: min(220px, 70%);
+  height: 12px;
+}
+
+.doccard__actions {
+  margin-top: 6px;
+}
+
+@media (max-width: 480px) {
+  .doccard {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+  .doccard__actions > li {
+    flex: 1 1 140px;
+  }
+  .doccard__actions .btn {
+    width: 100%;
+  }
+}
+
+/* links to the repository and the model host: a ruled list like the About page's key-value rows */
+.doclinks {
+  display: grid;
+  border-top: 1px solid var(--line);
+}
+
+.doclinks > li {
+  border-bottom: 1px solid var(--line);
+}
+
+.doclink {
+  display: grid;
+  grid-template-columns: auto minmax(0, max-content) auto;
+  justify-content: start;
+  align-items: center;
+  gap: 4px 10px;
+  min-height: 44px;
+  padding: 8px 0;
+  font-size: 0.9375rem;
+  text-decoration: none;
+}
+
+.doclink > svg {
+  flex: none;
+}
+
+.doclink__main {
+  display: grid;
+  min-width: 0;
+}
+
+.doclink__label {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  overflow-wrap: anywhere;
+}
+
+.doclink--static {
+  display: flex;
+  color: var(--ink-2);
+}
+
+.doclink__path {
+  display: block;
+  font: 400 0.8125rem/1.5 var(--mono);
+  color: var(--ink-3);
+  overflow-wrap: anywhere;
+}
+
+.doclink__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-xs);
+  font: 500 0.6875rem/1.5 var(--mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.docnotice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 12px 14px;
+  border: 1px solid var(--line-2);
+  border-left: 2px solid var(--warn);
+  border-radius: var(--r-sm);
+  background: var(--sunken);
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+}
+
+.docnotice > svg {
+  margin-top: 3px;
+  color: var(--warn);
+}

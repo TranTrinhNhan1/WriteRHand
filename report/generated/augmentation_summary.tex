@@ -1,0 +1,20 @@
+\begin{table}[tbp]\centering\small
+\begin{tabular}{lrrrr}
+\toprule
+ & \multicolumn{2}{c}{MLP (3 seed)} & \multicolumn{2}{c}{CNN (2 seed)} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+Điều kiện & $\Delta$ val (điểm) & Test (\%) & $\Delta$ val (điểm) & Test (\%) \\
+\midrule
+Không tăng cường & -- & 98.02 & -- & 98.82 \\
+Xoay & +0.57 $\pm$ 0.47 & 98.48 & +0.23 $\pm$ 0.01 & 99.17 \\
+Dịch chuyển & +0.54 $\pm$ 0.55 & 98.41 & +0.22 $\pm$ 0.03 & 99.17 \\
+Co giãn & +0.42 $\pm$ 0.45 & 98.33 & +0.20 $\pm$ 0.01 & 99.06 \\
+Nhiễu Gauss & +0.38 $\pm$ 0.42 & 98.35 & +0.19 $\pm$ 0.20 & 99.06 \\
+Nhiễu muối tiêu & +0.37 $\pm$ 0.40 & 98.32 & +0.17 $\pm$ 0.06 & 99.00 \\
+Hình học (xoay, dịch, co giãn) & +0.31 $\pm$ 0.33 & 98.24 & +0.25 $\pm$ 0.16 & 99.20 \\
+Cả năm phép & +0.09 $\pm$ 0.40 & 98.11 & +0.31 $\pm$ 0.01 & 99.25 \\
+\bottomrule
+\end{tabular}
+\caption{Tăng cường dữ liệu với cấu hình đã chọn: $\Delta$ là hiệu validation accuracy so với điều kiện gốc \emph{cùng seed} (trung bình $\pm$ độ lệch chuẩn mẫu của hiệu), ``Test'' là accuracy test sạch trung bình trên các seed. Mỗi điều kiện tăng cường dùng $100\,000$ ảnh train, điều kiện gốc $50\,000$.}
+\label{tab:augmentation}
+\end{table}

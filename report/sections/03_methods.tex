@@ -1,80 +1,90 @@
-\section{Cơ sở lý thuyết và cài đặt}
+\section{Phương pháp}
 \label{sec:methods}
+Ký hiệu: $\bm x\in\R^{D}$ ($D=784$) là ảnh đã chuẩn hóa và làm phẳng, $y\in\{0,\dots,K-1\}$ ($K=10$) là nhãn, tập huấn luyện gồm $N$ cặp $(\bm x_i,y_i)$. \Cref{tab:scope} nêu rõ phần nào do nhóm viết và phần nào dùng thư viện.
 
-Ký hiệu: $\bm{x}\in\R^{D}$ ($D=784$) là ảnh đã chuẩn hóa, $y\in\{0,\dots,K-1\}$ ($K=10$) là nhãn, tập huấn luyện $\{(\bm{x}_i,y_i)\}_{i=1}^{N}$. Mọi thuật toán dưới đây có \emph{phần tính toán lõi do nhóm tự viết} bằng NumPy (và PyTorch chỉ như thư viện tensor cho MLP, không dùng autograd); scikit-learn chỉ xuất hiện trong các bài kiểm thử và phần đối chiếu (Mục~\ref{sec:verification}). Giao diện chung (\texttt{fit}, \texttt{predict}, \texttt{predict\_proba}, \texttt{save}/\texttt{load}) nằm trong \texttt{src/models/base.py}.
+\begin{table}[tbp]
+\centering\small
+\begin{tabular}{@{}p{2.5cm}p{6.6cm}p{5.2cm}@{}}
+\toprule
+Thành phần & Nhóm tự viết (NumPy) & Thư viện \\
+\midrule
+Tiền xử lý, chỉ số & Chia phân tầng, chuẩn hóa, ma trận nhầm lẫn, precision/recall/F1 macro, McNemar & \texttt{sklearn.metrics} chỉ trong kiểm thử \\
+Naïve Bayes & Ước lượng tham số, log-likelihood, log-sum-exp & \texttt{GaussianNB} để đối chiếu \\
+Softmax & Hàm mất mát, gradient giải tích, mini-batch GD & \texttt{LogisticRegression} để đối chiếu \\
+MLP & Lan truyền tiến và ngược, khởi tạo He, dropout, SGD có momentum, dừng sớm & Tensor, \texttt{matmul}, bộ sinh số ngẫu nhiên của PyTorch; \texttt{autograd} và \texttt{optim} chỉ trong kiểm thử \\
+AdaBoost-SAMME & Cập nhật SAMME, cây CART có trọng số dựng bằng histogram & \texttt{AdaBoostClassifier} để đối chiếu \\
+CNN & im2col/col2im, tích chập, gộp cực đại, gradient của từng lớp & Như MLP; \texttt{F.conv2d}, \texttt{F.max\_pool2d} chỉ trong kiểm thử \\
+\bottomrule
+\end{tabular}
+\caption{Phạm vi tự cài đặt.}
+\label{tab:scope}
+\end{table}
 
 \subsection{Gaussian Naïve Bayes}
-Mô hình sinh với giả thiết độc lập có điều kiện giữa các pixel khi biết lớp, mỗi pixel theo phân phối chuẩn \citep{duda2001,bishop2006}:
+\label{sec:nb}
+Mô hình sinh giả thiết các pixel độc lập có điều kiện theo lớp và mỗi pixel có phân phối chuẩn \citep{duda2001,bishop2006}:
 \begin{equation}
-p(\bm{x}\mid y=k)=\prod_{j=1}^{D}\mathcal{N}\!\left(x_j;\mu_{kj},\sigma_{kj}^2\right),\qquad
-\hat y=\argmax_k\Big[\log\pi_k-\tfrac12\sum_{j=1}^{D}\Big(\log(2\pi\sigma_{kj}^2)+\tfrac{(x_j-\mu_{kj})^2}{\sigma_{kj}^2}\Big)\Big].
+\hat y=\argmax_k\Big[\log\pi_k-\tfrac12\sum_{j=1}^{D}\Big(\log(2\pi\sigma_{kj}^2)+\frac{(x_j-\mu_{kj})^2}{\sigma_{kj}^2}\Big)\Big].
+\label{eq:nb}
 \end{equation}
-Ước lượng hợp lý cực đại (MLE) cho ra $\pi_k=N_k/N$, $\mu_{kj}$ là trung bình mẫu và $\sigma_{kj}^2$ là phương sai mẫu (chia cho $N_k$) của pixel $j$ trong lớp $k$. Các pixel luôn bằng 0 có phương sai 0 làm $\log\sigma^2\to-\infty$, nên cộng thêm $\varepsilon=\texttt{var\_smoothing}\cdot\max_j \mathrm{Var}(x_j)$ vào mọi phương sai (cùng quy ước với scikit-learn). Việc tính trong không gian log tránh underflow khi nhân 784 thừa số; xác suất hậu nghiệm được chuẩn hóa bằng log-sum-exp. Huấn luyện chỉ cần một lượt qua dữ liệu, $O(ND)$; dự đoán $O(NKD)$. Siêu tham số duy nhất là \texttt{var\_smoothing}.
+Ước lượng hợp lý cực đại cho $\pi_k=N_k/N$, $\mu_{kj}$ và $\sigma^2_{kj}$ là trung bình và phương sai mẫu của pixel $j$ trong lớp $k$. Pixel luôn bằng 0 có phương sai 0 làm $\log\sigma^2\to-\infty$, nên mọi phương sai được cộng $\varepsilon=\texttt{var\_smoothing}\cdot\max_j\mathrm{Var}(x_j)$, cùng quy ước với scikit-learn. Phép tính thực hiện trong không gian log và chuẩn hóa hậu nghiệm bằng log-sum-exp để tránh underflow khi nhân 784 thừa số. Huấn luyện cần một lượt qua dữ liệu, $O(ND)$; dự đoán một ảnh $O(KD)$. Siêu tham số duy nhất là \texttt{var\_smoothing}. Giả thiết độc lập thường được dùng dù không đúng \citep{domingos1997}, nhưng ở đây nó sai rõ rệt (mục~\ref{sec:data}).
 
-\subsection{Hồi quy logistic đa lớp (softmax) huấn luyện bằng Gradient Descent}
-Với $\bm{z}=W^{\top}\bm{x}+\bm{b}$, $p_k=\exp(z_k)/\sum_{m}\exp(z_m)$, hàm mất mát trên một mini-batch $\mathcal{B}$ gồm cross-entropy và phạt L2 (không phạt bias):
+\subsection{Hồi quy softmax (logistic đa lớp)}
+Với $\bm z=W^{\top}\bm x+\bm b$ và $p_k=e^{z_k}/\sum_m e^{z_m}$, hàm mất mát trên mini-batch $\mathcal B$ gồm cross-entropy và phạt $\ell_2$ (không phạt bias):
 \begin{equation}
 L(W,\bm b)=-\frac1{|\mathcal B|}\sum_{i\in\mathcal B}\log p_{y_i}(\bm x_i)+\frac{\lambda}{2}\lVert W\rVert_F^2 .
 \end{equation}
-Đạo hàm giải tích: $\partial L/\partial z_k=p_k-\indic{y=k}$ nên với $X\in\R^{B\times D}$, $P$ là ma trận xác suất và $Y$ là ma trận one-hot,
+Vì $\partial L/\partial z_k=p_k-\indic{y=k}$, với $X\in\R^{B\times D}$, ma trận xác suất $P$ và ma trận one-hot $Y$:
 \begin{equation}
 \nabla_{W}L=\tfrac1B X^{\top}(P-Y)+\lambda W,\qquad \nabla_{\bm b}L=\tfrac1B\,\bm 1^{\top}(P-Y).
+\label{eq:softmax-grad}
 \end{equation}
-Softmax và cross-entropy được cài ở dạng ổn định số học (trừ $\max_k z_k$ trước khi lấy mũ, dùng $\log\sum\exp$ nên không bao giờ tính $\log 0$). Thuật toán cập nhật $\theta\leftarrow\theta-\eta\nabla_\theta L$ theo mini-batch với dữ liệu được xáo trộn mỗi epoch; hàm mục tiêu là lồi nên không cần khởi tạo ngẫu nhiên (khởi tạo bằng 0). Siêu tham số: tốc độ học $\eta$, kích thước batch, $\lambda$, số epoch. Lịch sử loss/accuracy theo epoch được ghi lại để theo dõi hội tụ.
+Softmax và cross-entropy được tính ở dạng ổn định số (trừ $\max_k z_k$, dùng $\log\sum\exp$). Cập nhật $\theta\leftarrow\theta-\eta\nabla_\theta L$ theo mini-batch có xáo trộn mỗi epoch; hàm mục tiêu lồi nên khởi tạo bằng 0. Mô hình tuyến tính nên biên quyết định giữa hai lớp là một siêu phẳng trong không gian pixel.
 
-\subsection{Mạng nơ-ron nhiều lớp (MLP) và lan truyền ngược}
-Kiến trúc $\bm a_0=\bm x$, $\bm z_l=\bm a_{l-1}W_l+\bm b_l$, $\bm a_l=\mathrm{ReLU}(\bm z_l)\odot\bm m_l$ cho các lớp ẩn, lớp cuối cho logits và softmax; mất mát là cross-entropy trung bình. Trọng số khởi tạo He \citep{he2015}: $W_l\sim\mathcal N(0,2/\mathrm{fan\_in})$, bias bằng 0. Dropout dạng \emph{inverted} \citep{srivastava2014}: $m_{l,j}\in\{0,\,1/(1-p)\}$, chỉ bật khi huấn luyện. Lan truyền ngược \citep{rumelhart1986} viết tay (không dùng autograd):
-\begin{align}
-\bm\delta_L&=\tfrac1B\big(\mathrm{softmax}(\bm z_L)-Y\big),\\
-\nabla_{W_l}=\bm a_{l-1}^{\top}\bm\delta_l,\quad \nabla_{\bm b_l}&=\textstyle\sum_{\text{hàng}}\bm\delta_l,\qquad
+\subsection{Perceptron nhiều lớp và lan truyền ngược}
+Các lớp ẩn tính $\bm z_l=\bm a_{l-1}W_l+\bm b_l$, $\bm a_l=\mathrm{ReLU}(\bm z_l)\odot\bm m_l$ với $\bm a_0=\bm x$; lớp cuối cho logits và softmax; mất mát là cross-entropy trung bình. Trọng số khởi tạo theo He \citep{he2015}, $W_l\sim\mathcal N(0,2/\mathrm{fan\_in})$. Dropout dạng \emph{inverted} \citep{srivastava2014} dùng mặt nạ $m_{l,j}\in\{0,1/(1-p)\}$, chỉ bật khi huấn luyện. Lan truyền ngược \citep{rumelhart1986} được viết tay:
+\begin{equation}
+\bm\delta_L=\tfrac1B(\mathrm{softmax}(\bm z_L)-Y),\quad
+\nabla_{W_l}=\bm a_{l-1}^{\top}\bm\delta_l,\quad
+\nabla_{\bm b_l}=\textstyle\sum_{\text{hàng}}\bm\delta_l,\quad
 \bm\delta_{l-1}=(\bm\delta_l W_l^{\top})\odot\indic{\bm a_{l-1}>0}\odot\bm m_{l-1}.
-\end{align}
-Cập nhật bằng SGD có momentum \citep{sutskever2013}, viết tường minh: $\bm v\leftarrow\mu\bm v+\bm g$, $\theta\leftarrow\theta-\eta\bm v$ (trùng với \texttt{torch.optim.SGD}, được kiểm thử). \emph{Early stopping} \citep{prechelt1998}: 8\% tập huấn luyện được tách nội bộ làm tập dừng, theo dõi cross-entropy (tắt dropout), kiên nhẫn 5 epoch, ngưỡng cải thiện $10^{-4}$, khôi phục trọng số tốt nhất; do đó tập validation của đồ án không tham gia vào quá trình huấn luyện. Mỗi lần \texttt{fit} khởi tạo mạng và bộ sinh số ngẫu nhiên (\texttt{torch.Generator}) riêng theo \texttt{seed}, nên kết quả tái lập được.
+\label{eq:backprop}
+\end{equation}
+Cập nhật dùng SGD có momentum \citep{sutskever2013}: $\bm v\leftarrow\mu\bm v+\bm g$, $\theta\leftarrow\theta-\eta\bm v$. Dừng sớm \citep{prechelt1998} dựa trên $8\%$ tập train tách riêng bên trong mỗi lần huấn luyện (kiên nhẫn 5 epoch, khôi phục trọng số tốt nhất), nên tập validation không tham gia huấn luyện. Thuật toán~\ref{alg:mlp} tóm tắt một epoch.
 
-\subsection{AdaBoost đa lớp (SAMME) với cây quyết định có trọng số}
-Chúng tôi chọn boosting vì nó là thuật toán ensemble thật sự (các bộ học yếu được huấn luyện tuần tự và có trọng số), không phải lấy trung bình các mô hình khác. SAMME \citep{zhu2009} mở rộng AdaBoost \citep{freund1997} cho $K$ lớp: khởi tạo $w_i=1/N$; ở vòng $t$, huấn luyện cây $h_t$ với trọng số mẫu $w$, tính sai số có trọng số $\mathrm{err}_t=\sum_i w_i\indic{h_t(\bm x_i)\ne y_i}$ (với $w$ đã chuẩn hóa) và
-\begin{align}
-\alpha_t&=\eta\Big(\ln\frac{1-\mathrm{err}_t}{\mathrm{err}_t}+\ln(K-1)\Big),\\
-w_i&\leftarrow w_i\exp\big(\alpha_t\indic{h_t(\bm x_i)\ne y_i}\big)\ \text{rồi chuẩn hóa},\\
-H(\bm x)&=\argmax_k\sum_{t}\alpha_t\indic{h_t(\bm x)=k}.
-\end{align}
-Số hạng $\ln(K-1)$ khiến bộ học chỉ cần tốt hơn đoán ngẫu nhiên ($\mathrm{err}<1-1/K$) thay vì $<1/2$; vòng lặp dừng khi điều kiện này bị vi phạm. $\eta$ là hệ số co (\texttt{learning\_rate}).
-
-\emph{Bộ học yếu}: cây CART độ sâu $\le d_{\max}$ giảm thiểu tạp chất Gini có trọng số $G(S)=W_S-\sum_k W_{S,k}^2/W_S$ \citep{breiman1984}, với $W_S=\sum_{i\in S}w_i$, $W_{S,k}=\sum_{i\in S,\,y_i=k}w_i$. Để huấn luyện nhanh trên 50\,000$\times$784, mỗi đặc trưng được lượng tử hóa \emph{một lần} thành $n_{\text{bins}}$ khoảng đều nhau; ở mỗi tầng của cây, trọng số theo (nút, đặc trưng, bin, lớp) được cộng dồn bằng histogram, tổng tích lũy cho phép đánh giá mọi ngưỡng của mọi đặc trưng trong $O(ND)$ mỗi tầng. Ngưỡng thực được lưu cho dự đoán nên suy luận không cần lượng tử hóa. Tuỳ chọn \texttt{max\_features} chọn ngẫu nhiên một tập con đặc trưng cho mỗi cây.
-
-\begin{algo}{Thuật toán: AdaBoost-SAMME (\texttt{src/models/adaboost.py})}
-\item Lượng tử hóa $X$ thành bin (một lần); $w_i\leftarrow 1/N$.
-\item Với $t=1,\dots,T$: dựng cây $h_t$ từ histogram có trọng số (chọn cặp (đặc trưng, ngưỡng) tối thiểu $G(L)+G(R)$ ở mỗi nút, dừng khi không giảm được tạp chất hoặc đạt $d_{\max}$).
-\item $\mathrm{err}_t\leftarrow\sum_i w_i[h_t(\bm x_i)\ne y_i]$; nếu $\mathrm{err}_t\ge 1-1/K$ thì dừng.
-\item $\alpha_t\leftarrow\eta\,(\ln\frac{1-\mathrm{err}_t}{\mathrm{err}_t}+\ln(K-1))$.
-\item $w_i\leftarrow w_i\,e^{\alpha_t[h_t(\bm x_i)\ne y_i]}$, chuẩn hóa $\sum_i w_i=1$.
-\item Dự đoán: $\hat y=\argmax_k\sum_t\alpha_t[h_t(\bm x)=k]$; ``xác suất'' là tỉ lệ phiếu bầu có trọng số (không được hiệu chỉnh).
+\begin{algo}{Một epoch huấn luyện MLP (\texttt{src/models/mlp.py})}{alg:mlp}
+\item Xáo trộn chỉ số của tập train, chia thành các mini-batch kích thước $B$.
+\item Với mỗi mini-batch: lan truyền tiến, lưu $\bm z_l,\bm a_l,\bm m_l$ của mọi lớp; tính cross-entropy.
+\item Tính $\bm\delta_L$ rồi lùi từ lớp cuối về lớp đầu theo \cref{eq:backprop} để thu $\nabla_{W_l},\nabla_{\bm b_l}$.
+\item Cập nhật $\bm v_l\leftarrow\mu\bm v_l+\nabla_l$, $\theta_l\leftarrow\theta_l-\eta\bm v_l$.
+\item Cuối epoch: tính loss trên tập dừng sớm (tắt dropout); nếu không cải thiện quá $10^{-4}$ trong 5 epoch thì dừng và khôi phục trọng số tốt nhất.
 \end{algo}
 
-\subsection{Mạng tích chập nhỏ (CNN)}
+\subsection{AdaBoost-SAMME với cây quyết định có trọng số}
+\label{sec:ada}
+Boosting là ensemble thực sự: các bộ học yếu được huấn luyện tuần tự và mỗi bộ tập trung vào mẫu mà các bộ trước phân lớp sai. SAMME \citep{zhu2009} mở rộng AdaBoost \citep{freund1997} sang $K$ lớp. Khởi tạo $w_i=1/N$; ở vòng $t$, huấn luyện cây $h_t$ với trọng số mẫu $w$, đặt $\mathrm{err}_t=\sum_i w_i\indic{h_t(\bm x_i)\ne y_i}$ (với $\sum_i w_i=1$) và
+\begin{equation}
+\begin{gathered}
+\alpha_t=\nu\Big(\ln\frac{1-\mathrm{err}_t}{\mathrm{err}_t}+\ln(K-1)\Big),\qquad
+w_i\leftarrow \frac{w_i\,e^{\alpha_t\indic{h_t(\bm x_i)\ne y_i}}}{\sum_{i'}w_{i'}e^{\alpha_t\indic{h_t(\bm x_{i'})\ne y_{i'}}}},\\
+H(\bm x)=\argmax_k\sum_{t}\alpha_t\indic{h_t(\bm x)=k},
+\end{gathered}
+\label{eq:samme}
+\end{equation}
+với $\nu$ là hệ số co. Số hạng $\ln(K-1)$ chỉ yêu cầu bộ học yếu tốt hơn đoán ngẫu nhiên ($\mathrm{err}<1-1/K$); vòng lặp dừng khi điều kiện này bị vi phạm. Bộ học yếu là cây CART độ sâu tối đa $d$ giảm tạp chất Gini có trọng số \citep{breiman1984}. Để huấn luyện được trên $50\,000\times784$, mỗi đặc trưng được lượng tử hóa một lần thành $n_{\text{bins}}$ khoảng đều nhau và trọng số theo (nút, đặc trưng, bin, lớp) được cộng dồn bằng histogram, nên mọi ngưỡng của mọi đặc trưng được đánh giá trong $O(ND)$ mỗi tầng; ngưỡng thực được lưu cho dự đoán. Mỗi cây chỉ xét một tập con ngẫu nhiên các đặc trưng (\texttt{max\_features}); Thuật toán~\ref{alg:ada} tóm tắt quy trình. Chi phí huấn luyện $O(T\,d\,N\,D)$ với $T$ cây và dự đoán $O(T\,d)$; điểm số đầu ra là tỉ lệ phiếu có trọng số chứ không phải xác suất đã hiệu chỉnh.
+
+\begin{algo}{AdaBoost-SAMME (\texttt{src/models/adaboost.py})}{alg:ada}
+\item Lượng tử hóa $X$ thành bin (một lần); $w_i\leftarrow1/N$.
+\item Với $t=1,\dots,T$: dựng cây $h_t$ từ histogram có trọng số, chọn ở mỗi nút cặp (đặc trưng, ngưỡng) làm giảm tạp chất nhiều nhất; dừng khi không giảm hoặc đạt độ sâu $d$.
+\item $\mathrm{err}_t\leftarrow\sum_i w_i\indic{h_t(\bm x_i)\ne y_i}$; nếu $\mathrm{err}_t\ge1-1/K$ thì dừng.
+\item Tính $\alpha_t$ và cập nhật, chuẩn hóa $w$ theo \cref{eq:samme}.
+\item Dự đoán: $\hat y=\argmax_k\sum_t\alpha_t\indic{h_t(\bm x)=k}$.
+\end{algo}
+
+\subsection{Mạng tích chập nhỏ}
 \label{sec:cnn-method}
-CNN là phần mở rộng so sánh với MLP. Kích thước mỗi lớp \emph{không} được gõ cứng trong báo cáo hay trong giao diện: chúng được đọc từ \texttt{CNN.describe()} của mô hình đã huấn luyện và từ đồ thị ONNX xuất ra. Với cấu hình được chọn trên validation (\texttt{channels}=$(16,32)$, \texttt{kernel\_size}=3, \texttt{dense}=$(64)$), đường đi của một ảnh là
-\begin{align*}
-1{\times}28{\times}28 &\xrightarrow{\text{conv }3{\times}3} 16{\times}26{\times}26 \xrightarrow{\text{ReLU, max-pool }2} 16{\times}13{\times}13 \\
-&\xrightarrow{\text{conv }3{\times}3} 32{\times}11{\times}11 \xrightarrow{\text{ReLU, max-pool }2} 32{\times}5{\times}5 \xrightarrow{\text{flatten}} 800 \to 64 \to 10,
-\end{align*}
-tổng cộng $56\,714$ tham số (so với $535\,818$ của MLP). Tích chập được cài đặt bằng \emph{im2col}: mỗi cửa sổ $k{\times}k{\times}C_{\text{in}}$ được trải thành một hàng, nên giá trị tại một vị trí là $\bm{p}^{\top}\bm{w}+b$ (nhân từng phần tử rồi cộng), đúng như phép tính mà trình khám phá vẽ ra; max-pool ghi lại vị trí cực đại để chuyển gradient ngược về đúng ô; gradient của kernel là $\text{patches}^{\top}\,\partial L/\partial \text{out}$ và gradient theo đầu vào được cộng dồn bằng \emph{col2im}.
-
-\textbf{Phần viết tay và phần dùng PyTorch.} Viết tay: im2col/col2im, lan truyền tiến và lùi của tích chập, max-pool và ReLU, lớp dày đặc, softmax kèm cross-entropy, cập nhật SGD có momentum, khởi tạo He, dropout, dừng sớm. PyTorch chỉ là kho tensor và phép nhân ma trận (\texttt{matmul}); \emph{không} dùng \texttt{autograd}, \texttt{nn.Module}, \texttt{optim}, \texttt{F.conv2d} hay \texttt{F.max\_pool2d}. Tính đúng được kiểm chứng độc lập (Mục~\ref{sec:verification}): tích chập khớp một vòng lặp ngây thơ bảy tầng, và tích chập, max-pool và gradient đầy đủ khớp \texttt{F.conv2d}, \texttt{F.max\_pool2d} và autograd (chỉ dùng trong kiểm thử), cộng thêm sai phân hữu hạn.
-
-\subsection{Độ phức tạp tính toán}
-\begin{table}[H]
-\centering\small
-\begin{tabular}{lll}
-\toprule
-Mô hình & Huấn luyện & Dự đoán 1 mẫu \\
-\midrule
-Gaussian NB & $O(ND)$ & $O(KD)$ \\
-Softmax regression & $O(E\,N\,K\,D)$ & $O(KD)$ \\
-MLP ($H$ nơ-ron ẩn, 1 lớp) & $O(E\,N\,D\,H)$ & $O(DH+HK)$ \\
-AdaBoost ($T$ cây, độ sâu $d$) & $O(T\,d\,N\,D)$ & $O(T\,d)$ \\
-CNN ($C_\ell$ kênh, kernel $k$, ảnh $S\times S$) & $O(E\,N\sum_\ell S_\ell^2 k^2 C_{\ell-1}C_\ell)$ & $O(\sum_\ell S_\ell^2 k^2 C_{\ell-1}C_\ell)$ \\
-\bottomrule
-\end{tabular}
-\caption{Độ phức tạp theo số mẫu $N$, số chiều $D$, số lớp $K$, số epoch $E$. Suy luận của AdaBoost chỉ so sánh $T d$ ngưỡng nên rất rẻ.}
-\end{table}
+CNN \citep{lecun1998} khác MLP ở chỗ mỗi đơn vị chỉ nhìn một cửa sổ cục bộ và các cửa sổ dùng chung trọng số. Cấu hình được chọn trên validation là hai khối tích chập $3\times3$ với $16$ và $32$ kênh, mỗi khối theo sau bởi ReLU và gộp cực đại $2\times2$, rồi hai lớp dày đặc:
+\begin{equation*}
+1{\times}28{\times}28\to16{\times}26{\times}26\to16{\times}13{\times}13\to32{\times}11{\times}11\to32{\times}5{\times}5\to800\to64\to10 .
+\end{equation*}
+Các kích thước này được đọc từ \texttt{CNN.describe()} của mô hình đã huấn luyện, tổng cộng $56\,714$ tham số (MLP: $535\,818$). Tích chập được cài bằng \emph{im2col}: mỗi cửa sổ $k\times k\times C_{\text{in}}$ được trải thành một hàng nên đầu ra là tích ma trận $\text{patches}\cdot W$; gradient của kernel là $\text{patches}^{\top}\,\partial L/\partial\text{out}$ và gradient theo đầu vào được cộng dồn bằng \emph{col2im}. Gộp cực đại ghi lại vị trí cực đại để chuyển gradient về đúng ô. Huấn luyện dùng cùng SGD momentum, khởi tạo He, dropout và dừng sớm như MLP.

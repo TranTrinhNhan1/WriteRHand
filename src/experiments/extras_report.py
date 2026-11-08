@@ -34,23 +34,25 @@ def _read(p):
 
 # --------------------------------------------------------------------------- augmentation
 def fig_augmentation_examples(plt, out):
+    """Columns: original and every transform at training and stress strength; rows: source digits."""
     data, _ = load_dataset()
-    rows, y = example_grid(data["X_train"], data["y_train"], n=8)
-    fig, axes = plt.subplots(len(rows), 8, figsize=(8 * 0.95, len(rows) * 0.95 + 0.2))
-    for r, (title, imgs) in enumerate(rows):
-        for c in range(8):
+    rows, _y = example_grid(data["X_train"], data["y_train"], n=3)
+    ncol = len(rows)
+    fig, axes = plt.subplots(3, ncol, figsize=(ncol * 0.95, 3 * 0.95 + 0.45))
+    for c, (title, imgs) in enumerate(rows):
+        for r in range(3):
             ax = axes[r, c]
             ax.imshow(
-                imgs[c].reshape(28, 28),
+                imgs[r].reshape(28, 28),
                 cmap="gray_r",
                 vmin=float(imgs.min()),
                 vmax=float(imgs.max()),
             )
             ax.axis("off")
-        axes[r, 0].text(
-            -0.15, 0.5, title, transform=axes[r, 0].transAxes, ha="right", va="center", fontsize=7.5
-        )
-    fig.subplots_adjust(left=0.27, wspace=0.04, hspace=0.04)
+        label = title.replace(" (stress)", "\n(kiểm tra)").replace(" (", "\n(")
+        label = label.replace("\n(kiểm tra)", "\n(stress)")
+        axes[0, c].set_title(label.replace("_", " "), fontsize=7.5)
+    fig.subplots_adjust(wspace=0.05, hspace=0.04)
     _save(fig, out, "augmentation_examples")
     plt.close(fig)
 
@@ -220,11 +222,20 @@ def fig_cnn_vs_mlp(plt, cmp, per_ds_mnist, out):
             color=COLOR[i],
             label=TITLE[i],
         )
+        for xx, t in zip(x, keys, strict=True):
+            b.text(
+                xx + (k - 0.5) * 0.38,
+                100 * rows[i]["robust"][t] + 0.6,
+                f"{100 * rows[i]['robust'][t]:.1f}",
+                ha="center",
+                fontsize=6,
+                rotation=90,
+            )
     b.set_xticks(x)
     b.set_xticklabels(
         ["clean", *[PRETTY[t].replace(" ", "\n", 1) for t in TRANSFORMS]], fontsize=7.5
     )
-    b.set_ylim(60, 100)
+    b.set_ylim(60, 104)
     b.set_ylabel("test accuracy (%)")
     b.set_title("accuracy under perturbation (no augmentation)")
     b.legend(fontsize=8)
@@ -321,40 +332,18 @@ def table_cnn_vs_mlp(cmp, out_dir):
 def tex_cnn_vs_mlp(cmp, out_dir):
     """``cnn_vs_mlp.tex``: the comparison table of the report (every value read from the JSON)."""
     r = {x["id"]: x for x in cmp["rows"]}
-    sizes = onnx_sizes()
     num = lambda v, f: format(v, f)  # noqa: E731
     rows = [
         ("Số tham số", lambda x: f"{x['n_parameters']:,}".replace(",", "\\,")),
-        (
-            "Kích thước ONNX (KiB)",
-            lambda x: f"{sizes[x['id']] / 1024:.0f}" if sizes.get(x["id"]) else "--",
-        ),
         ("Accuracy test (\\%)", lambda x: num(100 * x["accuracy"]["test"], ".2f")),
-        (
-            "Precision / Recall / F1 macro (\\%)",
-            lambda x: (
-                f"{100 * x['precision_macro']:.2f} / {100 * x['recall_macro']:.2f} / {100 * x['f1_macro']:.2f}"
-            ),
-        ),
         ("Accuracy train $-$ test (điểm)", lambda x: num(100 * x["generalization_gap"], ".2f")),
         ("Thời gian huấn luyện (s)", lambda x: num(x["train_time_sec"], ".0f")),
         ("Độ trễ một ảnh (ms)", lambda x: num(x["latency_ms"], ".3f")),
     ]
-    names = {
-        "rotation": "xoay",
-        "translation": "dịch",
-        "scaling": "co giãn",
-        "gaussian_noise": "nhiễu Gauss",
-        "salt_pepper": "muối tiêu",
-    }
-    rows += [
-        (f"Accuracy khi {names[t]} (\\%)", lambda x, t=t: num(100 * x["robust"][t], ".2f"))
-        for t in TRANSFORMS
-    ]
     body = [f"{lab} & {fn(r['mlp'])} & {fn(r['cnn'])} \\\\" for lab, fn in rows]
     m = cmp["mcnemar"]
     tex = [
-        r"\begin{table}[H]\centering\small",
+        r"\begin{table}[tbp]\centering\small",
         r"\begin{tabular}{lrr}",
         r"\toprule",
         r" & MLP & CNN \\",
@@ -362,8 +351,8 @@ def tex_cnn_vs_mlp(cmp, out_dir):
         *body,
         r"\bottomrule",
         r"\end{tabular}",
-        f"\\caption{{CNN và MLP trên MNIST, cùng giao thức; mọi số lấy từ các lần chạy đã ghi. Hàng cuối: ảnh test bị biến đổi cố định "
-        f"(seed 999, mức mạnh hơn lúc huấn luyện), chỉ để báo cáo. Kiểm định McNemar chính xác trên dự đoán test: "
+        f"\\caption{{CNN và MLP trên MNIST, cùng giao thức; mọi số lấy từ các lần chạy đã ghi. Accuracy khi ảnh test bị biến đổi nằm ở \\cref{{fig:cnn-vs-mlp}}b. "
+        f"Kiểm định McNemar chính xác trên dự đoán test: "
         f"chỉ MLP đúng {m['only_mlp']} ảnh, chỉ CNN đúng {m['only_cnn']} ảnh, $p={m['p']:.2g}$.}}",
         r"\label{tab:cnn-vs-mlp}",
         r"\end{table}",
@@ -386,7 +375,7 @@ def tex_datasets(per_ds, out_dir):
             )
         rows.append(f"{TITLE[m]} & " + " & ".join(cells) + " \\\\")
     tex = [
-        r"\begin{table}[H]\centering\small",
+        r"\begin{table}[tbp]\centering\small",
         r"\begin{tabular}{l" + "r" * len(names) + "}",
         r"\toprule",
         "Mô hình & " + " & ".join(DATASETS[n]["title"] for n in names) + " \\\\",
@@ -424,7 +413,7 @@ def tex_cross_eval(rd, out_dir):
         own_acc = "--" if own[r["model"]] is None else f"{100 * own[r['model']]:.2f}"
         rows.append(f"{TITLE[r['model']]} & {100 * r['accuracy']:.2f} & {own_acc} \\\\")
     tex = [
-        r"\begin{table}[H]\centering\small",
+        r"\begin{table}[tbp]\centering\small",
         r"\begin{tabular}{lrr}",
         r"\toprule",
         r"Mô hình & Huấn luyện trên MNIST & Huấn luyện trên EMNIST Digits \\",
@@ -446,6 +435,260 @@ def tex_cross_eval(rd, out_dir):
                 f"\\newcommand{{\\ownEmnist{pre[r['model']]}}}{{{100 * own[r['model']]:.2f}}}"
             )
     (out_dir / "cross_eval_numbers.tex").write_text("\n".join(macros) + "\n", encoding="utf-8")
+
+
+def tex_slide_datasets(per_ds, rd, out_dir):
+    """``slide_datasets.tex``: tabular for the slides (test accuracy per dataset + MNIST->EMNIST column)."""
+    cross = _read(Path(rd) / "datasets" / "emnist_digits" / "cross_eval.json")
+    cross_acc = {r["model"]: r["accuracy"] for r in cross[0]["rows"]} if cross else {}
+    names = list(per_ds)
+    head = "Mô hình & " + " & ".join(DATASETS[n]["title"] for n in names) + " & MNIST $\\to$ EMNIST"
+    rows = []
+    for m in ORDER:
+        cells = []
+        for n in names:
+            f = per_ds[n][1][m]["final"]
+            cells.append("--" if not f else f"{100 * f['splits']['test']['accuracy']:.2f}")
+        c = cross_acc.get(m)
+        cells.append("--" if c is None else f"{100 * c:.2f}")
+        rows.append(f"{TITLE[m]} & " + " & ".join(cells) + " \\\\")
+    tex = [
+        r"\begin{tabular}{l" + "r" * (len(names) + 1) + "}",
+        r"\toprule",
+        head + " \\\\",
+        r"\midrule",
+        *rows,
+        r"\bottomrule",
+        r"\end{tabular}",
+    ]
+    (Path(out_dir) / "slide_datasets.tex").write_text("\n".join(tex) + "\n", encoding="utf-8")
+
+
+# --------------------------------------------------------------------------- cost / trade-off
+def _final_rows(per_ds_mnist):
+    rows = []
+    for mid in ORDER:
+        fin = (per_ds_mnist.get(mid) or {}).get("final")
+        if not fin:
+            continue
+        sp = fin["splits"]
+        rows.append(
+            {
+                "id": mid,
+                "fit": fin["train_time_sec"],
+                "lat": fin["latency_ms_single_sample"],
+                "train": 100 * sp["train"]["accuracy"],
+                "val": 100 * sp["val"]["accuracy"],
+                "test": 100 * sp["test"]["accuracy"],
+                "predict10k": sp["test"].get("predict_time_sec"),
+            }
+        )
+    return rows
+
+
+def fig_tradeoff(plt, per_ds_mnist, out):
+    """Test accuracy against training time and per-image latency, and the train-test gap."""
+    rows = _final_rows(per_ds_mnist)
+    fig, axes = plt.subplots(1, 3, figsize=(11.5, 3.4))
+    a, b, c = axes
+    for ax, key, xl in (
+        (a, "fit", "training time on 50 000 images (s, log)"),
+        (b, "lat", "latency per image (ms, log)"),
+    ):
+        for r in rows:
+            ax.scatter(r[key], r["test"], s=46, color=COLOR[r["id"]], zorder=3)
+            ax.annotate(
+                TITLE[r["id"]],
+                (r[key], r["test"]),
+                textcoords="offset points",
+                xytext=(5, -9 if r["id"] in ("softmax", "adaboost") else 4),
+                fontsize=8,
+            )
+        ax.set_xscale("log")
+        ax.set_xlabel(xl)
+        ax.set_ylabel("test accuracy (%)")
+        ax.set_ylim(78, 100)
+    a.set_xlim(0.2, 4000)
+    b.set_xlim(0.004, 120)
+    a.set_title("accuracy against training cost")
+    b.set_title("accuracy against inference cost")
+    _panel(a, "a")
+    _panel(b, "b")
+    x = np.arange(len(rows))
+    gaps = [r["train"] - r["test"] for r in rows]
+    c.bar(x, gaps, color=[COLOR[r["id"]] for r in rows], width=0.6)
+    for k, g in enumerate(gaps):
+        c.text(k, g + (0.1 if g >= 0 else -0.45), f"{g:+.2f}", ha="center", fontsize=8)
+    c.axhline(0, color="black", lw=0.8)
+    c.set_xticks(x)
+    c.set_xticklabels(
+        [
+            {
+                "naive_bayes": "NB",
+                "softmax": "Softmax",
+                "mlp": "MLP",
+                "adaboost": "AdaBoost",
+                "cnn": "CNN",
+            }[r["id"]]
+            for r in rows
+        ],
+        fontsize=8.5,
+    )
+    c.set_ylabel("train accuracy $-$ test accuracy (points)")
+    c.set_title("generalisation gap")
+    c.set_ylim(-2, 4)
+    _panel(c, "c")
+    fig.tight_layout()
+    _save(fig, out, "tradeoff")
+    plt.close(fig)
+
+
+def tex_cost(per_ds_mnist, out_dir):
+    """One compact table: training time, prediction time, latency and exported file size."""
+    sizes = onnx_sizes()
+    key = {
+        "naive_bayes": "naive_bayes",
+        "softmax": "softmax",
+        "mlp": "mlp",
+        "adaboost": "adaboost",
+        "cnn": "cnn",
+    }
+    lines = [
+        "\\begin{tabular}{lrrrr}",
+        "\\toprule",
+        "Mô hình & Huấn luyện (s) & Dự đoán $10\\,000$ ảnh (s) & Một ảnh (ms) & Tệp xuất (KiB) \\\\",
+        "\\midrule",
+    ]
+    for r in _final_rows(per_ds_mnist):
+        size = sizes.get(key[r["id"]])
+        size_s = "--" if not size else f"{size / 1024:,.0f}".replace(",", "\\,")
+        pred = "--" if r["predict10k"] is None else f"{r['predict10k']:.3f}"
+        lines.append(f"{TITLE[r['id']]} & {r['fit']:.1f} & {pred} & {r['lat']:.3f} & {size_s} \\\\")
+    lines += ["\\bottomrule", "\\end{tabular}"]
+    (Path(out_dir) / "cost.tex").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+# --------------------------------------------------------------------------- key sweeps + EDA statistic
+KEY_SWEEPS = {
+    "naive_bayes": "var_smoothing",
+    "softmax": "learning_rate",
+    "mlp": "hidden_sizes",
+    "adaboost": "max_depth",
+    "cnn": "channels",
+}
+
+
+def _fmt_value(v):
+    if isinstance(v, (list, tuple)):
+        return "(" + ",".join(str(x) for x in v) + ")"
+    if isinstance(v, float) and v != 0 and (abs(v) < 0.01 or abs(v) >= 1000):
+        return f"{v:.0e}".replace("e-0", "e-").replace("e+0", "e+")
+    return str(v)
+
+
+def fig_key_sweeps(plt, per_ds_mnist, out):
+    """Train and validation accuracy against the most influential hyper-parameter of each model."""
+    fig, axes = plt.subplots(2, 3, figsize=(11.5, 5.0))
+    flat = list(axes.ravel())
+    for ax, mid, letter in zip(flat, ORDER, "abcde", strict=False):
+        tune = (per_ds_mnist.get(mid) or {}).get("tuning")
+        param = KEY_SWEEPS[mid]
+        trials = [t for t in tune["trials"] if t.get("stage") == f"sweep:{param}"]
+        xs = np.arange(len(trials))
+        tr = [100 * t["train_acc"] for t in trials]
+        va = [100 * t["val_acc"] for t in trials]
+        ax.plot(xs, tr, "o--", color="#777777", ms=4, label="train")
+        ax.plot(xs, va, "o-", color=COLOR[mid], ms=4.5, lw=1.8, label="validation")
+        best = tune["best_params"][param]
+        for k, t in enumerate(trials):
+            if t["params"][param] == best:
+                ax.scatter([k], [va[k]], s=150, facecolors="none", edgecolors="black", zorder=4)
+        ax.set_xticks(xs)
+        many = len(xs) >= 6
+        ax.set_xticklabels(
+            [_fmt_value(t["value"]) for t in trials],
+            fontsize=7.5,
+            rotation=45 if many else 0,
+            ha="right" if many else "center",
+        )
+        ax.set_xlabel(param.replace("_", " "))
+        ax.set_ylabel("accuracy (%)")
+        ax.set_title(TITLE[mid])
+        ax.legend(fontsize=8, loc="best")
+        _panel(ax, letter)
+    flat[5].axis("off")
+    fig.tight_layout()
+    _save(fig, out, "key_sweeps")
+    plt.close(fig)
+
+
+def tex_eda_stats(out_dir):
+    """Within-class correlation of horizontally adjacent pixels (supports the Naive Bayes discussion)."""
+    data, _meta = load_dataset(name="mnist")
+    X, y = data["X_train"], data["y_train"]
+    vals = []
+    for k in range(10):
+        Xk = X[y == k].reshape(-1, 28, 28)
+        a = Xk[:, :, :-1].reshape(len(Xk), -1)
+        b = Xk[:, :, 1:].reshape(len(Xk), -1)
+        a = a - a.mean(0)
+        b = b - b.mean(0)
+        den = np.sqrt((a * a).mean(0) * (b * b).mean(0))
+        ok = den > 1e-6
+        vals.append(((a * b).mean(0)[ok] / den[ok]).mean())
+    macros = [
+        "% generated by src/experiments/extras_report.py -- do not edit",
+        f"\\newcommand{{\\corrAdj}}{{{float(np.mean(vals)):.2f}}}",
+    ]
+    (Path(out_dir) / "eda_stats.tex").write_text("\n".join(macros) + "\n", encoding="utf-8")
+
+
+def tex_aug_summary(rd, out_dir):
+    """Appendix table: validation delta and clean test accuracy for every augmentation condition."""
+    studies = {k: _read(rd / f"augmentation_{k}.json") for k in ("mlp", "cnn")}
+    if not all(studies.values()):
+        return
+    names = {
+        "baseline": "Không tăng cường",
+        "rotation": "Xoay",
+        "translation": "Dịch chuyển",
+        "scaling": "Co giãn",
+        "gaussian_noise": "Nhiễu Gauss",
+        "salt_pepper": "Nhiễu muối tiêu",
+        "geometric": "Hình học (xoay, dịch, co giãn)",
+        "all": "Cả năm phép",
+    }
+    lines = [
+        r"\begin{table}[tbp]\centering\small",
+        r"\begin{tabular}{lrrrr}",
+        r"\toprule",
+        r" & \multicolumn{2}{c}{MLP (3 seed)} & \multicolumn{2}{c}{CNN (2 seed)} \\",
+        r"\cmidrule(lr){2-3}\cmidrule(lr){4-5}",
+        r"Điều kiện & $\Delta$ val (điểm) & Test (\%) & $\Delta$ val (điểm) & Test (\%) \\",
+        r"\midrule",
+    ]
+    for key, label in names.items():
+        cells = []
+        for k in ("mlp", "cnn"):
+            c = studies[k]["conditions"][key]
+            if key == "baseline":
+                cells.append("--")
+            else:
+                cells.append(
+                    f"{100 * c['val_delta_vs_baseline_mean']:+.2f} $\\pm$ {100 * c['val_delta_vs_baseline_sd']:.2f}"
+                )
+            cells.append(f"{100 * c['test_acc_mean']:.2f}")
+        lines.append(f"{label} & {' & '.join(cells)} \\\\")
+    lines += [
+        r"\bottomrule",
+        r"\end{tabular}",
+        r"\caption{Tăng cường dữ liệu với cấu hình đã chọn: $\Delta$ là hiệu validation accuracy so với điều kiện gốc \emph{cùng seed} (trung bình $\pm$ độ lệch chuẩn mẫu của hiệu), ``Test'' là accuracy test sạch trung bình trên các seed. Mỗi điều kiện tăng cường dùng $100\,000$ ảnh train, điều kiện gốc $50\,000$.}",
+        r"\label{tab:augmentation}",
+        r"\end{table}",
+    ]
+    (Path(out_dir) / "augmentation_summary.tex").write_text(
+        "\n".join(lines) + "\n", encoding="utf-8"
+    )
 
 
 def build_extras(log=print):
@@ -479,10 +722,12 @@ def build_extras(log=print):
                     fig_datasets(plt, per_ds, fig_dir),
                     table_datasets(per_ds, tab_dir),
                     tex_datasets(per_ds, gen),
+                    tex_slide_datasets(per_ds, rd, gen),
                 ),
             )
         )
     jobs.append(("cross eval", lambda: tex_cross_eval(rd, gen)))
+    jobs.append(("augmentation summary", lambda: tex_aug_summary(rd, gen)))
     cmp = _read(rd / "cnn_vs_mlp.json")
     if cmp and "mnist" in per_ds:
         jobs.append(
@@ -495,6 +740,19 @@ def build_extras(log=print):
                 ),
             )
         )
+    if "mnist" in per_ds:
+        jobs.append(
+            (
+                "tradeoff",
+                lambda: (
+                    fig_tradeoff(plt, per_ds["mnist"][1], fig_dir),
+                    tex_cost(per_ds["mnist"][1], gen),
+                ),
+            )
+        )
+    if "mnist" in per_ds:
+        jobs.append(("key sweeps", lambda: fig_key_sweeps(plt, per_ds["mnist"][1], fig_dir)))
+    jobs.append(("eda stats", lambda: tex_eda_stats(gen)))
     if (Path(ad) / "CNN" / "model.npz").is_file():
         jobs.append(("cnn filters", lambda: fig_cnn_filters(plt, ad, fig_dir)))
     for name, fn in jobs:

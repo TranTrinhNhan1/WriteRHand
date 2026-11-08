@@ -6,12 +6,13 @@ import type { Dict } from './en'
  */
 export const vi: Dict = {
   meta: {
-    description: 'Năm bộ phân loại tự cài đặt cho môn Nhận dạng mẫu, huấn luyện trên MNIST, Fashion-MNIST và EMNIST Digits. Vẽ hoặc chọn một ảnh test và xem từng mô hình đọc nó ngay trong trình duyệt, kèm phép tính thật bên trong.',
+    description: 'Năm bộ phân loại tự cài đặt cho môn Nhận dạng, huấn luyện trên MNIST, Fashion-MNIST và EMNIST Digits. Vẽ hoặc chọn một ảnh test và xem từng mô hình đọc nó ngay trong trình duyệt, kèm phép tính thật bên trong.',
     title: {
       recognise: 'WriteRHand: vẽ thử, xem năm mô hình đọc nó',
       models: 'Các mô hình | WriteRHand',
       results: 'Kết quả | WriteRHand',
       about: 'Giới thiệu | WriteRHand',
+      documents: 'Tài liệu | WriteRHand',
     },
   },
   nav: {
@@ -22,13 +23,15 @@ export const vi: Dict = {
     models: 'Mô hình',
     results: 'Kết quả',
     about: 'Giới thiệu',
+    documents: 'Tài liệu',
+    github: 'Mã nguồn trên GitHub',
     language: 'Ngôn ngữ',
     theme: 'Giao diện',
     toLight: 'Chuyển sang giao diện sáng',
     toDark: 'Chuyển sang giao diện tối',
   },
   footer: {
-    about: 'WriteRHand là đồ án môn Nhận dạng mẫu (Pattern Recognition). Mã nguồn nằm trên {github}, các mô hình đã huấn luyện nằm trên {hf}.',
+    about: 'WriteRHand là đồ án môn Nhận dạng (Pattern Recognition). Mã nguồn nằm trên {github}, các mô hình đã huấn luyện nằm trên {hf}.',
     github: 'GitHub',
     hf: 'Hugging Face',
     bundleId: 'gói {id}',
@@ -582,7 +585,7 @@ export const vi: Dict = {
   },
   rec: {
     title: 'Vẽ thử, rồi xem {n} mô hình đọc nó thế nào',
-    lede: 'Đây là đồ án môn Nhận dạng mẫu của tụi mình. Tụi mình tự viết các bộ phân loại và huấn luyện mỗi mô hình trên nhiều bộ dữ liệu. Bạn chọn bộ dữ liệu mà mô hình đã học, vẽ hoặc chọn một ảnh test thật, và mọi mô hình sẽ trả lời. Mọi thứ chạy ngay trong trình duyệt, nên nét vẽ của bạn ở lại trên máy bạn.',
+    lede: 'Đây là đồ án môn Nhận dạng của tụi mình. Tụi mình tự viết các bộ phân loại và huấn luyện mỗi mô hình trên nhiều bộ dữ liệu. Bạn chọn bộ dữ liệu mà mô hình đã học, vẽ hoặc chọn một ảnh test thật, và mọi mô hình sẽ trả lời. Mọi thứ chạy ngay trong trình duyệt, nên nét vẽ của bạn ở lại trên máy bạn.',
     ds: {
       region: 'Chọn bộ dữ liệu',
       legend: 'Chọn mô hình theo dữ liệu mà chúng đã học',
@@ -1151,7 +1154,7 @@ export const vi: Dict = {
   },
   about: {
     title: 'Giới thiệu đồ án',
-    lede: 'WriteRHand là đồ án môn Nhận dạng mẫu. Tụi mình tự cài đặt các bộ phân loại, huấn luyện chúng trên ba bộ ảnh, và làm trang này để bạn có thể tự thử và nhìn vào những gì chúng tính.',
+    lede: 'WriteRHand là đồ án môn Nhận dạng. Tụi mình tự cài đặt các bộ phân loại, huấn luyện chúng trên ba bộ ảnh, và làm trang này để bạn có thể tự thử và nhìn vào những gì chúng tính.',
     repo: 'Mã nguồn trên GitHub',
     hf: 'Các mô hình đã huấn luyện trên Hugging Face',
     scope: {
@@ -1246,6 +1249,49 @@ export const vi: Dict = {
     ai: {
       title: 'Phát triển có AI hỗ trợ',
       text: 'Một phần mã nguồn được viết cùng trợ lý lập trình AI và được các tác giả xem lại.',
+    },
+  },
+  docs: {
+    title: 'Báo cáo, slide và mã nguồn',
+    lede: 'Các sản phẩm của đồ án môn Nhận dạng. Hai tệp PDF được phục vụ trực tiếp từ trang này.',
+    pdf: 'PDF',
+    pages: '{n} trang',
+    slidesCount: '{n} trang',
+    metaLoading: 'Đang đọc thông tin tệp',
+    metaError: 'Không đọc được thông tin tệp. Các liên kết vẫn dùng được.',
+    view: 'Xem PDF',
+    viewLabel: 'Xem PDF: {doc} (mở trong thẻ mới)',
+    download: 'Tải xuống',
+    downloadLabel: 'Tải xuống: {doc}',
+    inVietnamese: 'Viết bằng tiếng Việt.',
+    report: {
+      title: 'Báo cáo khoa học',
+      name: 'So sánh các bộ phân lớp tự cài đặt trên MNIST',
+      text: 'Dữ liệu và tiền xử lý, năm phương pháp, giao thức thực nghiệm, kết quả chính trên MNIST có đối chiếu với scikit-learn, và các thí nghiệm mở rộng: CNN so với MLP, tăng cường dữ liệu, Fashion-MNIST và EMNIST Digits.',
+    },
+    slides: {
+      title: 'Slide thuyết trình',
+      name: 'Thuyết trình đồ án giữa kỳ',
+      text: 'Bản tóm tắt để thuyết trình: giao thức, năm mô hình, kết quả trên tập test và các phần mở rộng.',
+    },
+    code: {
+      title: 'Mã nguồn',
+      text: 'Mã nạp dữ liệu, năm bộ phân lớp, huấn luyện, đánh giá và mã của trang này nằm trong một kho GitHub.',
+      repo: 'Kho mã trên GitHub',
+      readme: 'README',
+      notebook: 'Notebook tái lập kết quả',
+      private: 'Riêng tư',
+      privateNote: 'Kho mã nguồn hiện ở chế độ riêng tư; chỉ thành viên được cấp quyền mới xem được. Hai tệp PDF ở trên được phục vụ trực tiếp từ trang này.',
+    },
+    exp: {
+      title: 'Thí nghiệm và mô hình',
+      models: 'Các mô hình đã huấn luyện cho từng bộ dữ liệu được công bố trong một kho mô hình trên Hugging Face. Trang này được ghim vào một phiên bản (revision) cố định của kho đó.',
+      hf: 'Kho mô hình trên Hugging Face',
+      revision: 'Phiên bản đã ghim',
+      noRevision: 'Bản dựng này không ghim phiên bản nào.',
+      tracking: 'Các lượt chạy thí nghiệm được ghi bằng Weights & Biases ở chế độ offline; không có dự án W&B công khai.',
+      resultsText: 'Các số đo, bảng và hình được commit trong thư mục results của kho mã.',
+      results: 'Thư mục results trên GitHub',
     },
   },
 }

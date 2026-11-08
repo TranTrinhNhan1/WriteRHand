@@ -1,6 +1,6 @@
 # WriteRHand - nhận dạng chữ số viết tay MNIST bằng các bộ phân lớp tự cài đặt
 
-Đồ án môn **Nhận dạng mẫu (Pattern Recognition)**. Bốn bộ phân lớp cùng một CNN nhỏ làm phần mở rộng, phần tính toán lõi viết tay
+Đồ án 1 (giữa kỳ) môn **Nhận dạng**, Khoa Toán – Tin học, ĐH KHTN, ĐHQG-HCM. Bốn bộ phân lớp bắt buộc cùng một CNN nhỏ làm phần mở rộng, phần tính toán lõi viết tay
 (NumPy; PyTorch chỉ làm kho tensor cho MLP và CNN, **không dùng autograd, `nn.Module`, `optim`, `F.conv2d`, `F.max_pool2d`**; scikit-learn chỉ để đối chiếu):
 
 | # | Bộ phân lớp | Cách huấn luyện | Mã nguồn |
@@ -98,13 +98,23 @@ Trọng số **không** được commit. Bundle (ONNX + tham số nhị phân + 
 cd report && pdflatex main.tex && bibtex main && pdflatex main.tex && pdflatex main.tex   # cần TeX Live có T5 + lmodern
 cd slides/beamer && latexmk -pdf main.tex && cp main.pdf ../WriteRHand-slides.pdf                                             # slide Beamer (Computer Modern)
 ```
-Các con số trong báo cáo và slide được đọc từ `results/` (xem `src/experiments/texfrag.py`), không nhập tay.
+Các con số trong báo cáo và slide được đọc từ `results/` (xem `src/experiments/texfrag.py`, `src/experiments/extras_report.py`), không nhập tay.
+
+Hai PDF được commit và được website phát hành tại `/WriteRHand/docs/report.pdf` và `/WriteRHand/docs/slides.pdf` (trang **Tài liệu**). Để một PDF cũ không bị phát hành âm thầm,
+sau khi dựng lại PDF hãy ghi dấu nguồn: `python3 scripts/docs_stamp.py write`; CI và workflow Pages chạy `python3 scripts/docs_stamp.py check` và thất bại nếu nguồn LaTeX, đoạn sinh tự động
+hoặc hình đã đổi mà PDF chưa dựng lại.
+
+## Nộp bài và quyền truy cập
+Đề bài yêu cầu repository Git **công khai** hoặc mã nén `.zip`. Repository `TranTrinhNhan1/WriteRHand` hiện ở chế độ **riêng tư** (chỉ chủ sở hữu và người được mời xem được mã nguồn);
+website, mô hình trên Hugging Face và hai PDF vẫn truy cập công khai. Nếu giữ repository riêng tư, nộp bản `.zip` sạch (không `data/`, `wandb/`, `.venv/`, `node_modules/`, `.git/`):
+`git archive --format=zip -o WriteRHand.zip HEAD`. Việc đổi chế độ hiển thị do nhóm quyết định.
 
 ## Cấu trúc thư mục
 ```
 src/                 models/ (5 mô hình), preprocessing/ (3 bộ dữ liệu), evaluation/, experiments/ (tune, train, augment, compare, replay, report), export/ (ONNX, hợp đồng vết, Hugging Face), cli.py
 tests/               kiểm thử đơn vị, đối chiếu scikit-learn/PyTorch, bundle và hợp đồng vết (chạy offline)
-docs/                TRACE_CONTRACT.md: hợp đồng giữa Python và trình khám phá
+docs/                TRACE_CONTRACT.md: hợp đồng giữa Python và trình khám phá; pdf-stamps.json: dấu nguồn của hai PDF
+scripts/             docs_stamp.py: kiểm tra PDF còn khớp nguồn
 notebooks/           EDA, reproduce_results (chính), fine-tuning, final_eval_with_test_set, eval_for_ensemble (khám phá)
 results/             tuning/ final/ baselines/ tables/ figures/ (sinh ra bởi chương trình)
 report/              báo cáo LaTeX (main.tex → main.pdf, các đoạn sinh tự động ở generated/)
@@ -113,7 +123,7 @@ web/                 website demo (src/engine, src/components/explorer, e2e/)   
 ```
 
 ## Thành viên
-Trần Trinh Nhân (24280088) và Lâm Nhật Tiến (24280029), đóng góp 50%/50% (nhóm tự thống nhất); chi tiết ở mục 10 của báo cáo. Phần hoàn thiện đồ án được thực hiện **với sự hỗ trợ của
+Trần Trinh Nhân (24280088) và Lâm Nhật Tiến (24280029), đóng góp 50%/50% (nhóm tự thống nhất); chi tiết ở mục 9 của báo cáo. Phần hoàn thiện đồ án được thực hiện **với sự hỗ trợ của
 trợ lý lập trình AI (Claude Code)** theo đúng công bố trong báo cáo. Quy trình nhóm: [WORKFLOW.md](WORKFLOW.md).
 
 ## Tài liệu / nguồn

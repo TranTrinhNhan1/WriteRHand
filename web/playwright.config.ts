@@ -26,7 +26,7 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 1000 } } }],
   webServer: {
-    command: `npx vite build --outDir dist-e2e --emptyOutDir && npx vite preview --outDir dist-e2e --host 127.0.0.1 --port ${port} --strictPort`,
+    command: `node scripts/docs.mjs prepare && npx vite build --outDir dist-e2e --emptyOutDir && npx vite preview --outDir dist-e2e --host 127.0.0.1 --port ${port} --strictPort`,
     env: { VITE_BASE: '/', VITE_MODEL_BASE_URL: '/bundle' },
     url: `http://127.0.0.1:${port}`,
     reuseExistingServer: !process.env.CI,

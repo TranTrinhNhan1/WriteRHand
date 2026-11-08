@@ -1,8 +1,9 @@
 # WriteRHand web
 
-Static demo site for WriteRHand: draw (or upload) a handwritten digit and let four from-scratch classifiers
-(Gaussian Naive Bayes, softmax regression, MLP, AdaBoost-SAMME) read it in the browser. It also explains the models
-and shows the evaluation results.
+Static demo site for WriteRHand: draw (or upload) a handwritten digit, or pick a test image, and let five classifiers
+written from scratch (Gaussian Naive Bayes, softmax regression, MLP, a small CNN, AdaBoost-SAMME), each trained on three
+datasets (MNIST, Fashion-MNIST, EMNIST Digits), read it in the browser. It also explains the models, shows the
+evaluation results and serves the course deliverables (report and slides PDFs) on the Documents page.
 
 React 18, TypeScript (strict), Vite, `onnxruntime-web` 1.30.0 (WebAssembly, single-threaded), hand-written SVG charts,
 KaTeX (MathML output) for the equations. No backend.
@@ -34,7 +35,8 @@ npm ci
 npm run dev          # http://localhost:5173, base path "/"
 npm run typecheck
 npm test
-npm run build        # tsc -b && vite build, base path "/WriteRHand/"
+npm run docs:prepare # copy ../report/main.pdf and ../slides/WriteRHand-slides.pdf to public/docs/ (needs pdfinfo)
+npm run build        # docs:prepare, tsc -b, vite build; base path "/WriteRHand/"
 npm run preview      # serves dist/ under /WriteRHand/
 ```
 
@@ -56,6 +58,17 @@ npm run preview      # serves dist/ under /WriteRHand/
 * `npm run bundle:check` verifies that the committed manifest, the lock and the remote manifest agree;
   `npm run bundle:fetch` downloads the pinned bundle into `public/bundle/` (git-ignored) with every file verified.
 * The trace contract that the explorer draws from is in `../docs/TRACE_CONTRACT.md`.
+
+## Documents and routing
+
+* The Documents page (`#/documents`) links `docs/report.pdf` and `docs/slides.pdf` and reads `docs/docs.json` (file
+  name, page count, size, SHA-256 per PDF). `scripts/docs.mjs prepare` writes them into `public/docs/` (git-ignored, so
+  the PDFs are not stored twice); page counts come from `pdfinfo` (poppler-utils), and a missing source PDF or a
+  missing `pdfinfo` stops the build. `npm run build` and the Playwright web server both run it first.
+* `REPO_PUBLIC` in `src/lib/config.ts` says whether the GitHub repository is public; while it is `false` the page states
+  that the repository is private.
+* Routing uses the URL hash (`#/models`, `#/documents`): the server only ever sees the site root, so reloading or sharing
+  a link to any page works on GitHub Pages without a `404.html` fallback.
 
 ## How inference and the explorer work
 
@@ -80,5 +93,7 @@ npm run preview      # serves dist/ under /WriteRHand/
   The bundle tests are skipped locally when `public/bundle` is absent, but **fail** when `REQUIRE_BUNDLE=1` (CI and
   release) so a missing bundle can never pass silently.
 * `npm run test:e2e` (Playwright, Chromium): builds the site, serves it with the pinned bundle and drives it like a
-  visitor (draw, choose a model, look inside, step the animation, change the input). Set `PW_CHROMIUM` to an existing
+  visitor (draw, choose a model, look inside, step the animation, change the input). `e2e/documents.spec.ts`
+  checks the header GitHub link, the Documents page, the served PDFs against `docs.json`, the phone layout, reloading
+  `#/documents`, and that no request fails. Set `PW_CHROMIUM` to an existing
   browser binary to avoid a download.

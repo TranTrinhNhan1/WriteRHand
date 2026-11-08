@@ -1,15 +1,16 @@
 \section{Giới thiệu}
-Nhận dạng chữ số viết tay trên MNIST \citep{lecun1998} là bài toán phân lớp 10 lớp kinh điển của nhận dạng mẫu: mỗi ảnh xám $28\times28$ chứa một chữ số thuộc $\{0,1,\ldots,9\}$ đã được căn giữa. Đồ án này \emph{tự cài đặt} bốn bộ phân lớp thuộc bốn họ phương pháp khác nhau, cộng một mạng tích chập nhỏ làm phần mở rộng, -- mô hình sinh (Gaussian Naïve Bayes), mô hình tuyến tính phân biệt (hồi quy softmax huấn luyện bằng Gradient Descent), mạng nơ-ron nhiều lớp (MLP, lan truyền ngược) và ensemble (AdaBoost-SAMME) -- rồi so sánh chúng trên cùng một giao thức đánh giá về độ chính xác, thời gian huấn luyện, thời gian dự đoán và khả năng giải thích.
+\label{sec:intro}
+MNIST \citep{lecun1998} gồm ảnh xám $28\times28$ của các chữ số viết tay từ 0 đến 9, đã được đưa về cùng kích thước và căn giữa. Bộ dữ liệu đủ nhỏ để huấn luyện lặp lại nhiều lần nhưng các mô hình có giả thiết rất khác nhau về cấu trúc của ảnh cho kết quả chênh nhau hơn 17 điểm phần trăm (\cref{tab:accuracy}), nên phù hợp để so sánh có kiểm soát. Đồ án này cài đặt bốn bộ phân lớp đại diện cho bốn kiểu giả thiết: mô hình sinh với các pixel độc lập có điều kiện theo lớp (Gaussian Naïve Bayes), mô hình phân biệt tuyến tính (hồi quy softmax), mô hình phi tuyến có tham số (MLP) và ensemble tuần tự các cây quyết định (AdaBoost-SAMME). Một mạng tích chập (CNN) được thêm vào như phần mở rộng, vì nó khác MLP ở đúng một điểm: tận dụng quan hệ lân cận giữa các pixel qua trọng số dùng chung.
 
-\textbf{Quy ước ``from scratch''.} Phần tính toán lõi của mỗi thuật toán (ước lượng tham số, hàm mất mát, gradient, cập nhật, dựng cây, cập nhật trọng số boosting) do nhóm viết bằng NumPy. scikit-learn chỉ được dùng để \emph{đối chiếu} (kiểm thử và so sánh baseline); PyTorch chỉ cung cấp tensor và sinh số ngẫu nhiên cho MLP và CNN, \emph{không dùng autograd, \texttt{nn.Module}, \texttt{optim}, \texttt{F.conv2d} hay \texttt{F.max\_pool2d} để huấn luyện}.
+Báo cáo trả lời năm câu hỏi nghiên cứu:
+\begin{enumerate}[label=\textbf{RQ\arabic*.}]
+\item Bốn phương pháp bắt buộc so sánh với nhau thế nào trên MNIST dưới cùng một giao thức đánh giá?
+\item Độ phức tạp của mô hình ảnh hưởng thế nào đến độ chính xác, chi phí tính toán và khả năng tổng quát hóa?
+\item Điều gì thay đổi khi thay MLP bằng một CNN khai thác cấu trúc không gian?
+\item Tăng cường dữ liệu và các nhiễu loạn có kiểm soát ảnh hưởng thế nào đến độ bền của MLP và CNN?
+\item Các phương pháp có nhất quán trên Fashion-MNIST và EMNIST Digits không, và khả năng tổng quát hóa giữa các bộ dữ liệu bị giới hạn ra sao?
+\end{enumerate}
 
-\textbf{Đóng góp chính.}
-(i) Bốn bộ phân lớp với giao diện thống nhất, có kiểm thử đối chiếu scikit-learn và kiểm tra gradient bằng sai phân hữu hạn;
-(ii) một giao thức thực nghiệm nhất quán, không rò rỉ dữ liệu, điều khiển bằng dòng lệnh và ghi nhận bằng Weights \& Biases;
-(iii) các thí nghiệm siêu tham số với đầy đủ nhật ký, so sánh công bằng với scikit-learn;
-(iv) bản demo web chạy hoàn toàn trên trình duyệt (ONNX Runtime Web) và quy trình xuất/kiểm chứng mô hình;
-(v) các nghiên cứu mở rộng có đối chứng: Fashion-MNIST và EMNIST Digits, năm phép tăng cường dữ liệu, CNN so với MLP;
-(vi) một trình khám phá thực thi trên trình duyệt, dựng từ chính mô hình đã triển khai thông qua một hợp đồng vết có kiểm chứng.
-Toàn bộ mã nguồn, kết quả và notebook nằm trong kho GitHub của đồ án; mô hình đã huấn luyện được đưa lên Hugging Face Hub (Mục~\ref{sec:demo}).
+\textbf{Phạm vi tự cài đặt.} Theo đề bài, phần tính toán lõi của mỗi thuật toán do nhóm viết; scikit-learn chỉ dùng để đối chiếu, PyTorch chỉ cung cấp tensor và bộ sinh số ngẫu nhiên cho MLP và CNN (không dùng \texttt{autograd}, \texttt{nn.Module}, \texttt{optim} hay các lớp tích chập có sẵn để huấn luyện). \Cref{tab:scope} liệt kê chi tiết.
 
-\textbf{Bố cục.} Mục~\ref{sec:data} mô tả dữ liệu; Mục~\ref{sec:methods} trình bày lý thuyết và cài đặt; Mục~\ref{sec:protocol} giao thức thực nghiệm; Mục~\ref{sec:verification} kiểm chứng; Mục~\ref{sec:results} kết quả; Mục~\ref{sec:discussion} thảo luận; các mục cuối là mở rộng, kết luận, đóng góp nhóm và công bố việc sử dụng AI.
+Mục~\ref{sec:data} mô tả dữ liệu, mục~\ref{sec:methods} các phương pháp, mục~\ref{sec:protocol} giao thức thực nghiệm. Kết quả chính (RQ1, RQ2) ở mục~\ref{sec:results}, các thí nghiệm mở rộng (RQ3--RQ5) ở mục~\ref{sec:extensions}; mục~\ref{sec:discussion} trả lời từng câu hỏi và mục~\ref{sec:conclusion} nêu các giới hạn.

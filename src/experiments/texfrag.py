@@ -6,7 +6,7 @@ Everything is written to ``report/generated/``:
 * ``hardware.tex``     -- one-line description of the machine used for timings;
 * ``ntests.tex``       -- number of automatic tests (collected with pytest);
 * ``export_check.tex`` -- ONNX/JSON parity summary from ``artifacts/bundle/manifest.json``;
-* ``augmentation.tex`` -- table of the augmentation study;
+* augmentation tables are produced by ``extras_report.py`` (``augmentation_summary.tex``);
 * ``confusions.tex``   -- the most frequent confusions of each model;
 * ``sweeps.tex``       -- what each hyper-parameter sweep found (best/worst validation accuracy).
 """
@@ -146,86 +146,20 @@ def write_export_check(out_dir, artifacts_dir=ARTIFACTS_DIR):
     if not path.is_file():
         txt = "chưa chạy bước xuất mô hình trong lần biên dịch này"
     else:
-        man = json.loads(path.read_text(encoding="utf-8"))
-        man = man["datasets"]["mnist"]  # the sentence in the report is about MNIST
-        parts = []
-        for mid in ORDER:
-            m = man["models"].get(mid)
-            if not m:
-                continue
-            v = m["validation"]
-            parts.append(
-                f"{_tex(TITLE[mid])}: sai lệch xác suất lớn nhất ${v['max_abs_prob_diff']:.1e}$, "
-                f"trùng nhãn {_pct(v['argmax_agreement'])}\\% trên {v['n_checked']:,} ảnh".replace(
-                    ",", "\\,"
-                )
-            )
-        txt = "; ".join(parts)
+        man = json.loads(path.read_text(encoding="utf-8"))["datasets"]
+        vals = [m["validation"] for d in man.values() for m in d["models"].values()]
+        n_models = len(vals)
+        worst = max(v["max_abs_prob_diff"] for v in vals)
+        agree = min(v["argmax_agreement"] for v in vals)
+        n_img = min(v["n_checked"] for v in vals)
+        mant, _, exp = f"{worst:.1e}".partition("e")
+        worst_tex = f"{mant}\\times10^{{{int(exp)}}}"
+        txt = (
+            f"với {n_models} mô hình xuất ra, sai lệch xác suất lớn nhất giữa ONNX (hoặc bộ đánh giá nhị phân) "
+            f"và mô hình Python là ${worst_tex}$ và độ trùng nhãn thấp nhất là {_pct(agree)}\\%"
+            f" (trên {n_img:,} ảnh test cho mỗi mô hình)"
+        ).replace(f"{n_img:,}", f"{n_img:,}".replace(",", "\\,"))
     (out_dir / "export_check.tex").write_text(txt + "%\n", encoding="utf-8")
-
-
-AUG_NAME = {
-    "baseline": "Không tăng cường",
-    "rotation": "Xoay",
-    "translation": "Dịch chuyển",
-    "scaling": "Co giãn",
-    "gaussian_noise": "Nhiễu Gauss",
-    "salt_pepper": "Nhiễu muối tiêu",
-    "geometric": "Hình học (xoay, dịch, co giãn)",
-    "all": "Cả năm phép",
-}
-
-
-def write_augmentation(results_dir, out_dir):
-    """One table per model (``augmentation_mlp.tex``, ``augmentation_cnn.tex``)."""
-    from src.experiments.augment import TRANSFORMS
-
-    for kind in ("mlp", "cnn"):
-        path = Path(results_dir) / f"augmentation_{kind}.json"
-        target = out_dir / f"augmentation_{kind}.tex"
-        if not path.is_file():
-            target.write_text(
-                f"\\emph{{Chưa chạy thí nghiệm tăng cường dữ liệu cho {kind.upper()}.}}\n",
-                encoding="utf-8",
-            )
-            continue
-        r = json.loads(path.read_text(encoding="utf-8"))
-        rows = []
-        for key, c in r["conditions"].items():
-            n = c["runs"][0]["n_train"]
-            d = c.get("val_delta_vs_baseline_mean", 0.0)
-            sd = c.get("val_delta_vs_baseline_sd", 0.0)
-            rob = c["robust_test_acc_mean"]
-            rows.append(
-                f"{AUG_NAME.get(key, _tex(key))} & {f'{n:,}'.replace(',', chr(92) + ',')} & "
-                + f"{_pct(c['val_acc_mean'])} $\\pm$ {_pct(c['val_acc_std'])} & "
-                f"{100 * d:+.2f} $\\pm$ {100 * sd:.2f} & "
-                f"{_pct(c['test_acc_mean'])} & "
-                + " & ".join(_pct(rob[t], 1) for t in TRANSFORMS)
-                + " \\\\"
-            )
-        seeds = ", ".join(str(s) for s in r["seeds"])
-        tex = [
-            r"\begin{table}[H]\centering\scriptsize",
-            r"\setlength{\tabcolsep}{3pt}",
-            r"\begin{tabular}{lrrrrrrrrr}",
-            r"\toprule",
-            r" & & \multicolumn{2}{c}{Validation} & Test & \multicolumn{5}{c}{Test sau nhiễu (\%)} \\",
-            r"\cmidrule(lr){3-4}\cmidrule(lr){6-10}",
-            r"Điều kiện & Số mẫu & Acc (\%) & $\Delta$ so với gốc & Acc (\%) & Xoay & Dịch & Co giãn & Gauss & Muối tiêu \\",
-            r"\midrule",
-            *rows,
-            r"\bottomrule",
-            r"\end{tabular}",
-            f"\\caption{{{kind.upper()} với cấu hình đã chọn, huấn luyện lại với {len(r['seeds'])} seed ({seeds}) "
-            f"cho mỗi điều kiện; $\\Delta$ là hiệu validation accuracy so với điều kiện gốc \\emph{{cùng seed}} "
-            f"(trung bình $\\pm$ độ lệch chuẩn mẫu). {r['k_copies']} bản sao biến đổi cho mỗi ảnh train; điều kiện "
-            f"được chọn chỉ theo validation (\\texttt{{{_tex(r['selected_by_validation'])}}}). Các cột ``Test sau nhiễu'' "
-            f"đo độ bền trên tập test bị biến đổi ở mức mạnh hơn mức huấn luyện, chỉ để báo cáo.}}",
-            f"\\label{{tab:augmentation-{kind}}}",
-            r"\end{table}",
-        ]
-        target.write_text("\n".join(tex) + "\n", encoding="utf-8")
 
 
 def write_confusions(data, out_dir):
@@ -283,7 +217,6 @@ def write_fragments(results_dir, out_dir=None, artifacts_dir=ARTIFACTS_DIR, coun
     if count_tests:
         write_ntests(out_dir)
     write_export_check(out_dir, artifacts_dir)
-    write_augmentation(results_dir, out_dir)
     write_confusions(data, out_dir)
     write_sweeps(data, out_dir)
     return out_dir

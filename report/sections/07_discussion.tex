@@ -1,41 +1,25 @@
 \section{Thảo luận}
 \label{sec:discussion}
 
-\subsection{Độ chính xác, thời gian và khả năng giải thích}
-Bốn mô hình nằm trên một đường đánh đổi khá rõ giữa độ chính xác, chi phí và độ dễ đọc (\cref{tab:accuracy,tab:time}).
+\subsection{RQ1 và RQ2: thứ hạng, độ phức tạp và chi phí}
+Dữ liệu cho thấy hai khoảng cách có bản chất khác nhau. Khoảng cách giữa Naïve Bayes, softmax và ba mô hình còn lại (từ $5.7$ đến $17$ điểm) lớn hơn mọi nguồn nhiễu đã đo và có thể gắn với giả thiết của từng mô hình. Khoảng cách giữa MLP, AdaBoost và CNN (dưới $1.2$ điểm) cùng bậc với độ lệch chuẩn giữa các seed ($0.29$ điểm ở MLP), nên chỉ riêng thứ tự CNN trên MLP được các seed hỗ trợ.
 
-\textbf{Naïve Bayes} (\accTestNB\%) rẻ nhất: huấn luyện trong \fitNB\,s, vì chỉ cần trung bình và phương sai từng pixel theo lớp. Nhưng giả thiết các pixel độc lập có điều kiện theo lớp sai với ảnh chữ số, nơi các pixel lân cận tương quan mạnh. Hệ quả thấy rõ ở bước chọn siêu tham số: với \texttt{var\_smoothing} mặc định $10^{-9}$ validation chỉ đạt khoảng 56\%, và tăng lên $0.1$ mới đạt \accValNB\%. Giải thích hợp lý (chúng tôi chưa kiểm chứng riêng): nhiều pixel ở rìa ảnh gần như luôn bằng 0 nên phương sai ước lượng rất nhỏ, và một pixel hiếm khi sáng lên cũng đủ kéo log-likelihood của lớp đó xuống rất thấp; làm trơn phương sai bù lại điều này. Đổi lại, mô hình dễ giải thích nhất: ảnh trung bình của từng lớp (\cref{fig:interp}, hàng đầu) cho biết nó ``nhìn thấy'' gì.
+\textbf{Naïve Bayes.} Hệ số tương quan trung bình $\corrAdj$ giữa hai pixel kề nhau trong cùng một lớp mâu thuẫn trực tiếp với giả thiết độc lập có điều kiện: khi các pixel tương quan, tổng log-likelihood của \cref{eq:nb} cộng cùng một thông tin nhiều lần. Bằng chứng gián tiếp là validation accuracy chỉ $56.05\%$ ở mức làm trơn mặc định và $79.67\%$ sau khi chỉnh \texttt{var\_smoothing}, trong khi accuracy train và validation gần như trùng nhau (\cref{fig:sweeps}a): lỗi đến từ giả thiết của mô hình chứ không từ overfitting. Chúng tôi chưa làm thí nghiệm khử tương quan (ví dụ PCA trước Naïve Bayes) để xác nhận cơ chế này.
 
-\textbf{Softmax} (\accTestSM\%) là mô hình tuyến tính: mỗi lớp là một mẫu (template) $w_k$ và lớp nào có điểm $w_k^\top x+b_k$ cao nhất thì thắng. Nó nhanh (\fitSM\,s huấn luyện, \latSM\,ms mỗi ảnh) nhưng bị giới hạn bởi biên quyết định tuyến tính. Trọng số (\cref{fig:interp}, hàng hai) đọc được ở mức mờ: có vệt dương/âm theo nét của chữ số, song nhiễu hơn ảnh trung bình của Naïve Bayes.
+\textbf{Softmax.} Accuracy trên chính tập train chỉ đạt $93.62\%$, thấp hơn nhiều so với MLP ($99.87\%$), tức là mô hình tuyến tính bị giới hạn bởi dung lượng (độ chệch cao) chứ không bởi sai khác giữa train và test. Lớp ẩn phi tuyến của MLP nâng test accuracy thêm $5.7$ điểm, tức MLP biểu diễn được những biên quyết định mà siêu phẳng không biểu diễn được.
 
-\textbf{MLP} (\accTestMLP\%) là mô hình tốt nhất và vẫn rẻ: \fitMLP\,s huấn luyện vì dừng sớm ở epoch 14 (khôi phục epoch 9). Đổi lại, các đơn vị lớp ẩn (\cref{fig:interp}, hàng ba) gần như không đọc được bằng mắt. Chênh lệch giữa train (\accTrainMLP\%) và test (\accTestMLP\%) khoảng \gapMLP{} điểm phần trăm; dropout không giúp thêm ở lượt quét (khoảng \texttt{p\_drop}=0.2 chỉ sát giá trị 0, trong phạm vi nhiễu).
+\textbf{MLP và CNN.} MLP có độ chệch thấp (train $99.87\%$) và khoảng cách $1.63$ điểm đến test. CNN có ít tham số hơn $9.4$ lần nhưng chính xác hơn và ít chênh giữa train và test; kết hợp với kết quả dịch ảnh ở \cref{fig:cnn-vs-mlp}b, điều này phù hợp với lập luận rằng chia sẻ trọng số và gộp cục bộ đưa vào một ràng buộc đúng với dữ liệu ảnh, nhưng thí nghiệm hiện tại không tách riêng từng thành phần.
 
-\textbf{AdaBoost} (\accTestADA\%) đạt độ chính xác cao nhưng đắt nhất mọi mặt: \fitADA\,s huấn luyện, \predADA\,s cho $10\,000$ ảnh test, \latADA\,ms cho một ảnh vì phải duyệt $393$ cây, và tệp xuất ra nặng hơn $15$\,MiB. Độ chính xác train đạt \accTrainADA\% từ rất sớm (\cref{fig:curves}c) trong khi validation vẫn tăng chậm theo số vòng; đây là hành vi quen thuộc của boosting với cây sâu: sai số huấn luyện về 0 không có nghĩa là hết khả năng tổng quát hóa. Mô hình có một dạng giải thích riêng: tần suất các pixel được dùng để chia nhánh (\cref{fig:interp}, hàng cuối) tập trung ở vùng trung tâm, nơi có nét chữ. Điểm số của nó là tỉ lệ phiếu, \emph{chưa hiệu chỉnh} thành xác suất.
+\textbf{AdaBoost.} Accuracy tăng đơn điệu theo độ sâu cây và số vòng (\cref{fig:sweeps}d, \cref{fig:curves}c) và ensemble đạt $97.60\%$ với các cây sâu tối đa $10$. Cái giá cụ thể là \fitADA\,s huấn luyện, \latADA\,ms mỗi ảnh và tệp $9.2$\,MiB (\cref{tab:cost}); độ trễ này phụ thuộc vào cài đặt Python và không chỉ vào $O(Td)$. Chúng tôi không có baseline một cây đơn, nên không định lượng được phần lợi riêng của việc kết hợp $393$ cây so với một cây sâu.
 
-\begin{figure}[H]
+\textbf{Khả năng giải thích.} \Cref{fig:interp} cho thấy các mô hình khác nhau ở mức độ có thể đọc được tham số. Ảnh trung bình theo lớp của Naïve Bayes là tham số $\mu_{kj}$ của chính mô hình; trọng số softmax là một khuôn mẫu trên mỗi lớp, đọc được ở mức mờ; các đơn vị ẩn đầu tiên của MLP gần như không đọc được bằng mắt; bản đồ tần suất chia nhánh của AdaBoost tập trung ở vùng trung tâm ảnh. Những hình này mô tả tham số hoặc thống kê của mô hình, không giải thích vì sao một ảnh cụ thể bị phân vào một lớp, và độ dễ đọc ở đây là nhận xét định tính, không phải một đại lượng đo được.
+
+\begin{figure}[tbp]
 \centering
-\includegraphics[width=\textwidth]{../results/figures/interpretability.pdf}
-\caption{Cái mà mỗi mô hình ``học'': ảnh trung bình theo lớp của Naïve Bayes, trọng số softmax (đỏ dương, xanh âm), một số đơn vị ẩn đầu tiên của MLP và bản đồ tần suất chia nhánh của AdaBoost.}
+\includegraphics[width=0.88\textwidth]{../results/figures/interpretability.pdf}
+\caption{Tham số hoặc thống kê của từng mô hình: ảnh trung bình theo lớp (Naïve Bayes), trọng số theo lớp (softmax; đỏ dương, xanh âm), các đơn vị ẩn đầu tiên của MLP, và tần suất pixel được dùng để chia nhánh (AdaBoost).}
 \label{fig:interp}
 \end{figure}
 
-\subsection{Những chữ số bị nhầm}
-Cặp nhầm nhiều nhất của từng mô hình (nhãn thật$\to$nhãn dự đoán, số ảnh) trong tập test:
-\input{generated/confusions}
-Cả bốn mô hình đều nhầm $4\to9$ hoặc $7\to9$ và $5\to3$: những cặp có nét chung (đầu chữ 4 và chữ 9 khép hay hở, nét ngang của 7). Với Naïve Bayes riêng cặp $4\to9$ chiếm tới 284 trong \errorsNB{} lỗi. Với MLP, chỉ \errorsMLP{} ảnh sai, và một số ảnh sai là những chữ khó đọc ngay cả với người (\cref{fig:errors}); nên một phần lỗi còn lại có thể đến từ chính nhãn và nét chữ mơ hồ chứ không chỉ từ mô hình.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\textwidth]{../results/figures/errors.pdf}
-\caption{Hai mươi ảnh test đầu tiên MLP dự đoán sai (nhãn thật$\to$dự đoán).}
-\label{fig:errors}
-\end{figure}
-
-\subsection{Giới hạn của kết quả}
-\begin{itemize}
-\item \textbf{Một seed.} Mỗi mô hình chính chỉ được huấn luyện một lần (seed 42) và chỉ có một phép chia train/validation. Riêng MLP chúng tôi có ba seed trong thí nghiệm tăng cường (\cref{tab:augmentation-mlp}): độ lệch chuẩn của test accuracy giữa các seed là cỡ vài phần mười điểm phần trăm, tức cùng bậc với chênh lệch giữa MLP và scikit-learn.
-\item \textbf{Quét tuần tự.} Coordinate descent một vòng không xét tương tác giữa các siêu tham số (ví dụ learning rate tối ưu phụ thuộc kích thước batch và momentum) và có thể bỏ lỡ tổ hợp tốt hơn. Thứ tự quét cũng ảnh hưởng đến kết quả.
-\item \textbf{Chọn trên validation, báo cáo trên test.} Test chỉ được dùng một lần cho mỗi cấu hình cuối cùng. Với Naïve Bayes, test cao hơn validation (\accTestNB\% so với \accValNB\%), điều thường thấy ở MNIST vì tập test chính thức dễ hơn một chút; chúng tôi không dùng điều này để chọn gì.
-\item \textbf{Một máy, CPU, có nhiễu.} Thời gian đo trên một máy; không dùng GPU. Một số lượt chạy (các baseline scikit-learn, tuning) có thể trùng thời gian với công việc khác nên chỉ dùng để so bậc độ lớn.
-\item \textbf{Phạm vi.} Kết quả chỉ nói về MNIST: ảnh $28\times28$, căn giữa, một chữ số. Bản demo web cắt, thu nhỏ và căn giữa nét vẽ theo cách của MNIST nhưng chữ viết trên màn hình vẫn khác phân phối huấn luyện, nên có thể sai ở những ca MLP không sai trên tập test.
-\end{itemize}
+\subsection{RQ3--RQ5: CNN, tăng cường dữ liệu và bộ dữ liệu khác}
+Thứ tự CNN trên MLP nhất quán qua các seed (mục~\ref{sec:results}) và qua hai bộ chữ số, nhưng không nhất quán trên Fashion-MNIST, nơi hai mô hình ngang nhau; lợi thế rõ nhất của CNN nằm ở độ bền với phép dịch và ở kích thước mô hình hơn là ở độ chính xác trên ảnh sạch. Tăng cường dữ liệu chủ yếu cải thiện độ bền với đúng loại biến đổi; tác dụng lên ảnh sạch chưa được tách khỏi hiệu ứng lượng dữ liệu, và với CNN việc chọn nhầm loại biến đổi có thể làm giảm độ bền với loại khác. Khi chuyển bộ dữ liệu, thứ hạng giữa các mô hình thay đổi ít giữa MNIST và EMNIST Digits nhưng nhiều hơn ở Fashion-MNIST, và việc đưa một mô hình ra ngoài bộ dữ liệu huấn luyện làm giảm accuracy từ $6.5$ đến $40.2$ điểm; chênh lệch giữa mô hình có cấu trúc không gian và mô hình không có là lớn nhất ở phép kiểm tra chéo đó.

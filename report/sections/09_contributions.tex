@@ -1,0 +1,21 @@
+\section{Phân công công việc và công bố sử dụng AI}
+\label{sec:contrib}
+\textbf{Phân công.} Bảng dưới đây chỉ ghi những gì kiểm chứng được từ lịch sử Git của kho mã (\texttt{git shortlog}, các pull request \#1--\#4 và \texttt{WORKFLOW.md}); tỉ lệ đóng góp do hai thành viên tự thống nhất và xác nhận, không suy ra từ số commit.
+
+\begin{table}[tbp]
+\centering\small
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{3.3cm}p{1.9cm}>{\raggedright\arraybackslash}p{7.6cm}p{1.1cm}@{}}
+\toprule
+Thành viên & MSSV & Công việc có bằng chứng trong kho mã & Tỉ lệ \\
+\midrule
+Lâm Nhật Tiến (GitHub: Tien-Lam28) & 24280029 &
+23 commit (13/10--06/11/2026) và PR \#1--\#4: dựng kho, README và \texttt{WORKFLOW.md}, tải và tiền xử lý dữ liệu, lớp cha \texttt{BaseClassifier}, độ đo, \texttt{Evaluator}, K-fold, Gaussian NB, bản đầu của MLP, EDA, notebook trực quan; được phân công Naïve Bayes và MLP. & 50\% \\
+\addlinespace
+Trần Trinh Nhân (GitHub: TranTrinhNhan1) & 24280088 &
+Khởi tạo kho; được phân công mô hình tuyến tính, ensemble và phần mở rộng. Giai đoạn hoàn thiện (softmax, AdaBoost-SAMME, tái cấu trúc MLP và độ đo, bộ kiểm thử, pipeline thực nghiệm, CNN, các thí nghiệm mở rộng, xuất mô hình, website, báo cáo, slide) được thực hiện cùng trợ lý AI như công bố dưới đây. & 50\% \\
+\bottomrule
+\end{tabular}
+\caption{Phân công và tỉ lệ đóng góp.}
+\end{table}
+
+\textbf{Công bố sử dụng AI.} Theo phụ lục của đề bài, nhóm công bố rằng phần hoàn thiện đồ án sau commit \texttt{f9a602b} được viết với sự hỗ trợ của trợ lý lập trình AI Claude Code (Anthropic): \texttt{SoftmaxRegression}, \texttt{AdaBoostSAMME} và cây quyết định có trọng số, các sửa đổi cho \texttt{MLP}, độ đo, tiền xử lý và \texttt{Evaluator}, bộ kiểm thử, pipeline thực nghiệm và tích hợp Weights \& Biases, CNN, các thí nghiệm mở rộng, quy trình xuất ONNX và Hugging Face, website và trình khám phá, notebook tái lập, mã LaTeX của báo cáo và slide. Trợ lý đã chạy mã, kiểm thử và thí nghiệm trong môi trường của nhóm; các con số trong báo cáo được sinh từ tệp kết quả do chương trình ghi. Các thành viên chịu trách nhiệm về mã nộp và phải đọc, hiểu và giải thích được nó. Mức hỗ trợ của AI ở giai đoạn trước commit \texttt{f9a602b}: \todo{Nhóm cần tự xác nhận và điền: có hay không dùng công cụ AI, công cụ nào, cho phần nào}. Các tài liệu tham khảo được kiểm tra thủ công về sự tồn tại và thông tin thư mục.

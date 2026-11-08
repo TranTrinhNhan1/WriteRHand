@@ -1,142 +1,121 @@
 % !TEX program = pdflatex
-\documentclass[11pt,a4paper]{article}
+\documentclass[10pt,a4paper]{article}
 
-% ---- encoding / fonts (Vietnamese via T5 + Latin Modern) -------------------------------
+% ---- encoding and fonts: Latin Modern (Computer Modern) with the T5 Vietnamese encoding ----
 \usepackage[T5]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
 \usepackage{microtype}
 
-% ---- layout -------------------------------------------------------------------------------
-\usepackage[a4paper,margin=2.4cm,headheight=24pt,headsep=14pt]{geometry}
+% ---- layout --------------------------------------------------------------------------------
+\usepackage[a4paper,left=2.4cm,right=2.4cm,top=2.3cm,bottom=2.4cm]{geometry}
 \usepackage{setspace}
-\setstretch{1.08}
-\usepackage{parskip}
-\setlength{\parskip}{4pt}
+\setstretch{1.07}
 \usepackage[dvipsnames,table]{xcolor}
+\definecolor{navy}{HTML}{1B3A63}
 \usepackage{titlesec}
-\titleformat{\section}{\sffamily\Large\bfseries\color{moss}}{\thesection}{0.7em}{}[{\color{moss!40}\titlerule[0.6pt]}]
-\titleformat{\subsection}{\sffamily\large\bfseries\color{ink}}{\thesubsection}{0.6em}{}
-\titlespacing*{\section}{0pt}{14pt}{5pt}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.7em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}[runin]{\normalsize\itshape}{}{0pt}{}[.]
+\titlespacing*{\section}{0pt}{13pt}{5pt}
 \titlespacing*{\subsection}{0pt}{9pt}{3pt}
 \usepackage{fancyhdr}
 \usepackage{lastpage}
-\definecolor{ink}{HTML}{1F2A24}
-\definecolor{moss}{HTML}{2F5F3C}
-\definecolor{mist}{HTML}{EEF2EC}
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\sffamily\small\color{black!60}Nhận dạng chữ số MNIST}
-\fancyhead[R]{\sffamily\small\color{black!60}Nhận dạng mẫu -- Đồ án giữa kỳ}
-\fancyfoot[C]{\small\color{black!60}\thepage\,/\,\pageref{LastPage}}
-\renewcommand{\headrulewidth}{0.3pt}
-\renewcommand{\headrule}{\hbox to\headwidth{\color{black!25}\leaders\hrule height \headrulewidth\hfill}}
-\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\small\color{black!60}\thepage\,/\,\pageref{LastPage}}\renewcommand{\headrulewidth}{0pt}}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\small\thepage}\renewcommand{\headrulewidth}{0pt}}
 
-% ---- math / tables / figures ----------------------------------------------------------------
+% ---- mathematics, tables, figures -----------------------------------------------------------
 \usepackage{amsmath,amssymb,mathtools,bm}
-\usepackage{booktabs,multirow,array}
+\usepackage{booktabs,array}
 \usepackage{graphicx}
 \usepackage{caption,subcaption}
-\captionsetup{font=small,labelfont={sf,bf,color=moss},labelsep=period,margin=8pt}
+\captionsetup{font=small,labelfont=bf,labelsep=period,margin=6pt}
+\captionsetup[subfigure]{font=small,labelfont=rm}
 \usepackage{float}
 \usepackage{enumitem}
-\setlist{nosep,leftmargin=1.4em}
-\usepackage{tcolorbox}
-\tcbuselibrary{breakable,skins}
-\usepackage{listings}
+\setlist{nosep,leftmargin=1.5em}
 \usepackage[numbers,sort&compress]{natbib}
+\setlength{\bibsep}{2pt}
 \usepackage{xurl}
-\usepackage[colorlinks=true,linkcolor=moss,citecolor=moss,urlcolor=moss,pdftitle={Nhận dạng chữ số viết tay MNIST},pdfauthor={Trần Trinh Nhân; Lâm Nhật Tiến}]{hyperref}
+\usepackage[colorlinks=true,linkcolor=navy,citecolor=navy,urlcolor=navy,
+  pdftitle={So sánh các bộ phân lớp tự cài đặt trên MNIST},
+  pdfauthor={Trần Trinh Nhân; Lâm Nhật Tiến}]{hyperref}
 \usepackage[nameinlink]{cleveref}
-\usepackage{tikz}
 
-% Vietnamese names for generated labels (no babel-vietnamese on this system)
+% Vietnamese names for generated labels (babel-vietnamese is not installed on the build machine)
 \renewcommand{\figurename}{Hình}
 \renewcommand{\tablename}{Bảng}
 \renewcommand{\refname}{Tài liệu tham khảo}
-\renewcommand{\contentsname}{Mục lục}
 \renewcommand{\abstractname}{Tóm tắt}
+\renewcommand{\appendixname}{Phụ lục}
 \crefname{table}{bảng}{bảng}\Crefname{table}{Bảng}{Bảng}
 \crefname{figure}{hình}{hình}\Crefname{figure}{Hình}{Hình}
-\crefname{section}{Mục}{Mục}\Crefname{section}{Mục}{Mục}
-\crefname{subsection}{Mục}{Mục}\Crefname{subsection}{Mục}{Mục}
-\crefname{appendix}{Phụ lục}{Phụ lục}\Crefname{appendix}{Phụ lục}{Phụ lục}
+\crefname{section}{mục}{mục}\Crefname{section}{Mục}{Mục}
+\crefname{subsection}{mục}{mục}\Crefname{subsection}{Mục}{Mục}
+\crefname{appendix}{phụ lục}{phụ lục}\Crefname{appendix}{Phụ lục}{Phụ lục}
 \crefname{equation}{công thức}{công thức}\Crefname{equation}{Công thức}{Công thức}
+\crefname{algorithm}{thuật toán}{thuật toán}\Crefname{algorithm}{Thuật toán}{Thuật toán}
 \providecommand{\crefpairconjunction}{}\providecommand{\crefmiddleconjunction}{}\providecommand{\creflastconjunction}{}
 \renewcommand{\crefpairconjunction}{ và }\renewcommand{\crefmiddleconjunction}{, }\renewcommand{\creflastconjunction}{ và }
 
-\renewcommand{\arraystretch}{1.15}
-\setlength{\heavyrulewidth}{0.9pt}
+\renewcommand{\arraystretch}{1.12}
+\setlength{\heavyrulewidth}{0.8pt}
+\setlength{\parindent}{1.2em}
+\setlength{\parskip}{0pt}
+\renewcommand{\topfraction}{0.9}\renewcommand{\bottomfraction}{0.8}\renewcommand{\textfraction}{0.1}\renewcommand{\floatpagefraction}{0.75}
+\setlength{\textfloatsep}{12pt plus 2pt minus 2pt}
+\setlength{\floatsep}{10pt plus 2pt minus 2pt}
+\setlength{\intextsep}{10pt plus 2pt minus 2pt}
 
-% ---- helpers ------------------------------------------------------------------------------------
+% ---- notation helpers ---------------------------------------------------------------------------
 \DeclareMathOperator*{\argmax}{arg\,max}
-\DeclareMathOperator*{\argmin}{arg\,min}
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\indic}[1]{\mathbb{1}\!\left[#1\right]}
-\newcommand{\todo}[1]{\textcolor{BrickRed}{\textbf{[#1]}}}   % only for admin data the group must fill
-\newenvironment{algo}[1]{%
-  \begin{tcolorbox}[breakable,colback=black!2,colframe=black!35,boxrule=0.4pt,arc=2pt,
-    left=6pt,right=6pt,top=4pt,bottom=4pt,title={\small\bfseries #1},
-    coltitle=black,colbacktitle=black!8,fonttitle=\small]\small\begin{enumerate}[label=\arabic*.,itemsep=1pt]}%
-  {\end{enumerate}\end{tcolorbox}}
+% only for administrative information that the group itself has to supply
+\newcommand{\todo}[1]{\textcolor{BrickRed}{\textbf{[#1]}}}
+
+% Pseudo-code block: ruled, numbered steps, no colour
+\newcounter{algocount}
+\newenvironment{algo}[2]{%
+  \par\medskip\refstepcounter{algocount}\label{#2}\noindent\hrule height 0.8pt\vspace{3pt}
+  \noindent\textbf{Thuật toán \thealgocount.} #1\par\vspace{3pt}\hrule height 0.4pt\vspace{2pt}
+  \begin{enumerate}[label=\arabic*:,itemsep=1pt,topsep=2pt,leftmargin=1.6em]\small}%
+  {\end{enumerate}\vspace{1pt}\hrule height 0.8pt\medskip}
 
 \input{generated/numbers}
 \input{generated/mcnemar}
+\input{generated/cross_eval_numbers}
+\input{generated/eda_stats}
 
 \begin{document}
-\begin{titlepage}
-\thispagestyle{empty}
-\begin{tikzpicture}[remember picture,overlay]
-  \fill[moss] (current page.north west) rectangle ([yshift=-6.2cm]current page.north east);
-  \node[anchor=north west,text=white,font=\sffamily\small\bfseries,xshift=2.4cm,yshift=-1.6cm] at (current page.north west)
-    {MÔN NHẬN DẠNG MẪU (PATTERN RECOGNITION)};
-  \node[anchor=south west,text=white,font=\sffamily\Huge\bfseries,align=left,xshift=2.4cm,yshift=1.2cm]
-    at ([yshift=-6.2cm]current page.north west)
-    {Nhận dạng chữ số\\viết tay MNIST};
-\end{tikzpicture}
-\vspace*{6.4cm}
 
-{\sffamily\Large\color{ink} Bốn bộ phân lớp tự cài đặt (Gaussian Naïve Bayes, hồi quy softmax, MLP, AdaBoost-SAMME) và một CNN nhỏ}
+\begin{center}
+{\LARGE\bfseries So sánh các bộ phân lớp tự cài đặt\\[2pt] trên bài toán nhận dạng chữ số viết tay MNIST}\\[10pt]
+{\large Đồ án giữa kỳ, môn Nhận dạng}\\[3pt]
+Khoa Toán -- Tin học, Trường Đại học Khoa học Tự nhiên, ĐHQG-HCM\\[9pt]
+Trần Trinh Nhân (24280088) \quad Lâm Nhật Tiến (24280029)\\[3pt]
+{\small Mã nguồn: \url{https://github.com/TranTrinhNhan1/WriteRHand}\quad
+Bản chạy thử: \url{https://trantrinhnhan1.github.io/WriteRHand/}}
+\end{center}
+\vspace{4pt}
 
-\vspace{1.2cm}
-{\sffamily\large\bfseries\color{moss} Đồ án giữa kỳ}
-
-\medskip
-So sánh trên cùng một giao thức không rò rỉ dữ liệu, có đối chiếu với scikit-learn; mở rộng sang Fashion-MNIST, EMNIST Digits, tăng cường dữ liệu và trình khám phá thực thi chạy trong trình duyệt.
-
-\vfill
-\renewcommand{\arraystretch}{1.5}
-\begin{tabular}{@{}p{4.6cm}p{3.4cm}p{3cm}@{}}
-\textbf{Thành viên} & \textbf{MSSV} & \textbf{Đóng góp}\\
-\midrule
-Trần Trinh Nhân & 24280088 & 50\%\\
-Lâm Nhật Tiến  & 24280029 & 50\%\\
-\end{tabular}
-
-\bigskip
-{\small\color{black!60} Mã nguồn: \url{https://github.com/TranTrinhNhan1/WriteRHand}\\
-Ngày biên dịch: \number\day/\number\month/\number\year}
-\end{titlepage}
-
-\pagenumbering{arabic}
 \input{sections/00_abstract}
-\tableofcontents
-\newpage
 \input{sections/01_intro}
 \input{sections/02_data}
 \input{sections/03_methods}
 \input{sections/04_protocol}
-\input{sections/05_verification}
-\input{sections/06_results}
+\input{sections/05_results}
+\input{sections/06_extensions}
 \input{sections/07_discussion}
-\input{sections/08_extensions}
-\input{sections/09_conclusion}
-\input{sections/10_contributions}
+\input{sections/08_conclusion}
+\input{sections/09_contributions}
 
 \bibliographystyle{plainnat}
 \bibliography{references}
 
 \appendix
-\input{sections/11_appendix}
+\input{sections/10_appendix}
 \end{document}

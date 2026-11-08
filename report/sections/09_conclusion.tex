@@ -1,8 +1,0 @@
-\section{Kết luận}
-\label{sec:conclusion}
-
-Nhóm đã tự cài đặt và so sánh bốn bộ phân lớp, cùng một CNN nhỏ làm phần mở rộng, trên MNIST với cùng một giao thức không rò rỉ. CNN cho kết quả tốt nhất (\accTestCNN\% trên test, với khoảng một phần mười số tham số của MLP, đổi lại huấn luyện và suy luận chậm hơn); trong bốn bộ phân lớp chính, MLP tốt nhất (\accTestMLP\%) với chi phí nhỏ; AdaBoost-SAMME gần sát (\accTestADA\%) nhưng đắt hơn nhiều về thời gian huấn luyện và dự đoán; softmax (\accTestSM\%) là lựa chọn nhanh và dễ đọc; Naïve Bayes (\accTestNB\%) là mốc đơn giản nhất và bộc lộ rõ cái giá của giả thiết độc lập. Kết quả của các bản tự cài đặt khớp scikit-learn ở mức cho phép của từng thuật toán, và bản xuất ONNX khớp bản Python.
-
-Bài học thực nghiệm lớn nhất: phần lớn lợi ích đến từ \emph{chọn cấu hình bằng validation một cách có kỷ luật} (ví dụ \texttt{var\_smoothing} cho Naïve Bayes, độ sâu cây cho AdaBoost, hình dạng mạng cho MLP), và từ việc ghi lại trung thực cả những thí nghiệm không rõ ràng (tăng cường dữ liệu không cải thiện chắc chắn độ chính xác trên ảnh sạch với số seed đã chạy, nhưng cải thiện rõ độ bền với đúng loại biến đổi được huấn luyện).
-
-\textbf{Hướng tiếp theo.} Chạy nhiều seed và nhiều phép chia cho mọi mô hình để có khoảng tin cậy thật; tìm kiếm tương tác siêu tham số (ví dụ tìm ngẫu nhiên hoặc Bayes) trong cùng ngân sách; tách riêng tác động của việc có thêm dữ liệu khỏi tác động của loại biến đổi trong tăng cường; đối chiếu bản đồ kích hoạt với một phương pháp quy gán đã được kiểm chứng; hiệu chỉnh xác suất của AdaBoost; và kiểm tra bản demo trên dữ liệu viết tay thật ngoài MNIST.

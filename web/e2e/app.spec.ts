@@ -1,12 +1,11 @@
 import { expect, test, type Page } from '@playwright/test'
+import { MODEL_TITLES, answers, card, predicted, waitAllAnswered } from './helpers'
 
 /**
  * Browser end-to-end tests against the production build and the pinned model bundle.
  * They exercise what a visitor does: draw, pick a model, look inside, step through the computation,
  * and switch the input. Nothing here is mocked; the models are the deployed ONNX/binary files.
  */
-
-const MODEL_TITLES = ['Naive Bayes', 'Softmax regression', 'MLP', 'CNN', 'AdaBoost']
 
 test.beforeEach(async ({ page }) => {
   const problems: string[] = []
@@ -21,40 +20,6 @@ test.beforeEach(async ({ page }) => {
 test.afterEach(async ({ page }) => {
   expect((page as Page & { problems: string[] }).problems, 'no runtime errors').toEqual([])
 })
-
-const answers = (page: Page) => page.getByRole('region', { name: 'Câu trả lời' })
-const card = (page: Page, title: string) =>
-  answers(page).getByRole('listitem').filter({ has: page.getByRole('heading', { level: 3, name: title, exact: true }) })
-
-/** the class a model card currently reports (first paragraph of the card after the size) */
-async function predicted(page: Page, title: string) {
-  const bars = card(page, title).getByRole('list', { name: /Đầu ra cho từng lớp/ }).getByRole('listitem')
-  const texts = await bars.allInnerTexts()
-  let best = -1
-  let bestVal = -1
-  texts.forEach((t, i) => {
-    const m = /(\d+):\s*([\d.,]+)%/.exec(t)
-    if (m && Number(m[2].replace(',', '.')) > bestVal) {
-      bestVal = Number(m[2].replace(',', '.'))
-      best = Number(m[1])
-    }
-    void i
-  })
-  return best
-}
-
-/** AdaBoost's 9 MB ensemble is loaded on request (not on every drawing): click its load button. */
-async function loadAdaBoost(page: Page) {
-  const load = card(page, 'AdaBoost').getByRole('button', { name: /^Tải/ })
-  if (await load.waitFor({ timeout: 10_000 }).then(() => true, () => false)) await load.click()
-}
-
-async function waitAllAnswered(page: Page) {
-  await loadAdaBoost(page)
-  for (const t of MODEL_TITLES) {
-    await expect(card(page, t).getByRole('list', { name: /Đầu ra cho từng lớp/ })).not.toContainText('không có', { timeout: 60_000 })
-  }
-}
 
 test('the page lists the dataset and all five models, none of them preselected as answered', async ({ page }) => {
   await expect(page.getByRole('radio', { name: /^MNIST/ })).toBeChecked()
