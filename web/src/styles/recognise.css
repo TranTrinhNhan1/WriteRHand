@@ -1218,7 +1218,8 @@
 
 /* the readout header tag: which data the answers come from */
 .panel-head {
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 6px 10px;
   justify-content: space-between;
 }
 
@@ -1718,7 +1719,11 @@
   border-color: var(--line-2);
 }
 
-/* the note opens over the rack, under its card */
+/* the note opens over the rack, under its card (the card is raised above the cards after it) */
+.readout .mcard:has(.mcard__about[open]) {
+  z-index: 6;
+}
+
 .mcard__pop {
   position: absolute;
   top: calc(100% - 4px);
@@ -1967,5 +1972,26 @@
   .readout .mpair .mcard__acts {
     grid-column: auto;
     margin-top: 0;
+  }
+  /* a load or retry button does not fit beside the icons: it takes a row of its own under them */
+  .readout .mpair .mcard__read:has(> .mcard__meta .btn) .mcard__acts {
+    grid-column: -2;
+  }
+  .readout .mpair .mcard__meta:has(.btn) {
+    grid-column: 1 / -1;
+    order: 1;
+  }
+  /* the left cell's note opens rightwards, so it stays inside the readout */
+  .readout .mpair .mcard:first-of-type .mcard__pop {
+    right: auto;
+    left: 6px;
+  }
+}
+
+/* two unpaired columns: the left column's note opens rightwards too */
+@container readout (min-width: 440px) and (max-width: 639px) {
+  .readout .models:not(.models--paired) .mcard:nth-child(odd) .mcard__pop {
+    right: auto;
+    left: 6px;
   }
 }

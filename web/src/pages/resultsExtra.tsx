@@ -65,7 +65,9 @@ function AugDots({ rows, label }: { rows: AugRow[]; label: string }) {
   const pad = Math.max((hi - lo) * 0.15, 0.0005)
   const x0 = lo - pad
   const x1 = hi + pad
-  const LABEL = width < 480 ? 104 : 140
+  // the condition names are set in the 11 px monospace font (0.6 em per character): the label column fits the longest
+  const longest = Math.max(...rows.map((r) => condName(t, r.name).length))
+  const LABEL = Math.max(width < 480 ? 104 : 140, Math.ceil(longest * 11 * 0.6) + 14)
   const VALUE = width < 480 ? 0 : 128
   const ROW = 30
   const TOP = 8
@@ -353,7 +355,7 @@ export function CnnVsMlpSection({ data }: { data: CnnVsMlp }) {
 
   return (
     <Section id="r-cvm" title={t('results.cvm.title')} intro={<p>{t('results.cvm.intro')}</p>}>
-      <div className="table-wrap" role="region" aria-label={t('results.cvm.title')} tabIndex={0}>
+      <div className="table-wrap" role="region" aria-label={t('results.cvm.caption')} tabIndex={0}>
         <table className="table num">
           <caption className="visually-hidden">{t('results.cvm.caption')}</caption>
           <thead>

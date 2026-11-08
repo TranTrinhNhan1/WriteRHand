@@ -31,7 +31,7 @@ const TITLE_KEY: Record<Route, Key> = {
 function PageSkeleton() {
   const { t } = useI18n()
   return (
-    <div className="page-skeleton" aria-busy="true" aria-label={t('common.loadingPage')}>
+    <div className="page-skeleton" role="status" aria-busy="true" aria-label={t('common.loadingPage')}>
       <div className="skeleton skeleton--title" />
       <div className="skeleton skeleton--line" />
       <div className="skeleton skeleton--line skeleton--short" />
@@ -212,12 +212,15 @@ export default function App() {
       </Suspense>
     )
   } else if (error) {
+    // the pinned lock is compiled into this script, so a pin mismatch (a cached old script next to a new
+    // manifest) only clears with a fresh page load; other errors are retried in place
+    const retry = error.key === 'fatal.pin' ? () => window.location.reload() : () => setAttempt((a) => a + 1)
     body = (
       <div className="wrap">
         <div className="fatal sheet" role="alert">
           <h1 className="h2">{t('fatal.title')}</h1>
           <p>{t(error.key, error.params)}</p>
-          <button type="button" className="btn btn--primary" onClick={() => setAttempt((a) => a + 1)}>
+          <button type="button" className="btn btn--primary" onClick={retry}>
             {t('common.retry')}
           </button>
         </div>

@@ -160,7 +160,7 @@ function TestImages({ dataset, ds, chosen, onPick, onIntent }: { dataset: string
           </button>
         </div>
       ) : state.state !== 'ready' ? (
-        <div className="tests__skel" aria-busy="true" aria-label={t('rec.test.loading')}>
+        <div className="tests__skel" role="status" aria-busy="true" aria-label={t('rec.test.loading')}>
           {Array.from({ length: 6 }, (_, i) => (
             <span key={i} className="skeleton" />
           ))}
@@ -665,7 +665,7 @@ export default function Recognise() {
         {model ? (
           <Suspense
             fallback={
-              <div className="result__loading" aria-busy="true" aria-label={t('common.loadingPage')}>
+              <div className="result__loading" role="status" aria-busy="true" aria-label={t('common.loadingPage')}>
                 <div className="skeleton skeleton--block" />
               </div>
             }
