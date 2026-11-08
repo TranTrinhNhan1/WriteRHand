@@ -70,7 +70,13 @@ test('looking inside Softmax: the recomputed logits match the graph, and the vie
 
   // a new input: the explorer must show the new execution, never the previous one
   await page.getByRole('button', { name: 'Vẽ số 3' }).click()
-  await expect.poll(async () => (await read())?.fp, { timeout: 30_000 }).not.toBe(first.fp)
+  // while the new execution is computed the panel shows no fingerprint at all; wait for a real, different one
+  await expect
+    .poll(async () => {
+      const r = await read()
+      return r !== null && r.fp !== first.fp
+    }, { timeout: 30_000 })
+    .toBe(true)
   expect((await read())!.diff).toBeLessThan(1e-3)
 })
 
