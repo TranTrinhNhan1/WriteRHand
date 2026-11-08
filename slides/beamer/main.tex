@@ -80,14 +80,14 @@
     \small
     \bul
       \item Chia phân tầng, seed 42, từ $60\,000$ ảnh huấn luyện; test chính thức giữ riêng.
-      \item Chuẩn hóa bằng một cặp vô hướng $(\bar x,s)=(0.1306,0.3081)$ tính \emph{chỉ trên train}, áp lại cho validation, test và trình duyệt.
+      \item Làm phẳng ảnh thành vectơ $784$ chiều, chuẩn hóa bằng một cặp vô hướng $(\bar x,s)=(0.1306,0.3081)$ tính \emph{chỉ trên train}, áp lại cho validation, test và trình duyệt.
       \item Hàm tìm siêu tham số không nhận tập test.
       \item Tìm siêu tham số: quét từng tham số một (tự viết, không dùng Optuna); không xét tương tác.
       \item Độ đo: accuracy, macro precision/recall/F1, ma trận nhầm lẫn trên cả ba tập; so sánh cặp bằng McNemar chính xác.
     \eul
     \column{0.48\linewidth}
     \footnotesize
-    \begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.9cm}>{\raggedright\arraybackslash}p{3.7cm}@{}}
+    \begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.7cm}>{\raggedright\arraybackslash}p{3.5cm}@{}}
       \toprule
       \textbf{Tự viết} & \textbf{Thư viện} \\
       \midrule
@@ -203,10 +203,22 @@
 \end{frame}
 
 % 9
-\begin{frame}{AdaBoost đắt nhất khi huấn luyện và suy luận}
+\begin{frame}{Ưu và nhược điểm: AdaBoost đắt nhất khi huấn luyện và suy luận}
   \centering
-  \fig[0.97\linewidth]{tradeoff.png}\par\smallskip
-  {\footnotesize CPU, một máy; thời gian có thể chênh tới gấp đôi giữa các lần chạy (CNN: \fitCNN\,s đến 312\,s). Độ trễ của AdaBoost gồm cả chi phí vòng lặp Python trên $393$ cây.}
+  \fig[0.78\linewidth]{tradeoff.png}\par\smallskip
+  \scriptsize
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{1.8cm}>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{3.0cm}>{\raggedright\arraybackslash}p{4.3cm}@{}}
+    \toprule
+    Mô hình & Độ chính xác & Thời gian (huấn luyện; một ảnh) & Khả năng giải thích \\
+    \midrule
+    Naïve Bayes & thấp nhất, \accTestNB\% & \fitNB\,s; \latNB\,ms & $\mu,\sigma$ theo lớp đọc được \\
+    Softmax & \accTestSM\%, giới hạn bởi biên tuyến tính & \fitSM\,s; \latSM\,ms & trọng số vẽ thành ảnh \\
+    MLP & \accTestMLP\% & \fitMLP\,s; \latMLP\,ms & đơn vị ẩn khó đọc \\
+    AdaBoost & \accTestADA\% & \fitADA\,s; \latADA\,ms & tần suất pixel; điểm là tỉ lệ phiếu \\
+    CNN & cao nhất, \accTestCNN\% & \fitCNN\,s; \latCNN\,ms & bản đồ kích hoạt, chưa chứng minh nguyên nhân \\
+    \bottomrule
+  \end{tabular}\par\smallskip
+  {\tiny CPU, một máy; thời gian có thể chênh tới gấp đôi giữa các lần chạy. Độ trễ của AdaBoost gồm cả vòng lặp Python trên $393$ cây.}
 \end{frame}
 
 % 10
@@ -295,7 +307,7 @@
       \item Quét từng tham số, một số giá trị tốt nhất ở mép khoảng quét.
       \item Tăng cường dữ liệu thiếu đối chứng cùng lượng dữ liệu.
       \item Thời gian đo trên một máy CPU.
-      \item Chưa đo độ chính xác trên nét vẽ của người dùng.
+      \item Chưa đo độ chính xác trên nét vẽ của người dùng; chưa thử chữ số viết tay tiếng Việt.
     \eul
   \end{columns}
   \vfill

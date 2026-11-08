@@ -2,11 +2,23 @@
 \label{app:sweeps}
 \Cref{tab:tuning} liệt kê cấu hình được chọn của mọi mô hình. Toàn bộ các lượt quét (kèm khoảng cách train--validation và thời gian huấn luyện mỗi cấu hình) nằm trong thư mục \texttt{results/} (\texttt{tuning} và \texttt{figures}).
 
-\begin{table}[tbp]
-\centering\small
+\begin{table}[H]
+\centering\footnotesize
 \input{../results/tables/tuning_summary}
 \caption{Cấu hình chọn bằng validation. \texttt{epochs} của softmax và \texttt{n\_estimators} của AdaBoost được lấy từ đường cong validation của một lần chạy dài.}
 \label{tab:tuning}
+\end{table}
+
+\section{Chỉ số đầy đủ trên ba tập}
+\label{app:prf}
+\Cref{tab:prf} đưa các chỉ số macro trên cả train, validation và test; \cref{tab:accuracy} chỉ giữ chỉ số test để dễ đọc. Ma trận nhầm lẫn của cả ba tập (không chỉ test, như ở \cref{fig:confusion}) được lưu trong \texttt{results/final/*.json}.
+
+\begin{table}[H]
+\centering\scriptsize
+\setlength{\tabcolsep}{3.5pt}
+\input{generated/prf_splits}
+\caption{Accuracy, precision, recall và F1 macro (\%) của năm mô hình trên MNIST, một seed (42).}
+\label{tab:prf}
 \end{table}
 
 \section{Tăng cường dữ liệu: số liệu tổng hợp}
@@ -14,18 +26,15 @@
 
 \section{Tái lập kết quả}
 \label{app:repro}
-Môi trường dùng \texttt{uv} (Python $\ge3.11$). Mỗi lệnh dưới đây nhận thêm \texttt{--dataset fashion\_mnist} hoặc \texttt{--dataset emnist\_digits}.
-\begin{verbatim}
+Môi trường dùng \texttt{uv} (Python $\ge3.11$). Mỗi lệnh nhận thêm \texttt{--dataset fashion\_mnist} hoặc \texttt{--dataset emnist\_digits}. Notebook \texttt{notebooks/reproduce\_results.ipynb} chạy lại các bước chính trên tập con nhỏ.
+{\scriptsize\begin{verbatim}
 uv sync --extra track --extra export
 uv run python -m src prepare            # tải dữ liệu, chia train/val, chuẩn hóa
 uv run python -m src tune --model all   # quét siêu tham số -> results/tuning
 uv run python -m src train --model all  # huấn luyện cuối, đánh giá 3 tập
 uv run python -m src baselines          # scikit-learn, cùng siêu tham số
-uv run python -m src augment --model mlp
-uv run python -m src augment --model cnn --seeds 2
+uv run python -m src augment --model mlp; uv run python -m src augment --model cnn --seeds 2
 uv run python -m src compare            # CNN so với MLP, kiểm tra chéo
 uv run python -m src report             # bảng, hình, đoạn LaTeX
 uv run python -m src export --site      # ONNX + kiểm tra số học
-uv run pytest
-\end{verbatim}
-Notebook \texttt{notebooks/reproduce\_results.ipynb} chạy lại các bước chính trên tập con nhỏ. Báo cáo được biên dịch bằng \texttt{pdflatex} và \texttt{bibtex} trong thư mục \texttt{report/}.
+\end{verbatim}}

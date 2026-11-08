@@ -464,6 +464,32 @@ def tex_slide_datasets(per_ds, rd, out_dir):
     (Path(out_dir) / "slide_datasets.tex").write_text("\n".join(tex) + "\n", encoding="utf-8")
 
 
+def tex_prf_splits(per_ds_mnist, out_dir):
+    """``prf_splits.tex``: accuracy and macro precision / recall / F1 of every model on train, validation and test."""
+    lines = [
+        "\\begin{tabular}{l" + "rrrr" * 3 + "}",
+        "\\toprule",
+        "& \\multicolumn{4}{c}{Train} & \\multicolumn{4}{c}{Validation} & \\multicolumn{4}{c}{Test} \\\\",
+        "\\cmidrule(lr){2-5}\\cmidrule(lr){6-9}\\cmidrule(lr){10-13}",
+        "Mô hình" + " & Acc & P & R & F1" * 3 + " \\\\",
+        "\\midrule",
+    ]
+    for m in ORDER:
+        f = per_ds_mnist[m]["final"]
+        if not f:
+            continue
+        cells = []
+        for sp in ("train", "val", "test"):
+            d = f["splits"][sp]
+            cells += [
+                f"{100 * d[k]:.2f}"
+                for k in ("accuracy", "precision_macro", "recall_macro", "f1_macro")
+            ]
+        lines.append(f"{TITLE[m]} & " + " & ".join(cells) + " \\\\")
+    lines += ["\\bottomrule", "\\end{tabular}"]
+    (Path(out_dir) / "prf_splits.tex").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 # --------------------------------------------------------------------------- cost / trade-off
 def _final_rows(per_ds_mnist):
     rows = []
@@ -659,7 +685,7 @@ def tex_aug_summary(rd, out_dir):
         "all": "Cả năm phép",
     }
     lines = [
-        r"\begin{table}[tbp]\centering\small",
+        r"\begin{table}[H]\centering\small",
         r"\begin{tabular}{lrrrr}",
         r"\toprule",
         r" & \multicolumn{2}{c}{MLP (3 seed)} & \multicolumn{2}{c}{CNN (2 seed)} \\",
@@ -747,6 +773,7 @@ def build_extras(log=print):
                 lambda: (
                     fig_tradeoff(plt, per_ds["mnist"][1], fig_dir),
                     tex_cost(per_ds["mnist"][1], gen),
+                    tex_prf_splits(per_ds["mnist"][1], gen),
                 ),
             )
         )

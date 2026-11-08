@@ -21,5 +21,24 @@ Dữ liệu cho thấy hai khoảng cách có bản chất khác nhau. Khoảng 
 \label{fig:interp}
 \end{figure}
 
+\begin{table}[tbp]
+\centering\footnotesize
+\renewcommand{\arraystretch}{1.1}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\begin{tabular}{@{}L{2.0cm}L{3.9cm}L{3.9cm}L{4.5cm}@{}}
+\toprule
+Mô hình & Độ chính xác & Thời gian huấn luyện và dự đoán & Khả năng giải thích \\
+\midrule
+Naïve Bayes & Thấp nhất (\accTestNB\%): giả thiết độc lập bị mâu thuẫn bởi tương quan giữa các pixel kề nhau. & Rẻ: \fitNB\,s huấn luyện, \latNB\,ms mỗi ảnh. & Tham số $\mu_{kj},\sigma_{kj}$ là ảnh trung bình và phương sai theo lớp, đọc trực tiếp. \\
+Softmax & \accTestSM\%; train chỉ $93.62\%$, nên bị giới hạn bởi dung lượng của biên tuyến tính. & Nhanh khi dự đoán (\latSM\,ms mỗi ảnh); huấn luyện \fitSM\,s. & Trọng số theo lớp vẽ được thành ảnh; $x_iW_{ik}$ phân rã chính xác điểm số. \\
+MLP & \accTestMLP\%; chênh train--test $1.63$ điểm. & \fitMLP\,s huấn luyện, \latMLP\,ms mỗi ảnh. & Khó: đơn vị ẩn gần như không đọc được bằng mắt; $535\,818$ tham số. \\
+AdaBoost-SAMME & \accTestADA\%, gần MLP; train $100\%$. & Đắt nhất: \fitADA\,s huấn luyện, \latADA\,ms mỗi ảnh (393 cây, vòng lặp Python). & Bản đồ tần suất pixel được cây dùng; điểm cộng dồn là tỉ lệ phiếu, chưa phải xác suất. \\
+CNN & Cao nhất (\accTestCNN\%) với $56\,714$ tham số; bền hơn khi ảnh bị dịch. & \fitCNN\,s huấn luyện (CPU), \latCNN\,ms mỗi ảnh. & Bản đồ kích hoạt cho biết một lớp tính ra gì, không chứng minh nguyên nhân của quyết định. \\
+\bottomrule
+\end{tabular}
+\caption{Tóm tắt ưu và nhược điểm của năm mô hình theo bốn tiêu chí của đề bài. Số liệu lấy từ \cref{tab:accuracy,tab:cost}; nhận xét về khả năng giải thích là định tính (\cref{fig:interp}).}
+\label{tab:summary}
+\end{table}
+
 \subsection{RQ3--RQ5: CNN, tăng cường dữ liệu và bộ dữ liệu khác}
 Thứ tự CNN trên MLP nhất quán qua các seed (mục~\ref{sec:results}) và qua hai bộ chữ số, nhưng không nhất quán trên Fashion-MNIST, nơi hai mô hình ngang nhau; lợi thế rõ nhất của CNN nằm ở độ bền với phép dịch và ở kích thước mô hình hơn là ở độ chính xác trên ảnh sạch. Tăng cường dữ liệu chủ yếu cải thiện độ bền với đúng loại biến đổi; tác dụng lên ảnh sạch chưa được tách khỏi hiệu ứng lượng dữ liệu, và với CNN việc chọn nhầm loại biến đổi có thể làm giảm độ bền với loại khác. Khi chuyển bộ dữ liệu, thứ hạng giữa các mô hình thay đổi ít giữa MNIST và EMNIST Digits nhưng nhiều hơn ở Fashion-MNIST, và việc đưa một mô hình ra ngoài bộ dữ liệu huấn luyện làm giảm accuracy từ $6.5$ đến $40.2$ điểm; chênh lệch giữa mô hình có cấu trúc không gian và mô hình không có là lớn nhất ở phép kiểm tra chéo đó.
