@@ -1,10 +1,12 @@
 {
   "report": {
     "sources_sha256": "4bc4725855145a62b28f91978b53521390a68aba0bacee64559ad5812fd78def",
+    "pdf_sha256": "b8b40d4e458ace830a77522b8a108b344ab0aa7ac19eef832947d3ef4bbed532",
     "pages": 15
   },
   "slides": {
     "sources_sha256": "c3062059961fbfa6c8d07a1fafd01d0c55ac5a70878443e473dc6cff70a61d69",
+    "pdf_sha256": "129587053f4164b84d03247a6adc1db7c4043b83ae19d5538257ad412d6f11bf",
     "pages": 15
   }
 }

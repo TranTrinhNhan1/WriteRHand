@@ -30,11 +30,12 @@ jobs:
         working-directory: web
     steps:
       - uses: actions/checkout@v4
+      - name: poppler-utils (page counts for the Documents page)
+        working-directory: .
+        run: command -v pdfinfo || (sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils)
       - name: The committed PDFs must be built from the committed sources
         working-directory: .
         run: python3 scripts/docs_stamp.py check
-      - name: poppler-utils (page counts for the Documents page)
-        run: command -v pdfinfo || (sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils)
       - uses: actions/setup-node@v4
         with:
           node-version: 22

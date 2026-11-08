@@ -5,7 +5,8 @@
     python scripts/docs_stamp.py check   # CI: fail when a source changed but the PDF was not rebuilt
 
 The stamp (docs/pdf-stamps.json) holds a SHA-256 over the LaTeX sources, the generated fragments, the
-bibliography and the figures each PDF is built from, plus the PDF's own page count. Standard library only.
+bibliography and the figures each PDF is built from, the SHA-256 of the PDF itself, and its page count
+(informational; read with pdfinfo when available). Standard library only.
 """
 
 import hashlib
@@ -51,18 +52,29 @@ def digest(files):
 
 
 def pages(pdf):
-    out = subprocess.run(["pdfinfo", str(pdf)], capture_output=True, text=True, check=True).stdout
+    """Page count from pdfinfo (informational; None when poppler is not installed)."""
+    try:
+        out = subprocess.run(["pdfinfo", str(pdf)], capture_output=True, text=True, check=True).stdout
+    except FileNotFoundError:
+        return None
     for line in out.splitlines():
         if line.startswith("Pages:"):
             return int(line.split()[1])
-    raise SystemExit(f"pdfinfo gave no page count for {pdf}")
+    return None
 
 
 def current():
     for name, t in TARGETS.items():
         if not t["pdf"].is_file():
             raise SystemExit(f"{t['pdf'].relative_to(ROOT)} is missing; build it first")
-    return {n: {"sources_sha256": digest(t["sources"]), "pages": pages(t["pdf"])} for n, t in TARGETS.items()}
+    return {
+        n: {
+            "sources_sha256": digest(t["sources"]),
+            "pdf_sha256": hashlib.sha256(t["pdf"].read_bytes()).hexdigest(),
+            "pages": pages(t["pdf"]),
+        }
+        for n, t in TARGETS.items()
+    }
 
 
 def main(argv):
@@ -77,14 +89,15 @@ def main(argv):
         print("docs/pdf-stamps.json is missing; run: python scripts/docs_stamp.py write")
         return 1
     saved = json.loads(STAMP.read_text(encoding="utf-8"))
-    bad = [n for n in now if saved.get(n) != now[n]]
+    keys = ("sources_sha256", "pdf_sha256")  # the page count is informational only
+    bad = [n for n in now if any(saved.get(n, {}).get(k) != now[n][k] for k in keys)]
     if bad:
         print(
             "stale PDF(s): " + ", ".join(bad) + ". The sources changed (or the PDF was replaced) since the last "
             "recorded build. Rebuild the PDF and run: python scripts/docs_stamp.py write"
         )
         return 1
-    print("PDF stamps match: " + ", ".join(f"{n} ({v['pages']} pages)" for n, v in now.items()))
+    print("PDF stamps match: " + ", ".join(f"{n} ({saved[n].get('pages')} pages)" for n in now))
     return 0
 
 
