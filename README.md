@@ -15,6 +15,8 @@ a leak-free reproducible protocol (stratified 50k/10k train/validation split, of
 hyper-parameter search, scikit-learn parity tests, W&B tracking (offline fallback), ONNX export to Hugging Face,
 an in-browser demo (React + ONNX Runtime Web) and a LaTeX report with slides.
 
+**Demo trực tuyến:** <https://trantrinhnhan1.github.io/WriteRHand/> · **Mô hình:** <https://huggingface.co/TranTrinhNhan1111/WriteRHand-MNIST>
+
 ## Kết quả
 
 Đo trên CPU (xem `results/final/*.json` để biết phần cứng và phiên bản thư viện). Siêu tham số chọn **chỉ trên validation**;
