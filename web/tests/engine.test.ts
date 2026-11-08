@@ -5,7 +5,7 @@ import { subtreeSizes } from '../src/engine/adaboost'
 import * as R from '../src/engine/reconstruct'
 import { bundleRequired, fileFetch, hasBundle, loadManifest, makeRegistry, readJson, toPixels01, type TestVectors } from './bundle'
 
-const TOL_PROBA: Record<ModelKind, number> = { naive_bayes: 1e-3, softmax: 1e-4, mlp: 1e-4, cnn: 1e-4, adaboost: 5.01e-7 }
+const TOL_PROBA: Record<ModelKind, number> = { naive_bayes: 1e-3, softmax: 1e-4, svm: 1e-4, mlp: 1e-4, cnn: 1e-4, adaboost: 5.01e-7 }
 
 // These tests need the model bundle; CI fetches the pinned Hugging Face revision first and fails
 // (instead of skipping) when it is missing, see scripts/check-bundle.mjs and the `web` job.
@@ -42,6 +42,17 @@ describe.skipIf(!hasBundle)('manifest contract', () => {
       const wrongId = structuredClone(raw2)
       wrongId.datasets[first[0]].models.cnn_aug = wrongId.datasets[first[0]].models.mlp_aug
       expect(() => parseBundleManifest(wrongId)).toThrow(ContractError)
+    }
+  })
+
+  it('never accepts normalised SVM scores as calibrated probabilities', () => {
+    const r = raw() as never as { datasets: Record<string, { models: Record<string, { trace: { output: { kind: string; calibrated: boolean } } }> }> }
+    const hit = Object.entries(r.datasets).find(([, d]) => d.models.svm)
+    if (hit) {
+      expect(hit[1].models.svm.trace.output.kind).toBe('softmax_score')
+      const bad = structuredClone(r)
+      bad.datasets[hit[0]].models.svm.trace.output.calibrated = true
+      expect(() => parseBundleManifest(bad)).toThrow(ContractError)
     }
   })
 
@@ -172,7 +183,7 @@ function reconstructionError(model: ModelKind, lm: Awaited<ReturnType<NonNullabl
   let worst = 0
   const upd = (a: number, b: number) => (worst = Math.max(worst, Math.abs(a - b)))
   const dense = lm.trace.layers.filter((l) => l.op === 'dense')
-  if (model === 'mlp' || model === 'softmax') {
+  if (model === 'mlp' || model === 'softmax' || model === 'svm') {
     let a: ArrayLike<number> = o.x
     dense.forEach((l, i) => {
       const W = p!.get(l.params!.weight)

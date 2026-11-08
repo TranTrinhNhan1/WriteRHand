@@ -4,7 +4,7 @@ bundle/
   manifest.json                    schema ``writerhand.bundle/2``: datasets -> models -> trace contract
   README.md                        model card
   <dataset>/                       mnist | fashion_mnist | emnist_digits
-    models/<id>.onnx               naive_bayes, softmax, mlp, cnn   (input pixels/255, output probabilities)
+    models/<id>.onnx               naive_bayes, softmax, svm, mlp, cnn   (input pixels/255, output probabilities)
     models/<id>.params.bin         learned parameters for the execution explorer (float32, indexed in manifest)
     models/<id>.bin                SAMME ensemble: adaboost, adaboost_aug (small typed-array reader in the browser)
     python/<Class>.npz             original NumPy/torch weights (load with BaseClassifier.load)
@@ -30,6 +30,7 @@ from src.export.onnx_export import (
     gaussian_nb_to_onnx,
     mlp_to_onnx,
     softmax_regression_to_onnx,
+    svm_to_onnx,
 )
 from src.export.tracespec import BUNDLE_SCHEMA, build_trace, sha256_bytes, sha256_file
 from src.models.base import BaseClassifier
@@ -41,6 +42,7 @@ MODEL_VERSION = "2.0.0"
 EXPORTS = {
     "naive_bayes": ("GaussianNB", gaussian_nb_to_onnx),
     "softmax": ("SoftmaxRegression", softmax_regression_to_onnx),
+    "svm": ("LinearSVM", svm_to_onnx),
     "mlp": ("MLP", mlp_to_onnx),
     "cnn": ("CNN", cnn_to_onnx),
     "adaboost": ("AdaBoostSAMME", None),
@@ -48,11 +50,12 @@ EXPORTS = {
 TITLES = {
     "naive_bayes": "Gaussian Naive Bayes",
     "softmax": "Softmax regression",
+    "svm": "Linear SVM",
     "mlp": "Multilayer perceptron",
     "cnn": "Convolutional network",
     "adaboost": "AdaBoost (SAMME)",
 }
-TOL = {"naive_bayes": 1e-3, "softmax": 1e-4, "mlp": 1e-4, "cnn": 1e-4}
+TOL = {"naive_bayes": 1e-3, "softmax": 1e-4, "svm": 1e-4, "mlp": 1e-4, "cnn": 1e-4}
 
 # every model also has an augmented variant (same architecture, trained on the original images plus
 # randomly rotated / shifted / scaled copies): id ``<id>_aug``, class ``<Class>_aug``
@@ -138,7 +141,7 @@ def export_dataset(bundle, name, artifacts_dir, results_dir, log=print):
         kind = base_kind(mid)
         model = BaseClassifier.load(npz)
         shutil.copy(npz, root / "python" / f"{cname}.npz")
-        ref = model.predict_proba(Xn)
+        ref = _softmax(model.decision_function(Xn)) if kind == "svm" else model.predict_proba(Xn)
         extra = None
         if kind == "adaboost":
             blob = adaboost_to_binary(model, mean, std)
@@ -213,6 +216,7 @@ def export_dataset(bundle, name, artifacts_dir, results_dir, log=print):
             "validation": check,
             "input": "pixels",
             "output": "probabilities" if fmt == "onnx" else "vote_shares",
+            "output_kind": trace["output"]["kind"],
             "trace": trace,
             "replay": replay,
         }
@@ -295,12 +299,19 @@ def _augmentation_of(results_dir, cname):
     )
 
 
+def _softmax(z):
+    e = np.exp(z - z.max(axis=1, keepdims=True))
+    return e / e.sum(axis=1, keepdims=True)
+
+
 def _logits_for(model, Xn, mid):
     """Reference logits (float64) of the Python model for the expected-output vectors."""
     if mid == "naive_bayes":
         return np.round(model._joint_log_likelihood(Xn), 4).tolist()
     if mid == "softmax":
         return np.round(model._logits(Xn), 5).tolist()
+    if mid == "svm":
+        return np.round(model.decision_function(Xn), 5).tolist()
     return np.round(model._get_logits(Xn).numpy().astype(np.float64), 5).tolist()
 
 

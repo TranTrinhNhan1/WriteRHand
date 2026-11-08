@@ -280,7 +280,7 @@
   \fig[0.97\linewidth]{aug_pairs.png}\par\medskip
   \footnotesize\raggedright
   \begin{minipage}{0.94\linewidth}
-    Xoay, dịch, co giãn, nhiễu Gauss, nhiễu muối tiêu; chỉ áp dụng cho tập train. Hình: bản thường (nét đứt) và bản tăng cường (nét liền; xoay $\pm30^\circ$, dịch $\pm2$, co giãn $[0.9,1.1]$, thêm 2 bản sao) trên ảnh test bị xoay. MLP, AdaBoost, CNN tốt hơn trên cả ảnh sạch và ảnh xoay (CNN: \augPlainCNN\%$\to$\augTestCNN\%); Naïve Bayes (\augPlainNB\%$\to$\augTestNB\%) và softmax (\augPlainSM\%$\to$\augTestSM\%) \emph{kém hơn} trên ảnh sạch.\par\smallskip
+    Xoay, dịch, co giãn, nhiễu Gauss, nhiễu muối tiêu; chỉ áp dụng cho tập train. Hình: bản thường (nét đứt) và bản tăng cường (nét liền; xoay $\pm30^\circ$, dịch $\pm2$, co giãn $[0.9,1.1]$, thêm 2 bản sao) trên ảnh test bị xoay. MLP, AdaBoost, CNN tốt hơn trên cả ảnh sạch và ảnh xoay (CNN: \augPlainCNN\%$\to$\augTestCNN\%); Naïve Bayes (\augPlainNB\%$\to$\augTestNB\%), softmax (\augPlainSM\%$\to$\augTestSM\%) và SVM (\augPlainSVMP\%$\to$\augTestSVMP\%) \emph{kém hơn} trên ảnh sạch.\par\smallskip
     Nghiên cứu từng phép với CNN (2 seed): cả năm phép cho test $99.25\%$ so với $98.82\%$. Với MLP, phép dịch nâng accuracy trên ảnh bị dịch từ $72.1$ lên $94.5\%$.
   \end{minipage}
 \end{frame}

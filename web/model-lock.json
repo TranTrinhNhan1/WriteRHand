@@ -1,8 +1,8 @@
 {
   "repo": "TranTrinhNhan1111/WriteRHand-MNIST",
-  "revision": "93bbe2ee1864b3399ee8d89729ecd40fe27527c0",
-  "bundle_id": "6a67da24b0f2d0d7",
+  "revision": "6db6b8650e0dffb30e67f2eccfcc78f482a9a571",
+  "bundle_id": "498c0162fab833d6",
   "version": "2.0.0",
   "schema": "writerhand.bundle/2",
-  "manifest_sha256": "ee140c6c450d12d49f128c80dae78cc994e056c4793bbf213786a1be9f1b7c88"
+  "manifest_sha256": "e51f887d56bb53feef1d3db52ae1309090d39d98214d925622cde4870adf5305"
 }

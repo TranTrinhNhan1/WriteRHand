@@ -20,11 +20,11 @@ KaTeX (MathML output) for the equations. No backend.
   light theme. The theme follows the system setting until you use the sun/moon button (the choice is kept in
   `localStorage`, inside try/catch). The drawing screen and the model maps stay dark in both themes, like a real
   instrument display.
-* **Fonts.** Sans-serif and monospace only, self-hosted through Fontsource (no CDN): Geist Variable for text and
+* **Fonts.** Sans-serif and monospace for the interface (equations: Computer Modern, below), self-hosted through Fontsource (no CDN): Geist Variable for text and
   headings, Geist Mono Variable for numbers, labels and readouts. Both ship a Vietnamese subset.
-* **Equations.** KaTeX parses the TeX and emits MathML; the browser draws it with a subset of Noto Sans Math
-  (`src/assets/fonts/NotoSansMath-subset.woff2`, about 41 KB, SIL Open Font License 1.1), so equations are sans-serif
-  too and no KaTeX CSS or fonts are shipped.
+* **Equations.** KaTeX typesets the TeX as HTML in its Computer Modern fonts, with MathML alongside for screen
+  readers. `src/styles/katex.css` is the package stylesheet reduced to the woff2 files of `katex/dist/fonts` (bundled by
+  Vite, no CDN); KaTeX and its CSS load only with the Models page.
 * **Motion.** Springs and entry animations are CSS and only run under `prefers-reduced-motion: no-preference`.
 
 ## Run

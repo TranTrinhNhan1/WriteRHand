@@ -163,6 +163,18 @@ export const en = {
       narr: 'Step {s} of {n}: pixel row {r}, column {c} applied. Leader {leader} with logit {v}.',
       honest: 'For a linear model the products x_i W_ik add up exactly to the logit; that is a property of this model. It is still not a causal claim about handwriting: another model can read the same drawing differently.',
     },
+    svm: {
+      partial: 'score after {s} pixels',
+      logit: 'score once every pixel is added',
+      score: 'Score',
+      rebuilt: 'Rebuilt = b + Σ x·W; graph = score returned by the deployed ONNX graph.',
+      narrStart: 'Step 0: every class starts at its bias.',
+      narr: 'Step {s}/{n}: added the pixel at row {r}, column {c}. Leading: {leader}, score {v}.',
+      termFor: 'product: raises the score',
+      termAgainst: 'product: lowers the score',
+      inspectNote: 'A negative x times a negative weight raises the score: empty paper can be evidence too.',
+      honest: 'The products x_i W_ik add up exactly to the class score. The softmax of the scores only makes them add up to 1; an SVM does not learn probabilities.',
+    },
     ada: {
       factRounds: 'rounds (trees)',
       factDepth: 'tree depth',
@@ -538,7 +550,7 @@ export const en = {
     kind: { digits: 'handwritten digits', clothing: 'clothing photos' },
   },
   out: {
-    short: { probability: 'probability', voteShare: 'vote share' },
+    short: { probability: 'probability', voteShare: 'vote share', score: 'normalised score · not a probability' },
     notCalibrated: 'not calibrated',
     note: {
       naive_bayes:
@@ -546,6 +558,7 @@ export const en = {
       softmax: 'One linear layer plus softmax. It keeps one weight image per class and checks how well your input matches each of them.',
       mlp: 'A small neural network with ReLU layers. Its probabilities usually look sensible, but nothing guarantees they are calibrated.',
       cnn: 'A small convolutional network: learned filters slide over the image, pooling shrinks the maps, a linear layer gives the class scores. Its probabilities are not guaranteed to be calibrated either.',
+      svm: 'The linear SVM\'s scores are normalised with a softmax so they add up to 100%. They are scores, not probabilities.',
       adaboost:
         'The score is the share of the trees’ total weight that voted for each class. The shares add up to 100%, but they are not probabilities.',
     },

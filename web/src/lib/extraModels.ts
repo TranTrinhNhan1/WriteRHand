@@ -66,7 +66,7 @@ export function parseExtraModels(raw: unknown): Record<string, ExtraResults> {
   const out: Record<string, ExtraResults> = {}
   for (const [ds, v] of Object.entries(raw.datasets)) {
     if (!isObj(v)) continue
-    const models = (Array.isArray(v.models) ? v.models : []).filter(validModel).map((m) => ({ ...m, in_browser: false }))
+    const models = (Array.isArray(v.models) ? v.models : []).filter(validModel).map((m) => ({ ...m, in_browser: m.in_browser === true }))
     const pairs = parsePairs(v.pairs)
     if (!models.length && !pairs) continue
     const tuning: ExtraResults['tuning'] = {}

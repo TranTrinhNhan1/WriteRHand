@@ -113,7 +113,7 @@ def _dense_head(pack, layers, prev, W, b, ids, relu_ids, name_w, name_b, last):
 def build_trace(kind, model, mean, std, class_names, extra=None):
     """Return ``(trace, ParamPack)`` for a fitted model.
 
-    ``kind`` is one of ``mlp | cnn | softmax | naive_bayes | adaboost``. The trace dictionary goes
+    ``kind`` is one of ``mlp | cnn | softmax | svm | naive_bayes | adaboost``. The trace dictionary goes
     into ``manifest.json``; the pack is written to ``<model>.params.bin`` by the exporter.
     """
     pack = ParamPack()
@@ -147,12 +147,13 @@ def build_trace(kind, model, mean, std, class_names, extra=None):
                 ]
         runtime.append({"name": "logits", "layer": "logits", "shape": [k], "role": "logits"})
         out_kind = "softmax_probability"
-    elif kind == "softmax":
+    elif kind in ("softmax", "svm"):
         W, b = model.W, model.b
         _dense_head(pack, layers, "standardize", W, b, ("logits", "a"), None, "W", "b", True)
         runtime.append({"name": "logits", "layer": "logits", "shape": [k], "role": "logits"})
         prev = "logits"
-        out_kind = "softmax_probability"
+        # SVM scores are not probabilities: the softmax only normalises them (never calibrated)
+        out_kind = "softmax_probability" if kind == "softmax" else "softmax_score"
     elif kind == "naive_bayes":
         var, mu = model.var, model.mean
         pack.add("class_mean", mu, "logits", "class_mean")
@@ -297,10 +298,10 @@ def build_trace(kind, model, mean, std, class_names, extra=None):
 
     final = {
         "id": "output",
-        "op": "softmax" if out_kind == "softmax_probability" else "normalize",
+        "op": "softmax" if out_kind in ("softmax_probability", "softmax_score") else "normalize",
         "out_shape": [k],
         "inputs": [prev],
-        "runtime": "probabilities" if out_kind == "softmax_probability" else None,
+        "runtime": "probabilities" if out_kind != "vote_share" else None,
     }
     layers.append(final)
     trace = {
@@ -316,7 +317,7 @@ def build_trace(kind, model, mean, std, class_names, extra=None):
         "layers": layers,
         "runtime_outputs": runtime,
         "output": {
-            "name": "probabilities" if out_kind == "softmax_probability" else "vote_share",
+            "name": "probabilities" if out_kind != "vote_share" else "vote_share",
             "kind": out_kind,
             "calibrated": out_kind == "softmax_probability",
             "classes": list(class_names),

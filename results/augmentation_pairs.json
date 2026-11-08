@@ -136,6 +136,69 @@
     }
    }
   },
+  "svm": {
+   "plain": {
+    "class": "LinearSVM",
+    "train_acc": 0.9253,
+    "val_acc": 0.9138,
+    "test_acc": 0.9195,
+    "test_f1_macro": 0.918238112185769,
+    "fit_time_sec": 11.522602356038988,
+    "latency_ms": 0.007862458005547523,
+    "augmentation": null,
+    "test_rotation_acc": {
+     "0": 0.9195,
+     "10": 0.9058,
+     "20": 0.8584,
+     "30": 0.7848,
+     "45": 0.6621,
+     "90": 0.4225
+    },
+    "test_stress_acc": {
+     "rotation": 0.8584,
+     "translation": 0.5371,
+     "scaling": 0.834,
+     "gaussian_noise": 0.8672,
+     "salt_pepper": 0.8849
+    }
+   },
+   "augmented": {
+    "class": "LinearSVM_aug",
+    "train_acc": 0.89164,
+    "val_acc": 0.881,
+    "test_acc": 0.8908,
+    "test_f1_macro": 0.8883733770088569,
+    "fit_time_sec": 35.980084768962115,
+    "latency_ms": 0.009212992154061794,
+    "augmentation": {
+     "ops": [
+      "rotation",
+      "translation",
+      "scaling"
+     ],
+     "k": 2,
+     "seed": 123,
+     "ranges": {
+      "rotation": 30.0
+     }
+    },
+    "test_rotation_acc": {
+     "0": 0.8908,
+     "10": 0.8848,
+     "20": 0.8633,
+     "30": 0.8265,
+     "45": 0.7336,
+     "90": 0.4881
+    },
+    "test_stress_acc": {
+     "rotation": 0.8633,
+     "translation": 0.6268,
+     "scaling": 0.8308,
+     "gaussian_noise": 0.821,
+     "salt_pepper": 0.8395
+    }
+   }
+  },
   "mlp": {
    "plain": {
     "class": "MLP",

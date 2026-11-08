@@ -2,7 +2,10 @@ import { expect, type Page } from '@playwright/test'
 
 /** Shared helpers for the end-to-end tests (Vietnamese UI, the default language). */
 
+/** the models of every dataset, in display order */
 export const MODEL_TITLES = ['Naive Bayes', 'Softmax regression', 'MLP', 'CNN', 'AdaBoost']
+/** MNIST also has the linear SVM (after softmax regression) */
+export const MNIST_TITLES = ['Naive Bayes', 'Softmax regression', 'Linear SVM', 'MLP', 'CNN', 'AdaBoost']
 
 export const answers = (page: Page) => page.getByRole('region', { name: 'Câu trả lời' })
 const escapeRe = (s: string) => s.replace(/[.*+?^$()|[\]\\{}]/g, '\\$&')
@@ -38,7 +41,8 @@ export async function loadAdaBoost(page: Page) {
 
 export async function waitAllAnswered(page: Page) {
   await loadAdaBoost(page)
-  for (const t of MODEL_TITLES) {
+  const titles = (await answers(page).locator('.mpair').count()) ? MNIST_TITLES : MODEL_TITLES
+  for (const t of titles) {
     await expect(card(page, t).getByRole('list', { name: /Đầu ra cho từng lớp/ })).not.toContainText('không có', { timeout: 60_000 })
   }
 }

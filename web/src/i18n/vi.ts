@@ -165,6 +165,18 @@ export const vi: Dict = {
       narr: 'Bước {s}/{n}: đã cộng điểm ảnh hàng {r}, cột {c}. Dẫn đầu: {leader}, logit {v}.',
       honest: 'Với mô hình tuyến tính, các tích x_i W_ik cộng lại đúng bằng logit; đó là tính chất của mô hình này. Nó vẫn không phải khẳng định nhân quả về chữ viết tay: mô hình khác có thể đọc cùng hình vẽ theo cách khác.',
     },
+    svm: {
+      partial: 'điểm số sau {s} điểm ảnh',
+      logit: 'điểm số khi đã cộng đủ',
+      score: 'Điểm số',
+      rebuilt: 'Dựng lại = b + Σ x·W; đồ thị = điểm số do đồ thị ONNX triển khai trả về.',
+      narrStart: 'Bước 0: mỗi lớp bắt đầu bằng bias của nó.',
+      narr: 'Bước {s}/{n}: đã cộng điểm ảnh hàng {r}, cột {c}. Dẫn đầu: {leader}, điểm số {v}.',
+      termFor: 'tích: làm tăng điểm số',
+      termAgainst: 'tích: làm giảm điểm số',
+      inspectNote: 'x âm nhân trọng số âm sẽ làm tăng điểm số: nền giấy trống cũng có thể là bằng chứng.',
+      honest: 'Các tích x_i W_ik cộng lại đúng bằng điểm số của lớp. Softmax của các điểm số chỉ để chúng cộng lại bằng 1; SVM không học xác suất.',
+    },
     ada: {
       factRounds: 'vòng (cây)',
       factDepth: 'độ sâu cây',
@@ -540,7 +552,7 @@ export const vi: Dict = {
     kind: { digits: 'chữ số viết tay', clothing: 'ảnh quần áo' },
   },
   out: {
-    short: { probability: 'xác suất', voteShare: 'tỉ lệ phiếu' },
+    short: { probability: 'xác suất', voteShare: 'tỉ lệ phiếu', score: 'điểm số chuẩn hóa · không phải xác suất' },
     notCalibrated: 'chưa được hiệu chỉnh',
     note: {
       naive_bayes:
@@ -548,6 +560,7 @@ export const vi: Dict = {
       softmax: 'Một lớp tuyến tính cộng với softmax. Mô hình giữ một ảnh trọng số cho mỗi lớp, rồi xem đầu vào của bạn khớp với từng ảnh tới mức nào.',
       mlp: 'Mạng neuron nhỏ với các lớp ReLU. Xác suất của nó thường nhìn hợp lý, nhưng không có gì đảm bảo chúng đã được hiệu chỉnh (calibrated).',
       cnn: 'Mạng tích chập nhỏ: các bộ lọc đã học trượt trên ảnh, pooling thu nhỏ các bản đồ, một lớp tuyến tính cho điểm của từng lớp. Xác suất của nó cũng không được đảm bảo là đã hiệu chỉnh.',
+      svm: 'Điểm số của SVM tuyến tính được chuẩn hoá bằng softmax để cộng lại bằng 100%. Đó là điểm số, không phải xác suất.',
       adaboost:
         'Điểm số là phần trăm tổng trọng số của các cây đã bỏ phiếu cho từng lớp. Các tỉ lệ này cộng lại bằng 100%, nhưng chúng không phải xác suất.',
     },

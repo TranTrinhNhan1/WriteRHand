@@ -3,19 +3,19 @@ import '../styles/results.css'
 import '../styles/models.css'
 import { Segmented } from '../components/Segmented'
 import { Tex } from '../components/Tex'
-import { augId, modelsOf, type ModelKind } from '../engine/contract'
+import { MODEL_ORDER, augId, modelsOf } from '../engine/contract'
 import { useBundle } from '../engine/react'
 import { useI18n } from '../i18n'
 import { parameterCount, summarizeLayers } from '../lib/architecture'
 import { useChoice } from '../lib/choice'
 import { bytes, int, paramName, paramValue, pct } from '../lib/format'
 import { datasetIdsOf, downloadBytes } from '../lib/selection'
-import { EXTRA_TEX, MODEL_TEX } from './modelContent'
+import { EXTRA_TEX, MODEL_TEX, hasContent, type ContentKind } from './modelContent'
 import type { ResultModel } from '../lib/types'
 
 const HIDDEN_PARAMS = new Set(['verbose', 'dtype'])
 
-function Architecture({ dataset, id }: { dataset: string; id: ModelKind }) {
+function Architecture({ dataset, id }: { dataset: string; id: string }) {
   const { t } = useI18n()
   const { manifest } = useBundle()
   const entry = manifest.datasets[dataset].models[id]!
@@ -37,7 +37,7 @@ function Architecture({ dataset, id }: { dataset: string; id: ModelKind }) {
   )
 }
 
-function ModelArticle({ dataset, id }: { dataset: string; id: ModelKind }) {
+function ModelArticle({ dataset, id }: { dataset: string; id: ContentKind }) {
   const { t, tl } = useI18n()
   const { manifest, results, extra } = useBundle()
   const ds = manifest.datasets[dataset]
@@ -200,12 +200,18 @@ function ModelArticle({ dataset, id }: { dataset: string; id: ModelKind }) {
   )
 }
 
-/** A model measured in Python only (linear SVM, stacking): numbers from extra_models.json, no browser file. */
+/**
+ * A compact article (linear SVM, stacking) with the numbers of extra_models.json. When the pinned bundle has the
+ * model (the SVM on MNIST) it also shows what the browser runs: architecture, download size, parameter count.
+ */
 function ExtraArticle({ dataset, m }: { dataset: string; m: ResultModel }) {
   const { t, tl } = useI18n()
-  const { manifest } = useBundle()
+  const { manifest, extra } = useBundle()
   const ds = manifest.datasets[dataset]
   const id = m.id as 'svm' | 'stacking'
+  const entry = ds.models[id]
+  const nParams = entry ? parameterCount(entry.trace) : null
+  const augTest = entry && ds.models[augId('svm')] ? (extra[dataset]?.pairs?.models.svm?.augmented.test_acc ?? null) : null
   const params = Object.entries(m.params ?? {}).filter(([k]) => !HIDDEN_PARAMS.has(k) && k !== 'bases')
   const captions = tl(`models.extra.${id}.eq`)
   const st = m.stacking
@@ -214,7 +220,7 @@ function ExtraArticle({ dataset, m }: { dataset: string; m: ResultModel }) {
       <header className="model__head">
         <h2 id={`model-${id}-h`} className="h2">
           {t(`model.${id}`)}
-          <span className="offline-tag">{t('results.extra.offline')}</span>
+          {!entry && <span className="offline-tag">{t('results.extra.offline')}</span>}
         </h2>
         <dl className="facts facts--inline">
           <div>
@@ -225,6 +231,24 @@ function ExtraArticle({ dataset, m }: { dataset: string; m: ResultModel }) {
             <dt>{t('models.output')}</dt>
             <dd>{id === 'svm' ? t('models.extra.outScore') : t('models.outProb')}</dd>
           </div>
+          {augTest != null && (
+            <div>
+              <dt>{t('models.augTest')}</dt>
+              <dd className="num">{pct(augTest, 2)}</dd>
+            </div>
+          )}
+          {entry && nParams != null && (
+            <div>
+              <dt>{t('models.nParams')}</dt>
+              <dd className="num">{int(nParams)}</dd>
+            </div>
+          )}
+          {entry && (
+            <div>
+              <dt>{t('models.size')}</dt>
+              <dd className="num">{bytes(downloadBytes(entry))}</dd>
+            </div>
+          )}
           {st && (
             <div>
               <dt>{t('models.extra.cv')}</dt>
@@ -233,6 +257,7 @@ function ExtraArticle({ dataset, m }: { dataset: string; m: ResultModel }) {
           )}
         </dl>
       </header>
+      {entry && <Architecture dataset={dataset} id={id} />}
       <div className="model__body">
         <div className="model__col">
           <div className="equations">
@@ -303,15 +328,25 @@ export default function Models() {
   const { manifest, extra } = useBundle()
   const { dataset, setDataset } = useChoice()
   const ds = manifest.datasets[dataset]
-  const ids = modelsOf(ds)
   const extras = extra[dataset]?.models ?? []
+  // one article per architecture, in the site's order: the full one when its texts exist, else the compact one
+  type Item = { kind: 'full'; id: ContentKind } | { kind: 'extra'; m: ResultModel }
+  const items: Item[] = [
+    ...MODEL_ORDER.flatMap((k): Item[] => {
+      if (hasContent(k) && modelsOf(ds).includes(k)) return [{ kind: 'full' as const, id: k }]
+      const m = extras.find((x) => x.id === k)
+      return m ? [{ kind: 'extra' as const, m }] : []
+    }),
+    ...extras.filter((m) => !(MODEL_ORDER as string[]).includes(m.id)).map((m): Item => ({ kind: 'extra', m })),
+  ]
+  const itemId = (it: (typeof items)[number]) => (it.kind === 'full' ? it.id : it.m.id)
   const [active, setActive] = useState<string | null>(null)
   const dsIds = datasetIdsOf(manifest)
 
   return (
     <div className="models sheet">
       <header className="page-head">
-        <h1 className="display">{t('models.title', { n: ids.length + extras.length })}</h1>
+        <h1 className="display">{t('models.title', { n: items.length })}</h1>
         <p className="lede">{t('models.lede')}</p>
         {dsIds.length > 1 && (
           <Segmented
@@ -323,7 +358,7 @@ export default function Models() {
         )}
         <nav aria-label={t('models.jump')} className="jump">
           <ul>
-            {[...ids, ...extras.map((m) => m.id)].map((id) => (
+            {items.map(itemId).map((id) => (
               <li key={id}>
                 <button
                   type="button"
@@ -341,12 +376,9 @@ export default function Models() {
           </ul>
         </nav>
       </header>
-      {ids.map((id) => (
-        <ModelArticle key={`${dataset}-${id}`} dataset={dataset} id={id} />
-      ))}
-      {extras.map((m) => (
-        <ExtraArticle key={`${dataset}-${m.id}`} dataset={dataset} m={m} />
-      ))}
+      {items.map((it) =>
+        it.kind === 'full' ? <ModelArticle key={`${dataset}-${it.id}`} dataset={dataset} id={it.id} /> : <ExtraArticle key={`${dataset}-${it.m.id}`} dataset={dataset} m={it.m} />,
+      )}
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import katex from 'katex'
 import { useMemo } from 'react'
+import '../styles/katex.css'
 
 interface Props {
   tex: string
@@ -7,12 +8,12 @@ interface Props {
 }
 
 /**
- * Typesets a TeX string as MathML (KaTeX does the parsing). The browser draws it with the site's own sans-serif
- * math font, so equations match the rest of the page and screen readers read real MathML. Input is static, trusted text.
+ * Typesets a TeX string with KaTeX in its Computer Modern fonts (HTML), with the MathML alongside for screen
+ * readers. Input is static, trusted text.
  */
 export function Tex({ tex, block }: Props) {
   const html = useMemo(
-    () => katex.renderToString(tex, { displayMode: !!block, throwOnError: false, strict: 'ignore', trust: false, output: 'mathml' }),
+    () => katex.renderToString(tex, { displayMode: !!block, throwOnError: false, strict: 'ignore', trust: false, output: 'htmlAndMathml' }),
     [tex, block],
   )
   return block ? (

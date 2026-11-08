@@ -128,12 +128,12 @@ def _final_entry(mid, cname, title, f, sk):
     return entry
 
 
-def build_extra_models(results_dir):
+def build_extra_models(results_dir, browser_ids=()):
     """Website data of the models that are measured but not in the browser bundle (linear SVM, stacking).
 
     Only numbers read from ``results_dir`` (``final/``, ``tuning/``, ``baselines/``); ``None`` when neither
     model has a final result. The output is deterministic (no timestamp), so a regenerated file only
-    differs when the results do.
+    differs when the results do. ``browser_ids``: model ids of this dataset in the browser bundle (the SVM is).
     """
     rd = Path(results_dir)
     cls_to_id = {**{v: k for k, v in CLASS_NAME.items()}, **{c: m for m, c, _ in EXTRA_MODELS}}
@@ -145,6 +145,7 @@ def build_extra_models(results_dir):
         entry = _final_entry(
             mid, cname, title, f, _read(rd / "baselines" / f"sklearn_{cname}.json")
         )
+        entry["in_browser"] = mid in set(browser_ids)
         if mid == "stacking":
             bases = f.get("base_models") or f["params"].get("bases") or []
             base_fit = [
@@ -243,11 +244,15 @@ def build_pairs(results_dir):
     return {"rotation_angles": raw.get("rotation_angles"), "recipe": recipe, "models": models}
 
 
-def write_extra_models(datasets, out_path):
-    """Write ``extra_models.json`` for the site: ``datasets`` maps a dataset id to its results dir."""
+def write_extra_models(datasets, out_path, manifest=None):
+    """Write ``extra_models.json`` for the site: ``datasets`` maps a dataset id to its results dir.
+
+    ``manifest`` (the site's bundle manifest) tells which of these models also run in the browser.
+    """
     out = {"schema": EXTRA_SCHEMA, "datasets": {}}
     for name, rd in datasets.items():
-        e = build_extra_models(rd)
+        ids = list(((manifest or {}).get("datasets", {}).get(name) or {}).get("models", {}))
+        e = build_extra_models(rd, ids)
         if e:
             out["datasets"][name] = e
     Path(out_path).write_text(json.dumps(out, separators=(",", ":")) + "\n", encoding="utf-8")

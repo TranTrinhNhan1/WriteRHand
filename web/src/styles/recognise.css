@@ -646,8 +646,6 @@
     gap: 12px 16px;
     align-items: end;
   }
-  .mcard__head,
-  .mcard__foot,
   .mcard .cbars--h {
     grid-column: 1 / -1;
   }
@@ -668,13 +666,6 @@
   }
 }
 
-.mcard__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 4px 12px;
-  flex-wrap: wrap;
-}
 
 .mcard__name {
   font: 600 0.875rem/1.3 var(--sans);
@@ -682,15 +673,6 @@
   color: var(--ink);
 }
 
-.mcard__state {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font: 400 0.6875rem/1.3 var(--mono);
-  letter-spacing: 0.02em;
-  color: var(--ink-3);
-  white-space: nowrap;
-}
 
 .mcard__read {
   display: grid;
@@ -909,15 +891,6 @@
 }
 
 /* inspect + about this model */
-.mcard__foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 0 14px;
-  margin-inline: calc(-1 * var(--pp));
-  padding-inline: var(--pp);
-  border-top: 1px dashed var(--line);
-}
 
 .mcard__about {
   flex: 1 1 auto;
@@ -1575,103 +1548,6 @@
   }
 }
 
-/* plain and augmented variant side by side: one row per model ------------------- */
-.pairs {
-  display: grid;
-  border-top: 1px solid var(--line);
-}
-
-.pairs__head {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: center;
-  gap: 8px var(--pp);
-  padding: 10px var(--pp);
-  border-bottom: 1px solid var(--line);
-}
-
-.pairs__col {
-  font: 500 0.6875rem/1.3 var(--mono);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-}
-
-.pairs__head .btn {
-  grid-column: 1 / -1;
-  justify-self: start;
-}
-
-.readout .models--paired {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  border-top: 0;
-}
-
-.mpair {
-  display: grid;
-  border-top: 1px solid var(--line);
-}
-
-.mpair:first-child {
-  border-top: 0;
-}
-
-.mpair__name {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 10px var(--pp) 0;
-  font: 600 0.875rem/1.3 var(--sans);
-  color: var(--ink);
-}
-
-.mpair__diff {
-  font: 600 0.6875rem/1.3 var(--mono);
-  color: var(--warn);
-}
-
-.mpair__diff::before {
-  content: '≠ ';
-}
-
-.mpair__cells {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.readout .mpair .mcard {
-  grid-template-columns: minmax(0, 1fr);
-  gap: 10px;
-  padding-top: 8px;
-  border-top: 0;
-}
-
-.readout .mpair .mcard:first-child {
-  border-right: 1px solid var(--line);
-}
-
-.readout .mpair .mcard__read {
-  grid-template-columns: auto minmax(0, 1fr);
-  min-height: 48px;
-}
-
-.readout .mpair .mcard__digit {
-  font-size: 2.25rem;
-}
-
-.readout .mpair .mcard .cbars--h {
-  grid-column: auto;
-}
-
-.mpair.is-split .mcard__digit {
-  color: var(--warn);
-}
-
-.mcard--none {
-  min-height: 1px;
-}
-
 /* the variant toggle next to the model picker (section 04) */
 .mpick {
   display: flex;
@@ -1713,4 +1589,383 @@
 .mpick__vbtn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* compact rack: every model's answer in one screen ------------------------------- */
+/* a card is one dense line (digit, confidence, time, two icon actions) over a slim strip of class bars */
+
+.readout .mcard {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 3px;
+  padding: 6px 10px 6px;
+  align-items: start;
+}
+
+.readout .mcard__name {
+  font: 600 0.8125rem/1.3 var(--sans);
+  color: var(--ink);
+}
+
+.readout .mcard__read {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+}
+
+.readout .mcard__digit {
+  font-size: 2rem;
+  line-height: 0.95;
+  min-width: 0.65em;
+}
+
+.readout .mcard__digit.is-word {
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.readout .mcard__meta {
+  gap: 0;
+}
+
+.readout .mcard__conf {
+  font-size: 0.9375rem;
+  line-height: 1.2;
+}
+
+.readout .mcard__conf .mcard__label {
+  margin-left: 2px;
+}
+
+.readout .mcard__label {
+  font-size: 0.6875rem;
+  line-height: 1.35;
+}
+
+.readout .mcard__meta .btn--small {
+  min-height: 32px;
+  padding: 4px 10px;
+}
+
+.mcard__acts {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  align-self: start;
+}
+
+.mcard__icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--ink-3);
+  cursor: pointer;
+  list-style: none;
+  transition: color 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+
+.mcard__icon::-webkit-details-marker {
+  display: none;
+}
+
+.mcard__icon:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: var(--line-2);
+}
+
+.mcard__icon:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.mcard__inspect[aria-pressed='true'] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.mcard__inspect:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (pointer: coarse) {
+  .mcard__icon {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+.readout .mcard__about {
+  position: static;
+  flex: none;
+}
+
+.readout .mcard__about > summary::before {
+  content: none;
+}
+
+.mcard__about[open] > .mcard__icon {
+  color: var(--ink);
+  border-color: var(--line-2);
+}
+
+/* the note opens over the rack, under its card */
+.mcard__pop {
+  position: absolute;
+  top: calc(100% - 4px);
+  right: 6px;
+  z-index: 5;
+  display: grid;
+  gap: 4px;
+  width: min(300px, calc(100cqi - 16px));
+  padding: 10px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--raised);
+  box-shadow: 0 10px 28px -12px rgba(0, 0, 0, 0.45);
+}
+
+.mcard__pop .note {
+  padding: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+/* slim class bars */
+.cbars--mini {
+  gap: 2px;
+}
+
+.cbars--mini.cbars--v .cbars__track {
+  height: 16px;
+}
+
+.cbars--mini.cbars--v .cbars__name {
+  font-size: 0.625rem;
+  line-height: 1.2;
+}
+
+.readout .mcard.is-selected {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+/* plain / augmented pairs: a matrix of rows (models) and two columns (augmented, plain) */
+.pairs {
+  border-top: 1px solid var(--line);
+}
+
+.pairs__head,
+.mpair {
+  display: grid;
+  grid-template-columns: 7.25rem repeat(2, minmax(0, 1fr));
+}
+
+.pairs__head {
+  padding-block: 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+.pairs__col {
+  padding-inline: 10px;
+  font: 500 0.6875rem/1.3 var(--mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.readout .models--paired {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  border-top: 0;
+}
+
+.mpair {
+  border-top: 1px solid var(--line);
+}
+
+.mpair:first-child {
+  border-top: 0;
+}
+
+.mpair__name {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: 8px 6px 8px var(--pp);
+  font: 600 0.8125rem/1.3 var(--sans);
+  color: var(--ink);
+}
+
+.mpair__diff {
+  font: 600 0.6875rem/1.3 var(--mono);
+  color: var(--warn);
+}
+
+.mpair__diff::before {
+  content: '≠ ';
+}
+
+.mpair__cells {
+  display: contents;
+}
+
+.readout .mpair .mcard {
+  border-top: 0;
+  border-left: 1px solid var(--line);
+}
+
+.mpair.is-split .mcard__digit {
+  color: var(--warn);
+}
+
+.mcard--none {
+  min-height: 1px;
+}
+
+/* narrow readout: the model name goes above its two cells */
+@container readout (max-width: 519px) {
+  .pairs__head,
+  .mpair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pairs__head > span:first-child {
+    display: none;
+  }
+  .mpair__name {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 8px var(--pp) 0;
+  }
+  .readout .mpair .mcard:first-of-type {
+    border-left: 0;
+  }
+}
+
+/* desktop: the readout stays in view while the input column scrolls, and the verdict is compact */
+@media (min-width: 980px) {
+  .deck {
+    grid-template-columns: minmax(0, 0.78fr) minmax(0, 1fr);
+  }
+  .readout {
+    position: sticky;
+    top: 72px;
+  }
+  .readout .verdict {
+    gap: 12px 18px;
+    padding: 12px var(--pp);
+  }
+  .readout .mnist28 {
+    --eye: 64px;
+    margin: 4px;
+    box-shadow:
+      0 0 0 4px var(--scr-bg),
+      0 0 0 5px var(--line-2);
+  }
+  .readout .verdict__eye {
+    gap: 6px;
+  }
+  .readout .verdict__eyelabel {
+    max-width: 92px;
+  }
+  .readout .verdict__digit {
+    font-size: 3.5rem;
+    margin-top: 4px;
+  }
+  .readout .verdict__say {
+    font-size: 0.9375rem;
+  }
+  .readout .verdict__text {
+    gap: 3px;
+  }
+  .readout .verdict__text .caption {
+    font-size: 0.75rem;
+    line-height: 1.45;
+  }
+  .readout > .panel-head {
+    min-height: 40px;
+    padding-block: 6px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .deck {
+    grid-template-columns: minmax(0, 440px) minmax(0, 1fr);
+  }
+}
+
+.cbars--mini.cbars--v .cbars__row {
+  gap: 2px;
+}
+
+@container readout (max-width: 519px) {
+  .readout .mcard__read {
+    grid-template-columns: auto minmax(0, 1fr);
+    row-gap: 2px;
+  }
+  .readout .mcard__conf .mcard__label {
+    display: block;
+    margin-left: 0;
+    white-space: nowrap;
+  }
+  .mcard__acts {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    margin-top: -4px;
+  }
+}
+
+.mpair__q {
+  font: 400 0.625rem/1.35 var(--mono);
+  color: var(--ink-3);
+}
+
+@container readout (max-width: 519px) {
+  .mpair__name {
+    flex-wrap: wrap;
+  }
+}
+
+@media (min-width: 980px) {
+  .readout .verdict__eyelabel {
+    max-width: none;
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 980px) {
+  .readout > .panel-head {
+    min-height: 36px;
+    padding-block: 4px;
+  }
+  .pairs__head {
+    padding-block: 3px;
+  }
+  .readout .mpair .mcard {
+    padding-block: 5px;
+  }
+  .readout .verdict {
+    padding-block: 10px;
+  }
+}
+
+/* in a pair the quantity label sits in the row header, so a card keeps its actions on the first line */
+@container readout (max-width: 519px) {
+  .readout .mpair .mcard__read {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .readout .mpair .mcard__acts {
+    grid-column: auto;
+    margin-top: 0;
+  }
 }

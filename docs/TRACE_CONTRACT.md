@@ -29,17 +29,21 @@ the number of boosting rounds is hard-coded in the frontend.
 ## `models.<id>`
 
 `title`, `class`, `format` (`onnx` | `binary`), `file`, `sha256`, `size_bytes`, `params`
-(hyper-parameters), `validation` (export vs Python parity), and **`trace`**:
+(hyper-parameters), `validation` (export vs Python parity), `kind` (= `trace.kind`), `augmented`
+(bool), `augmentation` (recipe or null), `output_kind` (optional, = `trace.output.kind`), and **`trace`**.
+
+The model id is the architecture (`trace.kind`) for the plain model, or `<kind>_aug` for the variant
+trained on augmented images; `augmented` must agree with the id, and every model has its own files.
 
 ```jsonc
 {
   "schema": "writerhand.trace/1",
-  "kind": "mlp" | "cnn" | "softmax" | "naive_bayes" | "adaboost",
+  "kind": "mlp" | "cnn" | "softmax" | "svm" | "naive_bayes" | "adaboost",
   "preprocessing": [{"op":"scale","divisor":255}, {"op":"standardize","mean":..,"std":..,"eps":1e-8}],
   "input":  {"name":"pixels","shape":["N",784],"range":[0,1]},
   "layers": [ {"id","op","inputs":[ids],"out_shape":[..],"runtime":"<onnx output>"|null, ...op fields} ],
   "runtime_outputs": [ {"name","layer","shape":[..],"role"} ],   // exactly the extra ONNX outputs
-  "output": {"name","kind":"softmax_probability"|"vote_share","calibrated":bool,"classes":[..]},
+  "output": {"name","kind":"softmax_probability"|"vote_share"|"softmax_score","calibrated":bool,"classes":[..]},
   "params": {"file","sha256","nbytes","tensors":[{"name","shape","offset","nbytes","layer","role"}]},
   "n_parameters": int
 }
@@ -73,6 +77,9 @@ the runtime value, with the absolute difference.
 * Reconstructions (MLP weighted sums, convolution/pooling values, GaussianNB log-likelihood
   decomposition, softmax logits, AdaBoost paths and votes) agree with the runtime outputs.
 * AdaBoost `vote_share` is **not calibrated** (`output.calibrated = false`).
+* The linear SVM (`kind: "svm"`, same layers as softmax regression) outputs `softmax_score`: its
+  `probabilities` output is only a softmax normalisation of the class scores (`logits` = raw scores),
+  so `calibrated` must be `false`; the site labels it "normalised score, not a probability".
 * An activation map shows a layer's activation for this input; it is not an attribution or a causal
   explanation of the decision. Methods that do attribute (e.g. pixel-wise `x_i·W_ik` for the linear
   models, which is exact for them) are labelled as such.

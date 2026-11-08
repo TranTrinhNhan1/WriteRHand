@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { MODEL_TITLES, answers, card, predicted, waitAllAnswered } from './helpers'
+import { MNIST_TITLES, answers, card, predicted, waitAllAnswered } from './helpers'
 
 /**
  * Browser end-to-end tests against the production build and the pinned model bundle.
@@ -21,19 +21,19 @@ test.afterEach(async ({ page }) => {
   expect((page as Page & { problems: string[] }).problems, 'no runtime errors').toEqual([])
 })
 
-test('the page lists the dataset and all five models, none of them preselected as answered', async ({ page }) => {
+test('the page lists the dataset and all six models with their variants, none of them preselected as answered', async ({ page }) => {
   await expect(page.getByRole('radio', { name: /^MNIST/ })).toBeChecked()
   // MNIST: one row per model, the augmented variant on the left and the plain model on the right
-  expect(await answers(page).locator('.mpair__name').allInnerTexts()).toEqual(MODEL_TITLES)
-  for (const t of MODEL_TITLES) await expect(card(page, t)).toHaveCount(1)
-  for (const t of MODEL_TITLES) await expect(card(page, t, 'augmented')).toHaveCount(1)
+  expect(await answers(page).locator('.mpair__name').evaluateAll((els) => els.map((e) => e.firstChild?.textContent?.trim()))).toEqual(MNIST_TITLES)
+  for (const t of MNIST_TITLES) await expect(card(page, t)).toHaveCount(1)
+  for (const t of MNIST_TITLES) await expect(card(page, t, 'augmented')).toHaveCount(1)
   await expect(page.getByText('Bạn vẽ một chữ số trước nhé')).toBeVisible()
 })
 
 test('a sample digit is read by every model, with per-class outputs', async ({ page }) => {
   await page.getByRole('button', { name: 'Vẽ số 7' }).click()
   await waitAllAnswered(page)
-  for (const t of MODEL_TITLES) expect(await predicted(page, t), `${t} reads the 7`).toBe(7)
+  for (const t of MNIST_TITLES) expect(await predicted(page, t), `${t} reads the 7`).toBe(7)
 })
 
 test('drawing with the mouse produces answers, and clearing removes them', async ({ page }) => {
@@ -145,7 +145,8 @@ test('results page shows the five browser models and the two measured-only ones'
   await page.goto('/#/results')
   for (const t of ['Naive Bayes', 'MLP', 'CNN', 'AdaBoost', 'Linear SVM', 'Stacking']) await expect(page.getByText(t).first()).toBeVisible()
   const table = page.getByRole('region', { name: 'Các chỉ số trên tập Test' })
-  await expect(table.getByRole('row', { name: /Linear SVM.*không chạy trên trình duyệt.*91[.,]95%/ })).toBeVisible()
+  // the linear SVM runs in the browser now: no tag; the stacking ensemble still does not
+  await expect(table.getByRole('row', { name: /^Linear SVM 91[.,]95%/ })).toBeVisible()
   await expect(table.getByRole('row', { name: /Stacking.*không chạy trên trình duyệt.*99[.,]05%/ })).toBeVisible()
 })
 
@@ -213,8 +214,8 @@ test('MNIST pairs each model with its augmented variant; variants load on reques
   await waitAllAnswered(page)
   // nothing augmented is downloaded until asked
   await expect(card(page, 'MLP', 'augmented').getByRole('button', { name: /^Tải/ })).toBeVisible()
-  await page.getByRole('button', { name: /^Tải 5 bản tăng cường · / }).click()
-  for (const t of ['Naive Bayes', 'Softmax regression', 'MLP', 'CNN', 'AdaBoost']) {
+  await page.getByRole('button', { name: /^Tải 6 bản tăng cường · / }).click()
+  for (const t of MNIST_TITLES) {
     await expect(card(page, t, 'augmented').getByRole('list', { name: /Đầu ra cho từng lớp/ })).not.toContainText('không có', { timeout: 60_000 })
   }
   expect(await predicted(page, 'CNN', 'augmented')).toBe(7)
@@ -245,4 +246,44 @@ test('results page compares every plain model with its augmented variant, number
   await expect(table.getByRole('row', { name: /Naive Bayes 81[.,]32% 70[.,]64% −10[.,]68/ })).toBeVisible()
   await expect(table.getByRole('row', { name: /CNN 98[.,]80% 99[.,]21% \+0[.,]41/ })).toBeVisible()
   await expect(page.getByText(/xoay ±30°, dịch ±2 px, co giãn 0[.,]9–1[.,]1/)).toBeVisible()
+})
+
+test('at 1280 × 800 the answer of every model and variant (12 cells) is on screen together with the majority', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.getByRole('button', { name: 'Vẽ số 7' }).click()
+  await waitAllAnswered(page)
+  await page.getByRole('button', { name: /^Tải 6 bản tăng cường · / }).click()
+  await expect(card(page, 'AdaBoost', 'augmented').getByRole('list', { name: /Đầu ra cho từng lớp/ })).not.toContainText('không có', { timeout: 60_000 })
+  // scroll to the two panels, as a visitor does after the introduction
+  await page.locator('.deck').evaluate((e) => {
+    const w = globalThis as unknown as { scrollTo(x: number, y: number): void; scrollY: number }
+    w.scrollTo(0, e.getBoundingClientRect().top + w.scrollY - 70)
+  })
+  const cells = answers(page).locator('.mcard')
+  await expect(cells).toHaveCount(12)
+  const boxes = await cells.evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).map((r) => ({ top: r.top, bottom: r.bottom })))
+  for (const b of boxes) {
+    expect(b.top).toBeGreaterThanOrEqual(0)
+    expect(b.bottom).toBeLessThanOrEqual(800)
+  }
+  const verdict = await answers(page).locator('.verdict__digit').boundingBox()
+  expect(verdict!.y).toBeGreaterThanOrEqual(0)
+  // the readout stays in view while the input column scrolls
+  await page.mouse.wheel(0, 500)
+  await expect.poll(async () => (await cells.last().boundingBox())!.y + (await cells.last().boundingBox())!.height).toBeLessThanOrEqual(800)
+})
+
+test('the linear SVM answers with normalised scores, never called probabilities, and opens in the explorer', async ({ page }) => {
+  await page.getByRole('button', { name: 'Vẽ số 3' }).click()
+  await waitAllAnswered(page)
+  await expect(card(page, 'Linear SVM').getByRole('list', { name: 'Đầu ra cho từng lớp (điểm số chuẩn hóa · không phải xác suất)' })).toBeVisible()
+  await expect(answers(page).locator('.mpair').filter({ hasText: 'Linear SVM' })).toContainText('điểm số chuẩn hóa · không phải xác suất')
+  await card(page, 'Linear SVM').getByRole('button', { name: 'Xem bên trong' }).click()
+  await expect(page.getByRole('region', { name: 'Linear SVM' })).toBeVisible({ timeout: 30_000 })
+  const panel = page.getByRole('tabpanel')
+  // the softmax-regression view, with scores instead of logits, checked against the deployed graph
+  await expect(panel).toContainText(/Điểm số/, { timeout: 30_000 })
+  await expect(panel).toContainText(/Chênh lệch tuyệt đối lớn nhất trên \d+ lớp/)
+  await page.getByRole('group', { name: 'Biến thể' }).getByRole('button', { name: 'tăng cường', exact: true }).click()
+  await expect(page.getByRole('region', { name: 'Linear SVM · tăng cường' })).toBeVisible({ timeout: 30_000 })
 })

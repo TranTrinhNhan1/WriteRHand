@@ -16,7 +16,7 @@ from src.experiments.search import CLASS_NAME
 from src.models.base import BaseClassifier
 from src.utils.paths import ARTIFACTS_DIR, RESULTS_DIR
 
-KINDS = ["naive_bayes", "softmax", "mlp", "adaboost", "cnn"]
+KINDS = ["naive_bayes", "softmax", "svm", "mlp", "adaboost", "cnn"]
 
 
 def _acc(model, X, y):

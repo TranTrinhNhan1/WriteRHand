@@ -102,6 +102,27 @@ def softmax_regression_to_onnx(model, mean, std):
     )
 
 
+def svm_to_onnx(model, mean, std):
+    """One-vs-rest linear SVM: scores = x W + b. ``probabilities`` is only a softmax of the scores
+    (a normalised ranking, not a calibrated probability: the SVM does not produce probabilities)."""
+    nodes, inits = _normalise_nodes(mean, std)
+    inits += [_init("W", model.W), _init("b", model.b)]
+    nodes += [
+        helper.make_node("Gemm", ["x", "W", "b"], ["logits"]),
+        helper.make_node("Softmax", ["logits"], ["probabilities"], axis=1),
+    ]
+    k = len(model.classes)
+    trace = [("x", ["batch", 784]), ("logits", ["batch", k])]
+    return _wrap(
+        nodes,
+        inits,
+        "Linear SVM (one-vs-rest hinge scores)",
+        len(model.classes),
+        model.classes,
+        trace,
+    )
+
+
 def gaussian_nb_to_onnx(model, mean, std):
     """log p(k) - 0.5 sum_j [log(2 pi s2_kj) + (x_j - m_kj)^2 / s2_kj], expanded as a quadratic
     form so it becomes two matrix products:  (x^2) A + x B + c."""

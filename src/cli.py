@@ -315,8 +315,11 @@ def _write_site_extra(names):
     from src.experiments.report import write_extra_models
     from src.utils.paths import ROOT
 
-    path = ROOT / "web" / "public" / "data" / "extra_models.json"
-    out = write_extra_models({n: dataset_dirs(n)[0] for n in names}, path)
+    data = ROOT / "web" / "public" / "data"
+    path = data / "extra_models.json"
+    man = data / "manifest.json"
+    manifest = json.loads(man.read_text(encoding="utf-8")) if man.is_file() else None
+    out = write_extra_models({n: dataset_dirs(n)[0] for n in names}, path, manifest)
     print(f"extra models -> {path} ({', '.join(out['datasets']) or 'none'})")
 
 

@@ -14,6 +14,7 @@ from src.export.onnx_export import (  # noqa: E402
     gaussian_nb_to_onnx,
     mlp_to_onnx,
     softmax_regression_to_onnx,
+    svm_to_onnx,
 )
 from src.export.tracespec import build_trace  # noqa: E402
 from src.models.adaboost import AdaBoostSAMME  # noqa: E402
@@ -21,6 +22,7 @@ from src.models.cnn import CNN  # noqa: E402
 from src.models.logistic_regression import SoftmaxRegression  # noqa: E402
 from src.models.mlp import MLP  # noqa: E402
 from src.models.naive_bayes import GaussianNB  # noqa: E402
+from src.models.svm import LinearSVM  # noqa: E402
 
 MEAN, STD = 0.3, 0.4
 NAMES = [f"c{i}" for i in range(10)]
@@ -66,6 +68,7 @@ def models(pixel_data):
     return {
         "mlp": MLP((32, 16), epochs=3, learning_rate=0.05).fit(X, y),
         "softmax": SoftmaxRegression(epochs=3).fit(X, y),
+        "svm": LinearSVM(epochs=3).fit(X, y),
         "naive_bayes": GaussianNB(0.5).fit(X, y),
         "cnn": CNN((3, 4), dense=(12,), epochs=2, batch_size=64).fit(X, y),
     }
@@ -74,10 +77,11 @@ def models(pixel_data):
 BUILDERS = {
     "mlp": mlp_to_onnx,
     "softmax": softmax_regression_to_onnx,
+    "svm": svm_to_onnx,
     "naive_bayes": gaussian_nb_to_onnx,
     "cnn": cnn_to_onnx,
 }
-TOL = {"mlp": 1e-5, "softmax": 1e-5, "naive_bayes": 1e-3, "cnn": 1e-4}
+TOL = {"mlp": 1e-5, "softmax": 1e-5, "svm": 1e-5, "naive_bayes": 1e-3, "cnn": 1e-4}
 
 
 @pytest.mark.parametrize("kind", list(BUILDERS))
@@ -85,7 +89,8 @@ def test_onnx_matches_python_model(kind, models, pixel_data):
     P, _ = pixel_data
     model = models[kind]
     out = _run_all(BUILDERS[kind](model, MEAN, STD), P)["probabilities"]
-    ref = model.predict_proba(_norm(P))
+    X = _norm(P)
+    ref = _softmax(model.decision_function(X)) if kind == "svm" else model.predict_proba(X)
     assert out.shape == ref.shape
     assert np.abs(out - ref).max() < TOL[kind]
     np.testing.assert_array_equal(out.argmax(1), ref.argmax(1))
@@ -120,7 +125,10 @@ def test_layer_graph_is_consistent(kind, models):
     assert len(set(ids)) == len(ids)
     for layer in trace["layers"]:
         assert all(i in ids[: ids.index(layer["id"])] for i in layer["inputs"])  # DAG, topological
-    assert trace["layers"][-1]["op"] == "softmax" and trace["output"]["calibrated"] is True
+    assert trace["layers"][-1]["op"] == "softmax"
+    # SVM scores are only normalised by the softmax, never presented as calibrated probabilities
+    assert trace["output"]["calibrated"] is (kind != "svm")
+    assert trace["output"]["kind"] == ("softmax_score" if kind == "svm" else "softmax_probability")
     assert trace["schema"] == "writerhand.trace/1"
 
 

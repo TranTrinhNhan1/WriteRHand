@@ -23,6 +23,8 @@ const VIEWS: Record<ModelKind, (p: ExplorerViewProps) => ReactNode> = {
   cnn: CnnView,
   naive_bayes: NaiveBayesView,
   softmax: SoftmaxView,
+  // same layout as softmax regression (one dense layer of per-class weights); its output is scores
+  svm: SoftmaxView,
   adaboost: AdaBoostView,
 }
 

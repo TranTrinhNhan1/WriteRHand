@@ -4,6 +4,7 @@ PREPROCESS = "mnist-global-standardize-v2-stratified"
 DESCRIPTIONS = {
     "cnn": "two Conv-ReLU-MaxPool stages and a linear head; hand-written im2col convolution, pooling and backpropagation",
     "naive_bayes": "per-class, per-pixel Gaussian likelihoods with MLE parameters and log-space inference",
+    "svm": "one-vs-rest linear SVM, hinge loss, sub-gradient mini-batch descent, L2; outputs scores, not probabilities",
     "softmax": "multiclass logistic regression, softmax + cross-entropy, mini-batch gradient descent, L2",
     "mlp": "fully connected ReLU network, hand-written backpropagation, momentum SGD, early stopping",
     "adaboost": "multiclass AdaBoost (SAMME) over weighted histogram decision trees",
@@ -80,7 +81,7 @@ license_name: unspecified-educational
 
 # WriteRHand
 
-Five image classifiers (each also as an augmented variant) whose mathematical core was implemented **from scratch** (NumPy; PyTorch
+Six image classifiers (each also as an augmented variant) whose mathematical core was implemented **from scratch** (NumPy; PyTorch
 only as a tensor library, *no autograd, no nn.Module, no F.conv2d*) for a university Pattern
 Recognition course, trained **separately** on three 28x28 datasets: MNIST, Fashion-MNIST and
 EMNIST Digits. They are *educational* models, not production OCR. Code, tests and report:

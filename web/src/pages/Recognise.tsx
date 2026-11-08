@@ -1,5 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { Check, MagnifyingGlass, Warning } from '@phosphor-icons/react'
+import { Check, Info, MagnifyingGlass, Warning } from '@phosphor-icons/react'
 import { ClassBars } from '../components/ClassBars'
 import { DigitPad, cropOf, type CropRect, type DigitPadHandle, type PadChange } from '../components/DigitPad'
 import { Mnist28 } from '../components/Mnist28'
@@ -200,6 +200,13 @@ function TestImages({ dataset, ds, chosen, onPick, onIntent }: { dataset: string
   )
 }
 
+/** What a model's per-class output is, as a short label (with the calibration caveat when there is one). */
+function quantityOf(t: ReturnType<typeof useI18n>['t'], out: { kind: string; calibrated: boolean }): string {
+  if (out.kind === 'softmax_score') return t('out.short.score')
+  const q = out.kind === 'vote_share' ? t('out.short.voteShare') : t('out.short.probability')
+  return out.calibrated ? q : `${q} · ${t('out.notCalibrated')}`
+}
+
 interface CardProps {
   choice: ModelChoice
   dataset: string
@@ -220,12 +227,13 @@ function ModelCard({ choice, classes, exec, status, hasInput, dissent, selected,
   const { kind, entry, selectable } = choice
   const out = entry.trace.output
   const isVote = out.kind === 'vote_share'
+  const isScore = out.kind === 'softmax_score'
   const ready = exec.state === 'ready' ? exec.execution : null
   const size = bytes(choice.bytes)
   const top = ready ? classes[ready.top] : null
   const v = entry.validation
   const st = !selectable ? 'off' : status.state
-  const quantity = isVote ? t('out.short.voteShare') : t('out.short.probability')
+  const quantity = isVote ? t('out.short.voteShare') : isScore ? t('out.short.score') : t('out.short.probability')
 
   let line: React.ReactNode
   if (!selectable) {
@@ -233,13 +241,12 @@ function ModelCard({ choice, classes, exec, status, hasInput, dissent, selected,
   } else if (ready) {
     line = (
       <>
-        <p className="mcard__conf num">{pct(ready.probs[ready.top], 0)}</p>
-        <p className="mcard__label">
-          {quantity}
-          {!out.calibrated ? ` · ${t('out.notCalibrated')}` : ''}
+        <p className="mcard__conf num">
+          {pct(ready.probs[ready.top], 0)} {!paired && <span className="mcard__label">{quantity}</span>}
         </p>
         <p className="mcard__label num">
           {latency(ready.ms)}
+          {!paired && !out.calibrated && !isScore ? ` · ${t('out.notCalibrated')}` : ''}
           {dissent && (
             <>
               {' · '}
@@ -278,53 +285,55 @@ function ModelCard({ choice, classes, exec, status, hasInput, dissent, selected,
     )
   }
 
+  const name = `${t(`model.${kind}`)}${paired ? ` ${choice.augmented ? t('rec.pair.augmented') : t('rec.pair.plain')}` : ''}`
   return (
     <li
       className={`mcard${dissent ? ' is-dissent' : ''}${ready ? ' has-pred' : ''}${selected ? ' is-selected' : ''}${selectable ? '' : ' is-off'}`}
       data-variant={choice.augmented ? 'augmented' : 'plain'}
+      data-state={st}
     >
-      <div className="mcard__head">
-        <h3 className="mcard__name">
-          {/* in a pair the row shows the model name and the column header the variant */}
-          <span className={paired ? 'visually-hidden' : undefined}>
-            {t(`model.${kind}`)}
-            {paired ? ` ${choice.augmented ? t('rec.pair.augmented') : t('rec.pair.plain')}` : ''}
-          </span>
-        </h3>
-        <span className="mcard__state">
-          <span className={`dot dot--${st}`} aria-hidden="true" />
-          {st === 'loading' ? t('rec.compare.loading') : st === 'error' ? t('rec.compare.failed') : size}
-        </span>
-      </div>
-
+      {/* in a pair the row shows the model name and the column header the variant */}
+      <h3 className={paired ? 'visually-hidden' : 'mcard__name'}>{name}</h3>
       <div className="mcard__read">
         <p className={`mcard__digit num${top && top.length > 2 ? ' is-word' : ''}`} aria-hidden={!top}>
           {top ?? '–'}
         </p>
         <div className="mcard__meta">{line}</div>
+        <div className="mcard__acts">
+          <button
+            type="button"
+            className="mcard__icon mcard__inspect"
+            aria-pressed={selected}
+            disabled={!selectable}
+            onClick={onSelect}
+            aria-label={selected ? t('rec.card.inspecting') : t('rec.card.inspect')}
+            title={selected ? t('rec.card.inspecting') : t('rec.card.inspect')}
+          >
+            <MagnifyingGlass size={15} weight="bold" aria-hidden="true" />
+          </button>
+          <details className="mcard__about">
+            <summary className="mcard__icon" aria-label={t('rec.card.about')} title={t('rec.card.about')}>
+              <Info size={15} weight="bold" aria-hidden="true" />
+            </summary>
+            <div className="mcard__pop">
+              <p className="note">{t(`out.note.${kind}`)}</p>
+              <p className="note note--muted num">
+                {st === 'loading' ? t('rec.compare.loading') : st === 'error' ? t('rec.compare.failed') : size}
+              </p>
+              {v?.n_checked ? (
+                <p className="note note--muted">
+                  {t('out.checked', {
+                    n: int(v.n_checked),
+                    diff: v.max_abs_prob_diff === 0 ? '0' : v.max_abs_prob_diff.toExponential(1),
+                    agree: pct(v.argmax_agreement, 1),
+                  })}
+                </p>
+              ) : null}
+            </div>
+          </details>
+        </div>
       </div>
-
-      <ClassBars values={ready ? ready.probs : null} classes={classes} quantity={quantity} dissent={dissent} />
-
-      <div className="mcard__foot">
-        <button type="button" className="mcard__inspect" aria-pressed={selected} disabled={!selectable} onClick={onSelect}>
-          <MagnifyingGlass size={14} weight="bold" aria-hidden="true" />
-          {selected ? t('rec.card.inspecting') : t('rec.card.inspect')}
-        </button>
-        <details className="mcard__about">
-          <summary>{t('rec.card.about')}</summary>
-          <p className="note">{t(`out.note.${kind}`)}</p>
-          {v?.n_checked ? (
-            <p className="note note--muted">
-              {t('out.checked', {
-                n: int(v.n_checked),
-                diff: v.max_abs_prob_diff === 0 ? '0' : v.max_abs_prob_diff.toExponential(1),
-                agree: pct(v.argmax_agreement, 1),
-              })}
-            </p>
-          ) : null}
-        </details>
-      </div>
+      <ClassBars values={ready ? ready.probs : null} classes={classes} quantity={quantity} dissent={dissent} mini />
     </li>
   )
 }
@@ -571,6 +580,7 @@ export default function Recognise() {
               {t('rec.step.answer')}
             </h2>
             <span className="panel-head__tag">{t('rec.chip.dataset', { title: ds.title })}</span>
+            {paired && <LoadVariants choices={choices} dataset={dataset} onLoad={(ids) => (onIntent(), ids.forEach((id) => registry.load(dataset, id).catch(() => undefined)))} />}
           </header>
 
           <div className={`verdict${verdict ? ' has-result' : ''}${running > 0 && verdict ? ' is-partial' : ''}`}>
@@ -607,14 +617,10 @@ export default function Recognise() {
 
           {paired ? (
             <div className="pairs">
-              <div className="pairs__head">
-                <span className="pairs__col" aria-hidden="true">
-                  {t('rec.pair.augmented')}
-                </span>
-                <span className="pairs__col" aria-hidden="true">
-                  {t('rec.pair.plain')}
-                </span>
-                <LoadVariants choices={choices} dataset={dataset} onLoad={(ids) => (onIntent(), ids.forEach((id) => registry.load(dataset, id).catch(() => undefined)))} />
+              <div className="pairs__head" aria-hidden="true">
+                <span />
+                <span className="pairs__col">{t('rec.pair.augmented')}</span>
+                <span className="pairs__col">{t('rec.pair.plain')}</span>
               </div>
               <ul className="models models--paired">
                 {pairs.map((p) => {
@@ -625,6 +631,8 @@ export default function Recognise() {
                     <li key={p.kind} className={`mpair${differ ? ' is-split' : ''}`} aria-label={t(`model.${p.kind}`)}>
                       <p className="mpair__name">
                         {t(`model.${p.kind}`)}
+                        {/* what the numbers of both cells are, said once per row */}
+                        {(p.plain ?? p.augmented) && <span className="mpair__q">{quantityOf(t, (p.plain ?? p.augmented)!.entry.trace.output)}</span>}
                         {differ && <span className="mpair__diff">{t('rec.pair.differ')}</span>}
                       </p>
                       <ul className="mpair__cells">

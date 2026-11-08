@@ -2,8 +2,8 @@
  "schema": "writerhand.bundle/2",
  "name": "WriteRHand",
  "version": "2.0.0",
- "created": "2026-11-08T14:46:09+00:00",
- "bundle_id": "6a67da24b0f2d0d7",
+ "created": "2026-11-08T15:35:35+00:00",
+ "bundle_id": "498c0162fab833d6",
  "default_dataset": "mnist",
  "files_sha256": {
   "mnist/models/naive_bayes.params.bin": "ce91f4e58174a2bcfb9ef6395da1c30c1745294eb4f46194f7e719b747631c19",
@@ -11,6 +11,8 @@
   "mnist/models/softmax.params.bin": "aa2ff6199fcbea43a92e264ebecfca729657076f3d4d981cb971184a23569a1b",
   "mnist/models/softmax.onnx": "9a183cded622f2468566a720b5bf7177f202339d6ab98bf61729273b4fa5e515",
   "mnist/replay/softmax.replay.json": "f223abf9e37ee44e216e3b117e9d209370895140568b05f33758335b1951e7de",
+  "mnist/models/svm.params.bin": "719406b37fefff834871ed9594e229715e272572254d1f2f6cce047dd1b6b6cf",
+  "mnist/models/svm.onnx": "b5f8b2ac916f3f170b10b6af20dca86940f181ce0398ca000e5daed4f8763fb3",
   "mnist/models/mlp.params.bin": "70764806c98f18a0c988eb883b12a16c7a9ca420f462a1a89e8a6785d39106d1",
   "mnist/models/mlp.onnx": "9ada8d972350a33883c7fe726ebd5e09eb5c5a240453b0d165f5e6b4184ba677",
   "mnist/replay/mlp.replay.json": "e5022476d424d3e5d5f578c2719d458e9c231e4080431483fac3655369fc56e8",
@@ -23,13 +25,15 @@
   "mnist/models/naive_bayes_aug.onnx": "d911b4b13ff630d24234ee2c23a67f9b65f0ab102bf9b55a36bbbfa36cfa42a0",
   "mnist/models/softmax_aug.params.bin": "b1dc3047bbdc3f801d07eb06416a0287850699a00e00f8dce8872a2b1c1ead08",
   "mnist/models/softmax_aug.onnx": "6acbd393663a7e44fa3fc527be5859d3e50f9f04559365f7b55bb1c7c4ae0ccf",
+  "mnist/models/svm_aug.params.bin": "acc81251bf7080bfdbd65be7b10fb607b6947b7af7f45c2cdbe17a3eeacf387c",
+  "mnist/models/svm_aug.onnx": "a586e5d0b05ee485d1f704e559fb643de783f29989c986fe25bd3c0f73cb0b08",
   "mnist/models/mlp_aug.params.bin": "70b1558920c71f2c55d8956a8a2691ddbccef970ff7c26f15c8dab805560d207",
   "mnist/models/mlp_aug.onnx": "68c670fc56566c51d8b00ca256ff81e052a78a8bbcd24b8b0f923146f9932b89",
   "mnist/models/cnn_aug.params.bin": "f31d511419e29eb3ba589b81c7d29ba3d2adb0be2f17ca887eff8c31fdcf7a17",
   "mnist/models/cnn_aug.onnx": "950ed872e489b5932699a4b8deed28de758cfbcfccde0563d80d656b1eef2e1e",
   "mnist/models/adaboost_aug.bin": "3516a5c916a5ad18257dba7b8b4db84d08361430acea267f5375fbf51d16abca",
-  "mnist/test_vectors.json": "a27ab368453fa62d49835493f271e93880e02786f64c3ae3721fd79947b147cd",
-  "mnist/results.json": "8a462cf2ace005a748b2a70adba8befb4007102a95fe0fb94e0f42cec4856044",
+  "mnist/test_vectors.json": "b20a9d5f5493fb941087300cacd15de8abdf783c80f0b4c5efef40e562a2d201",
+  "mnist/results.json": "f3219031da10dd29afc034c9139ab8d10c4cec5408a89aee5019b15e099d38b1",
   "fashion_mnist/models/naive_bayes.params.bin": "bf6a7df26dccdb9155c86080042f6fa7c2d03029f2d3f5d63b572dddccc5a7dc",
   "fashion_mnist/models/naive_bayes.onnx": "041a169223e11457195d77e5a45821bb76361a7445cdc9521b0377e6441c9619",
   "fashion_mnist/models/softmax.params.bin": "ae47b191b0af0dbdc68da2f428d3ad62736e3dab49aa46fc1e4767d120512f82",
@@ -44,7 +48,7 @@
   "fashion_mnist/models/adaboost.bin": "6c0dce63fce9d7ead79cb902f2d3ebcc0e48dca6e491b09e32b0ea8d42122c50",
   "fashion_mnist/replay/adaboost.replay.json": "18613cd84c6b027ddf6b4b8f96abc91af79793ad9320ceca20530ea6a0de1844",
   "fashion_mnist/test_vectors.json": "e28c22b74b67fff98890d31e43726d4d7c26ccde64e6b1b9db86a9eafeaa6847",
-  "fashion_mnist/results.json": "49b4c9ae92f35b7a492efb0b43ec0ed664b7b5e364a3ae9f4fa90c51dbb27960",
+  "fashion_mnist/results.json": "1e5aa20b9e20b0601c7b327fdb976010686d5aaf13ab237687cd78f781c503e5",
   "emnist_digits/models/naive_bayes.params.bin": "75a56078114d6f2a66008408181b9dbd8ba3bca6a87545db488e6eb72abd98ef",
   "emnist_digits/models/naive_bayes.onnx": "6f51b3b218ebc1e01d81be9defb0741b547dede9087aae7e0eeaf1496a1805da",
   "emnist_digits/models/softmax.params.bin": "2e575fd74a614015ac2d71af3be99b4f42710c257428cd90b016bdf01a5b9ce0",
@@ -59,7 +63,7 @@
   "emnist_digits/models/adaboost.bin": "80e8a3d99590ea9b1f4e39de4192ed231f0a50006f70cdc15f93b2ca3d0fb486",
   "emnist_digits/replay/adaboost.replay.json": "fa5ee5076631bb8a9cfcaab44a04287c32acabd414c4869f0209853f45d3e0bd",
   "emnist_digits/test_vectors.json": "6e12f7a910175349c1f29dea566c066f0058d26288614149b6aebc9466454e22",
-  "emnist_digits/results.json": "aa74bb2ef976ffc5af21a6c1d7c1844d644f00cd6b4fa335e70cc8752d8e6848"
+  "emnist_digits/results.json": "709de6667c95741f275437cf23bb1bfb463ccad58ec860b943e0a1284e40359e"
  },
  "datasets": {
   "mnist": {
@@ -123,6 +127,7 @@
      },
      "input": "pixels",
      "output": "probabilities",
+     "output_kind": "softmax_probability",
      "trace": {
       "schema": "writerhand.trace/1",
       "kind": "naive_bayes",
@@ -327,6 +332,7 @@
      },
      "input": "pixels",
      "output": "probabilities",
+     "output_kind": "softmax_probability",
      "trace": {
       "schema": "writerhand.trace/1",
       "kind": "softmax",
@@ -493,6 +499,199 @@
       "size_bytes": 827640
      }
     },
+    "svm": {
+     "title": "Linear SVM",
+     "kind": "svm",
+     "augmented": false,
+     "augmentation": null,
+     "class": "LinearSVM",
+     "format": "onnx",
+     "file": "models/svm.onnx",
+     "sha256": "b5f8b2ac916f3f170b10b6af20dca86940f181ce0398ca000e5daed4f8763fb3",
+     "size_bytes": 31831,
+     "params": {
+      "learning_rate": 0.01,
+      "l2": 0.0001,
+      "loss": "hinge",
+      "epochs": 75,
+      "batch_size": 128,
+      "lr_decay": 0.0,
+      "tol": null,
+      "n_iter_no_change": 3,
+      "seed": 42,
+      "verbose": false
+     },
+     "validation": {
+      "max_abs_prob_diff": 1.8770728682504512e-06,
+      "argmax_agreement": 1.0,
+      "n_checked": 2000,
+      "ok": true
+     },
+     "input": "pixels",
+     "output": "probabilities",
+     "output_kind": "softmax_score",
+     "trace": {
+      "schema": "writerhand.trace/1",
+      "kind": "svm",
+      "preprocessing": [
+       {
+        "op": "scale",
+        "divisor": 255.0,
+        "note": "uint8 pixel -> [0, 1]"
+       },
+       {
+        "op": "standardize",
+        "mean": 0.13063468480215842,
+        "std": 0.3080791897808302,
+        "eps": 1e-08,
+        "formula": "(p - mean)/(std + eps)"
+       }
+      ],
+      "input": {
+       "name": "pixels",
+       "shape": [
+        "N",
+        784
+       ],
+       "range": [
+        0,
+        1
+       ],
+       "layout": "28x28 row-major"
+      },
+      "layers": [
+       {
+        "id": "image",
+        "op": "input",
+        "label": "image",
+        "out_shape": [
+         28,
+         28
+        ],
+        "inputs": []
+       },
+       {
+        "id": "flatten",
+        "op": "flatten",
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "image"
+        ]
+       },
+       {
+        "id": "standardize",
+        "op": "standardize",
+        "mean": 0.13063468480215842,
+        "std": 0.3080791897808302,
+        "eps": 1e-08,
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "flatten"
+        ],
+        "runtime": "x"
+       },
+       {
+        "id": "logits",
+        "op": "dense",
+        "in_features": 784,
+        "out_features": 10,
+        "params": {
+         "weight": "W",
+         "bias": "b"
+        },
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "standardize"
+        ],
+        "runtime": "logits"
+       },
+       {
+        "id": "output",
+        "op": "softmax",
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "logits"
+        ],
+        "runtime": "probabilities"
+       }
+      ],
+      "runtime_outputs": [
+       {
+        "name": "x",
+        "layer": "standardize",
+        "shape": [
+         784
+        ],
+        "role": "standardized_input"
+       },
+       {
+        "name": "logits",
+        "layer": "logits",
+        "shape": [
+         10
+        ],
+        "role": "logits"
+       }
+      ],
+      "output": {
+       "name": "probabilities",
+       "kind": "softmax_score",
+       "calibrated": false,
+       "classes": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+       ]
+      },
+      "n_parameters": 7850,
+      "params": {
+       "file": "models/svm.params.bin",
+       "sha256": "719406b37fefff834871ed9594e229715e272572254d1f2f6cce047dd1b6b6cf",
+       "nbytes": 31400,
+       "tensors": [
+        {
+         "name": "W",
+         "shape": [
+          784,
+          10
+         ],
+         "dtype": "float32",
+         "offset": 0,
+         "nbytes": 31360,
+         "layer": "logits",
+         "role": "weight"
+        },
+        {
+         "name": "b",
+         "shape": [
+          10
+         ],
+         "dtype": "float32",
+         "offset": 31360,
+         "nbytes": 40,
+         "layer": "logits",
+         "role": "bias"
+        }
+       ]
+      }
+     },
+     "replay": null
+    },
     "mlp": {
      "title": "Multilayer perceptron",
      "kind": "mlp",
@@ -529,6 +728,7 @@
      },
      "input": "pixels",
      "output": "probabilities",
+     "output_kind": "softmax_probability",
      "trace": {
       "schema": "writerhand.trace/1",
       "kind": "mlp",
@@ -870,6 +1070,7 @@
      },
      "input": "pixels",
      "output": "probabilities",
+     "output_kind": "softmax_probability",
      "trace": {
       "schema": "writerhand.trace/1",
       "kind": "cnn",
@@ -1368,6 +1569,7 @@
      },
      "input": "pixels",
      "output": "vote_shares",
+     "output_kind": "vote_share",
      "trace": {
       "schema": "writerhand.trace/1",
       "kind": "adaboost",
@@ -2317,6 +2519,7 @@
      },
      "input": "pixels",
      "output": "probabilities",
+     "output_kind": "softmax_probability",
      "trace": {
       "schema": "writerhand.trace/1",
       "kind": "naive_bayes",
@@ -2532,6 +2735,7 @@
      },
      "input": "pixels",
      "output": "probabilities",
+     "output_kind": "softmax_probability",
      "trace": {
       "schema": "writerhand.trace/1",
       "kind": "softmax",
@@ -2694,6 +2898,210 @@
      },
      "replay": null
     },
+    "svm_aug": {
+     "title": "Linear SVM (augmented)",
+     "kind": "svm",
+     "augmented": true,
+     "augmentation": {
+      "ops": [
+       "rotation",
+       "translation",
+       "scaling"
+      ],
+      "k": 2,
+      "seed": 123,
+      "ranges": {
+       "rotation": 30.0
+      }
+     },
+     "class": "LinearSVM_aug",
+     "format": "onnx",
+     "file": "models/svm_aug.onnx",
+     "sha256": "a586e5d0b05ee485d1f704e559fb643de783f29989c986fe25bd3c0f73cb0b08",
+     "size_bytes": 31831,
+     "params": {
+      "learning_rate": 0.01,
+      "l2": 0.0001,
+      "loss": "hinge",
+      "epochs": 75,
+      "batch_size": 128,
+      "lr_decay": 0.0,
+      "tol": null,
+      "n_iter_no_change": 3,
+      "seed": 42,
+      "verbose": false
+     },
+     "validation": {
+      "max_abs_prob_diff": 1.1571181397496133e-06,
+      "argmax_agreement": 1.0,
+      "n_checked": 2000,
+      "ok": true
+     },
+     "input": "pixels",
+     "output": "probabilities",
+     "output_kind": "softmax_score",
+     "trace": {
+      "schema": "writerhand.trace/1",
+      "kind": "svm",
+      "preprocessing": [
+       {
+        "op": "scale",
+        "divisor": 255.0,
+        "note": "uint8 pixel -> [0, 1]"
+       },
+       {
+        "op": "standardize",
+        "mean": 0.13063468480215842,
+        "std": 0.3080791897808302,
+        "eps": 1e-08,
+        "formula": "(p - mean)/(std + eps)"
+       }
+      ],
+      "input": {
+       "name": "pixels",
+       "shape": [
+        "N",
+        784
+       ],
+       "range": [
+        0,
+        1
+       ],
+       "layout": "28x28 row-major"
+      },
+      "layers": [
+       {
+        "id": "image",
+        "op": "input",
+        "label": "image",
+        "out_shape": [
+         28,
+         28
+        ],
+        "inputs": []
+       },
+       {
+        "id": "flatten",
+        "op": "flatten",
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "image"
+        ]
+       },
+       {
+        "id": "standardize",
+        "op": "standardize",
+        "mean": 0.13063468480215842,
+        "std": 0.3080791897808302,
+        "eps": 1e-08,
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "flatten"
+        ],
+        "runtime": "x"
+       },
+       {
+        "id": "logits",
+        "op": "dense",
+        "in_features": 784,
+        "out_features": 10,
+        "params": {
+         "weight": "W",
+         "bias": "b"
+        },
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "standardize"
+        ],
+        "runtime": "logits"
+       },
+       {
+        "id": "output",
+        "op": "softmax",
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "logits"
+        ],
+        "runtime": "probabilities"
+       }
+      ],
+      "runtime_outputs": [
+       {
+        "name": "x",
+        "layer": "standardize",
+        "shape": [
+         784
+        ],
+        "role": "standardized_input"
+       },
+       {
+        "name": "logits",
+        "layer": "logits",
+        "shape": [
+         10
+        ],
+        "role": "logits"
+       }
+      ],
+      "output": {
+       "name": "probabilities",
+       "kind": "softmax_score",
+       "calibrated": false,
+       "classes": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+       ]
+      },
+      "n_parameters": 7850,
+      "params": {
+       "file": "models/svm_aug.params.bin",
+       "sha256": "acc81251bf7080bfdbd65be7b10fb607b6947b7af7f45c2cdbe17a3eeacf387c",
+       "nbytes": 31400,
+       "tensors": [
+        {
+         "name": "W",
+         "shape": [
+          784,
+          10
+         ],
+         "dtype": "float32",
+         "offset": 0,
+         "nbytes": 31360,
+         "layer": "logits",
+         "role": "weight"
+        },
+        {
+         "name": "b",
+         "shape": [
+          10
+         ],
+         "dtype": "float32",
+         "offset": 31360,
+         "nbytes": 40,
+         "layer": "logits",
+         "role": "bias"
+        }
+       ]
+      }
+     },
+     "replay": null
+    },
     "mlp_aug": {
      "title": "Multilayer perceptron (augmented)",
      "kind": "mlp",
@@ -2741,6 +3149,7 @@
      },
      "input": "pixels",
      "output": "probabilities",
+     "output_kind": "softmax_probability",
      "trace": {
       "schema": "writerhand.trace/1",
       "kind": "mlp",
@@ -3089,6 +3498,7 @@
      },
      "input": "pixels",
      "output": "probabilities",
+     "output_kind": "softmax_probability",
      "trace": {
       "schema": "writerhand.trace/1",
       "kind": "cnn",
@@ -3594,6 +4004,7 @@
      },
      "input": "pixels",
      "output": "vote_shares",
+     "output_kind": "vote_share",
      "trace": {
       "schema": "writerhand.trace/1",
       "kind": "adaboost",
@@ -4570,6 +4981,7 @@
      },
      "input": "pixels",
      "output": "probabilities",
+     "output_kind": "softmax_probability",
      "trace": {
       "schema": "writerhand.trace/1",
       "kind": "naive_bayes",
@@ -4774,6 +5186,7 @@
      },
      "input": "pixels",
      "output": "probabilities",
+     "output_kind": "softmax_probability",
      "trace": {
       "schema": "writerhand.trace/1",
       "kind": "softmax",
@@ -4976,6 +5389,7 @@
      },
      "input": "pixels",
      "output": "probabilities",
+     "output_kind": "softmax_probability",
      "trace": {
       "schema": "writerhand.trace/1",
       "kind": "mlp",
@@ -5315,6 +5729,7 @@
      },
      "input": "pixels",
      "output": "probabilities",
+     "output_kind": "softmax_probability",
      "trace": {
       "schema": "writerhand.trace/1",
       "kind": "cnn",
@@ -5746,6 +6161,7 @@
      },
      "input": "pixels",
      "output": "vote_shares",
+     "output_kind": "vote_share",
      "trace": {
       "schema": "writerhand.trace/1",
       "kind": "adaboost",
@@ -6339,6 +6755,7 @@
      },
      "input": "pixels",
      "output": "probabilities",
+     "output_kind": "softmax_probability",
      "trace": {
       "schema": "writerhand.trace/1",
       "kind": "naive_bayes",
@@ -6543,6 +6960,7 @@
      },
      "input": "pixels",
      "output": "probabilities",
+     "output_kind": "softmax_probability",
      "trace": {
       "schema": "writerhand.trace/1",
       "kind": "softmax",
@@ -6744,6 +7162,7 @@
      },
      "input": "pixels",
      "output": "probabilities",
+     "output_kind": "softmax_probability",
      "trace": {
       "schema": "writerhand.trace/1",
       "kind": "mlp",
@@ -7016,6 +7435,7 @@
      },
      "input": "pixels",
      "output": "probabilities",
+     "output_kind": "softmax_probability",
      "trace": {
       "schema": "writerhand.trace/1",
       "kind": "cnn",
@@ -7447,6 +7867,7 @@
      },
      "input": "pixels",
      "output": "vote_shares",
+     "output_kind": "vote_share",
      "trace": {
       "schema": "writerhand.trace/1",
       "kind": "adaboost",

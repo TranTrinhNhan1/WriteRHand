@@ -25,6 +25,8 @@ export default function SoftmaxView({ classes, loaded, execution }: ExplorerView
   const K = layer.out_features!
   const x = runtimeOf(trace, execution, 'standardized_input')
   const graphLogits = runtimeOf(trace, execution, 'logits')
+  // the linear SVM has the same layout; its per-class values are scores, not logits of probabilities
+  const sv: 'ex.svm' | 'ex.sm' = trace.output.kind === 'softmax_score' ? 'ex.svm' : 'ex.sm'
 
   const [kState, setK] = useState(execution.top)
   const k = Math.min(kState, K - 1)
@@ -68,8 +70,8 @@ export default function SoftmaxView({ classes, loaded, execution }: ExplorerView
   const narr = acc.pb.playing
     ? ''
     : step === 0
-      ? t('ex.sm.narrStart')
-      : t('ex.sm.narr', { s: step, n: N, r: rowCol(acc.current!, w).r, c: rowCol(acc.current!, w).c, leader: classes[acc.leader], v: fmt(scoreAt[acc.leader], 2) })
+      ? t(`${sv}.narrStart` as const)
+      : t(`${sv}.narr` as const, { s: step, n: N, r: rowCol(acc.current!, w).r, c: rowCol(acc.current!, w).c, leader: classes[acc.leader], v: fmt(scoreAt[acc.leader], 2) })
 
   return (
     <div className="exc">
@@ -125,29 +127,29 @@ export default function SoftmaxView({ classes, loaded, execution }: ExplorerView
               { sym: 'p', label: t('ex.classic.rawPixel'), value: fmt(execution.pixels[j], 3) },
               { sym: 'x', label: t('ex.classic.stdPixel'), value: fmt(x[j], 4) },
               { sym: 'W', label: t('ex.sm.weight'), value: fmt(W[j * K + k], 4) },
-              { sym: 'x·W', label: term > 0 ? t('ex.sm.termFor') : term < 0 ? t('ex.sm.termAgainst') : t('ex.sm.termZero'), value: fmtSigned(term, 4), strong: true },
+              { sym: 'x·W', label: term > 0 ? t(`${sv}.termFor` as const) : term < 0 ? t(`${sv}.termAgainst` as const) : t('ex.sm.termZero'), value: fmtSigned(term, 4), strong: true },
               { sym: 'b', label: t('ex.sm.bias'), value: fmt(b[k], 4) },
-              { sym: 'z(s)', label: t('ex.sm.partial', { s: step }), value: fmt(scoreAt[k], 4) },
-              { sym: 'z', label: t('ex.sm.logit'), value: fmt(a.total[k], 4) },
+              { sym: 'z(s)', label: t(`${sv}.partial` as const, { s: step }), value: fmt(scoreAt[k], 4) },
+              { sym: 'z', label: t(`${sv}.logit` as const), value: fmt(a.total[k], 4) },
             ]}
           />
           <p className="note">{rank <= step ? t('ex.classic.applied', { s: rank }) : t('ex.classic.notApplied', { s: rank })}</p>
-          <p className="note note--muted">{t('ex.sm.inspectNote')}</p>
+          <p className="note note--muted">{t(`${sv}.inspectNote` as const)}</p>
         </section>
       </div>
 
-      <Accumulation acc={acc} a={a} classes={classes} k={k} width={w} finalProbs={execution.probs} scoreName={t('ex.sm.score')} startName={t('ex.sm.start')} />
+      <Accumulation acc={acc} a={a} classes={classes} k={k} width={w} finalProbs={execution.probs} scoreName={t(`${sv}.score` as const)} startName={t('ex.sm.start')} />
 
       <VerifyTable
         classes={classes}
         rebuilt={a.total}
         runtime={graphLogits}
         title={t('ex.classic.verifyTitle')}
-        formula={t('ex.sm.rebuilt')}
+        formula={t(`${sv}.rebuilt` as const)}
         note={t('ex.classic.verifyNote')}
       />
 
-      <p className="note exc-honest">{t('ex.sm.honest')}</p>
+      <p className="note exc-honest">{t(`${sv}.honest` as const)}</p>
       <Narration text={narr} />
     </div>
   )

@@ -7,8 +7,8 @@
 export const BUNDLE_SCHEMA = 'writerhand.bundle/2'
 export const TRACE_SCHEMA = 'writerhand.trace/1'
 
-export type ModelKind = 'naive_bayes' | 'softmax' | 'mlp' | 'cnn' | 'adaboost'
-export const MODEL_ORDER: ModelKind[] = ['naive_bayes', 'softmax', 'mlp', 'cnn', 'adaboost']
+export type ModelKind = 'naive_bayes' | 'softmax' | 'svm' | 'mlp' | 'cnn' | 'adaboost'
+export const MODEL_ORDER: ModelKind[] = ['naive_bayes', 'softmax', 'svm', 'mlp', 'cnn', 'adaboost']
 export const isModelKind = (s: string): s is ModelKind => (MODEL_ORDER as string[]).includes(s)
 
 /**
@@ -100,10 +100,20 @@ export interface Trace {
   input: { name: string; shape: (string | number)[]; range: [number, number] }
   layers: TraceLayer[]
   runtime_outputs: RuntimeOutput[]
-  output: { name: string; kind: 'softmax_probability' | 'vote_share'; calibrated: boolean; classes: string[] }
+  /**
+   * softmax_probability: a model of class probabilities; vote_share: weighted votes (AdaBoost); softmax_score: a
+   * softmax normalisation of scores that are not probabilities (linear SVM). Only the first can be calibrated.
+   */
+  output: { name: string; kind: OutputKind; calibrated: boolean; classes: string[] }
   params: TraceParams | null
   n_parameters: number | null
 }
+
+export type OutputKind = 'softmax_probability' | 'vote_share' | 'softmax_score'
+export const OUTPUT_KINDS: OutputKind[] = ['softmax_probability', 'vote_share', 'softmax_score']
+
+/** True when the model's per-class output is not a probability (vote shares, normalised scores). */
+export const notProbability = (k: OutputKind) => k !== 'softmax_probability'
 
 export interface Validation {
   max_abs_prob_diff: number
@@ -134,6 +144,8 @@ export interface ModelEntry {
   replay?: ReplayRef | null
   /** architecture (same as trace.kind); absent in older manifests */
   kind?: ModelKind
+  /** same as trace.output.kind when present */
+  output_kind?: OutputKind
   /** true for the variant trained on augmented images */
   augmented?: boolean
   augmentation?: AugRecipe | null
@@ -287,7 +299,9 @@ export function validateTrace(trace: Trace, where: string): void {
   } else if (trace.kind !== 'adaboost') {
     fail(where, 'model without parameter file')
   }
+  if (!OUTPUT_KINDS.includes(trace.output.kind)) fail(where, `unknown output kind ${String(trace.output.kind)}`)
   if (trace.output.kind === 'vote_share' && trace.output.calibrated) fail(where, 'vote shares can never be calibrated probabilities')
+  if (trace.output.kind === 'softmax_score' && trace.output.calibrated !== false) fail(where, 'normalised scores can never be calibrated probabilities')
 }
 
 export function parseBundleManifest(raw: unknown): BundleManifest {
@@ -305,6 +319,7 @@ export function parseBundleManifest(raw: unknown): BundleManifest {
       if (!isModelKind(kind) || (id !== kind && id !== augId(kind))) throw new ContractError('unknown model id', where)
       if (model.trace.kind !== kind) throw new ContractError(`trace.kind ${model.trace.kind} != ${kind}`, where)
       if (model.augmented != null && model.augmented !== (id === augId(kind))) throw new ContractError('augmented flag differs from the model id', where)
+      if (model.output_kind != null && model.output_kind !== model.trace.output?.kind) throw new ContractError('output_kind differs from the trace output', where)
       if (!model.sha256 || !model.file) throw new ContractError('missing file hash', where)
       const classes = model.trace.output.classes
       if (classes.length !== ds.classes.length || classes.some((c, i) => c !== ds.classes[i])) {

@@ -87,6 +87,9 @@ def test_svm_and_stacking_entries(tmp_path):
     assert ids == ["svm", "stacking"]
     svm, stack = out["models"]
     assert svm["in_browser"] is False and stack["in_browser"] is False
+    # a model that the browser bundle also has is marked as runnable there
+    runnable = build_extra_models(tmp_path, ["svm", "svm_aug"])
+    assert [m["in_browser"] for m in runnable["models"]] == [True, False]
     assert svm["splits"]["test"]["accuracy"] == 0.92
     assert "report" not in svm["splits"]["test"]
     assert svm["top_confusions"][0] == {"true": 4, "pred": 9, "count": 3}
@@ -115,7 +118,10 @@ def test_committed_site_file_matches_results(tmp_path):
     """web/public/data/extra_models.json must be the output of ``python -m src site-extra`` on the committed results."""
     committed = ROOT / "web" / "public" / "data" / "extra_models.json"
     fresh = tmp_path / "extra.json"
-    write_extra_models({"mnist": ROOT / "results"}, fresh)
+    manifest = json.loads(
+        (ROOT / "web" / "public" / "data" / "manifest.json").read_text(encoding="utf-8")
+    )
+    write_extra_models({"mnist": ROOT / "results"}, fresh, manifest)
     assert json.loads(committed.read_text(encoding="utf-8")) == json.loads(
         fresh.read_text(encoding="utf-8")
     )

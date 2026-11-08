@@ -5,12 +5,6 @@
   Sans-serif and monospace only, small radii (6 for controls, 10 for panels), no gradients, no glow.
 */
 
-@font-face {
-  font-family: 'Noto Sans Math Subset';
-  src: url('../assets/fonts/NotoSansMath-subset.woff2') format('woff2');
-  font-display: swap;
-}
-
 :root,
 :root[data-theme='dark'] {
   color-scheme: dark;
@@ -821,14 +815,6 @@ a.btn--primary {
   justify-items: start;
   max-width: 560px;
   padding: 40px;
-}
-
-/* math: MathML drawn in the site's own sans-serif math font ------------------ */
-
-.tex math,
-math {
-  font-family: 'Noto Sans Math Subset', 'Geist Variable', ui-sans-serif, sans-serif;
-  font-size: 1.12em;
 }
 
 /* motion --------------------------------------------------------------------- */

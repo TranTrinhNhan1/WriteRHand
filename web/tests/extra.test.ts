@@ -13,7 +13,6 @@ describe('extra_models.json (measured models that are not in the browser bundle)
     const ids = extra.mnist.models.map((m) => m.id)
     expect(ids).toEqual(['svm', 'stacking'])
     for (const m of extra.mnist.models) {
-      expect(m.in_browser).toBe(false)
       for (const s of ['train', 'val', 'test'] as const) expect(m.splits?.[s]?.confusion_matrix?.length).toBe(10)
     }
     expect(extra.mnist.models[0].splits?.test?.accuracy).toBeCloseTo(0.9195, 6)
@@ -23,16 +22,21 @@ describe('extra_models.json (measured models that are not in the browser bundle)
     expect(Object.keys(extra.mnist.tuning).sort()).toEqual(['stacking', 'svm'])
   })
 
-  it('names datasets of the pinned manifest only, and neither model is in the bundle', () => {
+  it('names datasets of the pinned manifest only, and marks as runnable exactly the models of the bundle', () => {
     for (const [ds, v] of Object.entries(parseExtraModels(committed))) {
       expect(manifest.datasets[ds], ds).toBeTruthy()
-      for (const m of v.models) expect(manifest.datasets[ds].models[m.id], m.id).toBeUndefined()
+      for (const m of v.models) expect(m.in_browser, m.id).toBe(!!manifest.datasets[ds].models[m.id])
     }
+    // the linear SVM runs in the browser on MNIST; the stacking ensemble does not
+    const mnist = parseExtraModels(committed).mnist.models
+    expect(mnist.find((m) => m.id === 'svm')?.in_browser).toBe(true)
+    expect(mnist.find((m) => m.id === 'stacking')?.in_browser).toBe(false)
   })
 
   it('carries the plain / augmented pairs of MNIST with their measured numbers', () => {
     const pairs = parseExtraModels(committed).mnist.pairs!
-    expect(Object.keys(pairs.models)).toEqual(['naive_bayes', 'softmax', 'mlp', 'cnn', 'adaboost'])
+    expect(Object.keys(pairs.models)).toEqual(['naive_bayes', 'softmax', 'svm', 'mlp', 'cnn', 'adaboost'])
+    expect(pairs.models.svm!.augmented.test_acc).toBeLessThan(pairs.models.svm!.plain.test_acc)
     // augmentation does not help every model: Naive Bayes loses accuracy on the clean test set
     expect(pairs.models.naive_bayes!.augmented.test_acc).toBeLessThan(pairs.models.naive_bayes!.plain.test_acc)
     expect(pairs.models.cnn!.augmented.test_acc).toBeGreaterThan(pairs.models.cnn!.plain.test_acc)
@@ -52,7 +56,7 @@ describe('extra_models.json (measured models that are not in the browser bundle)
     expect(parseExtraModels(bad)).toEqual({})
     const ok = { schema: EXTRA_SCHEMA, datasets: { mnist: { models: [{ id: 'svm', in_browser: true, splits: { test: { accuracy: 0.9 } } }], tuning: { stacking: {} } } } }
     const r = parseExtraModels(ok)
-    expect(r.mnist.models[0].in_browser).toBe(false)
+    expect(r.mnist.models[0].in_browser).toBe(true)
     expect(r.mnist.tuning).toEqual({})
   })
 })

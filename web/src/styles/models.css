@@ -123,20 +123,32 @@
   font: 400 0.75rem/1.5 var(--mono);
 }
 
+/* equations: KaTeX in Computer Modern, left-aligned with the text; a wide one scrolls inside its own box */
+.tex .katex {
+  font-size: 1.1em;
+  color: var(--ink);
+}
+
 .tex--block {
   overflow-x: auto;
   overflow-y: hidden;
-  padding-block: 2px;
+  padding-block: 4px;
+  scrollbar-width: thin;
 }
 
-.tex--block math {
-  display: block;
+.tex--block .katex-display {
   margin: 0;
   text-align: left;
 }
 
-.tex .katex {
-  display: inline;
+.tex--block .katex-display > .katex {
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tex--block:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .params--grid {
