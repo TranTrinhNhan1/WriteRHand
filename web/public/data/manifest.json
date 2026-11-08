@@ -1,29 +1,85 @@
 {
-  "name": "WriteRHand-MNIST",
-  "version": "1.0.0",
-  "created": "2026-11-08T03:05:31+00:00",
-  "preprocessing": {
+ "schema": "writerhand.bundle/2",
+ "name": "WriteRHand",
+ "version": "2.0.0",
+ "created": "2026-11-08T10:05:42+00:00",
+ "bundle_id": "53f55a8a6287583d",
+ "default_dataset": "mnist",
+ "files_sha256": {
+  "mnist/models/naive_bayes.params.bin": "ce91f4e58174a2bcfb9ef6395da1c30c1745294eb4f46194f7e719b747631c19",
+  "mnist/models/naive_bayes.onnx": "50893c25c18d4e4c6360522f44271129642712526186f3d59b0c7d4813724499",
+  "mnist/models/softmax.params.bin": "aa2ff6199fcbea43a92e264ebecfca729657076f3d4d981cb971184a23569a1b",
+  "mnist/models/softmax.onnx": "9a183cded622f2468566a720b5bf7177f202339d6ab98bf61729273b4fa5e515",
+  "mnist/replay/softmax.replay.json": "f223abf9e37ee44e216e3b117e9d209370895140568b05f33758335b1951e7de",
+  "mnist/models/mlp.params.bin": "70764806c98f18a0c988eb883b12a16c7a9ca420f462a1a89e8a6785d39106d1",
+  "mnist/models/mlp.onnx": "9ada8d972350a33883c7fe726ebd5e09eb5c5a240453b0d165f5e6b4184ba677",
+  "mnist/replay/mlp.replay.json": "e5022476d424d3e5d5f578c2719d458e9c231e4080431483fac3655369fc56e8",
+  "mnist/models/cnn.params.bin": "a9edde47cac5807d88a6b4281d07db70abaceacc68bb0647fc59428c1405fbe0",
+  "mnist/models/cnn.onnx": "e3b9ff33eb909755333a763ce487222f9f94eb58e1a723d1896dce39b1cf65e0",
+  "mnist/replay/cnn.replay.json": "a1f89d4c30ab37bffb803e17359f34ab445ec9a5642e9a37e63a42fc92cf0f94",
+  "mnist/models/adaboost.bin": "b2e057c149a1463809b90efa1299c5c7d658c2508f68bec3eb74da5609f420e8",
+  "mnist/replay/adaboost.replay.json": "255ff6c94ed24b3c476f5d1e53b078ac0b9ab51fe8bcbbe4b3dbbb87dea84719",
+  "mnist/test_vectors.json": "ca084fc56953d666143574b474e840497c465fc5a2119351d9bd60035460cef3",
+  "mnist/results.json": "81b5317ae70e906057da43676004fc39fdb18f74522c2409b7b1cfe3b8852202",
+  "fashion_mnist/models/naive_bayes.params.bin": "bf6a7df26dccdb9155c86080042f6fa7c2d03029f2d3f5d63b572dddccc5a7dc",
+  "fashion_mnist/models/naive_bayes.onnx": "041a169223e11457195d77e5a45821bb76361a7445cdc9521b0377e6441c9619",
+  "fashion_mnist/models/softmax.params.bin": "ae47b191b0af0dbdc68da2f428d3ad62736e3dab49aa46fc1e4767d120512f82",
+  "fashion_mnist/models/softmax.onnx": "e4c3ec64b69b9773932b2b9cd6299d56cd399d1c17365ed33eafe475e22dd962",
+  "fashion_mnist/replay/softmax.replay.json": "c0343b94e2136e1a5ebd6d687d5dace62128de702481d86f5394a91bb5c519bd",
+  "fashion_mnist/models/mlp.params.bin": "360f8c89bb82060686b1ccbe6d6b9237b6a5da03006a8645820a66ec034f7c02",
+  "fashion_mnist/models/mlp.onnx": "b1c9ff06ec960d3323c0ecf43a046418fd5295428c28d736a41023d37be6e7e4",
+  "fashion_mnist/replay/mlp.replay.json": "d284d519394cec309ba0b7f43fb876334cd56243a3130f64d70123d25ca5c1dd",
+  "fashion_mnist/models/cnn.params.bin": "804229627fc97af6217c86fcbfefebd0f2711c55d184a7c485e6e26199963d10",
+  "fashion_mnist/models/cnn.onnx": "7f0ff912a2940a985a21b4a2169c01bdbd474f7eebf23ad4d2963a5c61422b8e",
+  "fashion_mnist/replay/cnn.replay.json": "0e92ca314b72889294d5bb00bc1a0a04cb5e02a399970492a1b16b7b43a9907e",
+  "fashion_mnist/models/adaboost.bin": "6c0dce63fce9d7ead79cb902f2d3ebcc0e48dca6e491b09e32b0ea8d42122c50",
+  "fashion_mnist/replay/adaboost.replay.json": "18613cd84c6b027ddf6b4b8f96abc91af79793ad9320ceca20530ea6a0de1844",
+  "fashion_mnist/test_vectors.json": "e28c22b74b67fff98890d31e43726d4d7c26ccde64e6b1b9db86a9eafeaa6847",
+  "fashion_mnist/results.json": "f00bef49ac2dfc77def3896edcb3308389c47813c3f1b5ee9490ed64a70dd133",
+  "emnist_digits/models/naive_bayes.params.bin": "75a56078114d6f2a66008408181b9dbd8ba3bca6a87545db488e6eb72abd98ef",
+  "emnist_digits/models/naive_bayes.onnx": "6f51b3b218ebc1e01d81be9defb0741b547dede9087aae7e0eeaf1496a1805da",
+  "emnist_digits/models/softmax.params.bin": "2e575fd74a614015ac2d71af3be99b4f42710c257428cd90b016bdf01a5b9ce0",
+  "emnist_digits/models/softmax.onnx": "414d2d6bec36f7a3b7e4c17ab66ca4ab1041d273eb4f7076d5f7ee7a1c227a8f",
+  "emnist_digits/replay/softmax.replay.json": "a10775f055ad647aa87a6ec9e04ca0069708c7032a3d575bc5ac5cbd6c15d2b5",
+  "emnist_digits/models/mlp.params.bin": "79fdbf022f90cc431445d8f96e252341dca4547339a1ad1e529482eb3cf8e047",
+  "emnist_digits/models/mlp.onnx": "2368023bf0145effb9a9f065d1f6d6018326926991f26db20fcbb0885640be6b",
+  "emnist_digits/replay/mlp.replay.json": "240dfd7ebca242673b38c4e5dc0bb325dcf421c044a73d3cff92b147a1560c2a",
+  "emnist_digits/models/cnn.params.bin": "3ed26c81dea62e28ef6901ac96f3ff598dbddf49720cb5ba4034f8871525322f",
+  "emnist_digits/models/cnn.onnx": "3761b6d0cab2918b4514d8cefb7c9626da1e5056425620b340298992c92a1bb5",
+  "emnist_digits/replay/cnn.replay.json": "dfb70b4fc9c043665e7d4777a64c1ff83d7ef13e88193eddaafc476427d3458e",
+  "emnist_digits/models/adaboost.bin": "80e8a3d99590ea9b1f4e39de4192ed231f0a50006f70cdc15f93b2ca3d0fb486",
+  "emnist_digits/replay/adaboost.replay.json": "fa5ee5076631bb8a9cfcaab44a04287c32acabd414c4869f0209853f45d3e0bd",
+  "emnist_digits/test_vectors.json": "6e12f7a910175349c1f29dea566c066f0058d26288614149b6aebc9466454e22",
+  "emnist_digits/results.json": "654263bd636104febb351109ca54f5c8ee27e6c395c1588648e4ccba9e26fc19"
+ },
+ "datasets": {
+  "mnist": {
+   "title": "MNIST",
+   "short": "MNIST",
+   "kind": "digits",
+   "source": "LeCun et al. (1998); torchvision.datasets.MNIST",
+   "classes": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9"
+   ],
+   "preprocessing": {
     "version": "mnist-global-standardize-v2-stratified",
-    "image": "28x28 grayscale, white digit on black",
+    "image": "28x28 grayscale, bright object on dark background",
     "scale": "pixel/255",
     "mean": 0.13063468480215842,
     "std": 0.3080791897808302,
     "eps": 1e-08,
     "formula": "x = (pixel/255 - mean) / (std + eps)"
-  },
-  "classes": [
-    0,
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-    7,
-    8,
-    9
-  ],
-  "dataset": {
+   },
+   "dataset": {
     "preprocess_version": "mnist-global-standardize-v2-stratified",
     "seed": 42,
     "n_train": 50000,
@@ -31,109 +87,5616 @@
     "n_test": 10000,
     "mean": 0.13063468480215842,
     "std": 0.3080791897808302,
-    "split_fingerprint": "52cc8206ff96f56d"
-  },
-  "models": {
+    "split_fingerprint": "52cc8206ff96f56d",
+    "dataset": "mnist"
+   },
+   "test_vectors": "mnist/test_vectors.json",
+   "results": "mnist/results.json",
+   "models": {
     "naive_bayes": {
-      "title": "Gaussian Naive Bayes",
-      "class": "GaussianNB",
-      "format": "onnx",
-      "file": "models/naive_bayes.onnx",
-      "size_bytes": 126310,
+     "title": "Gaussian Naive Bayes",
+     "class": "GaussianNB",
+     "format": "onnx",
+     "file": "models/naive_bayes.onnx",
+     "sha256": "50893c25c18d4e4c6360522f44271129642712526186f3d59b0c7d4813724499",
+     "size_bytes": 63302,
+     "params": {
+      "var_smoothing": 0.1
+     },
+     "validation": {
+      "max_abs_prob_diff": 0.00013913755719319187,
+      "argmax_agreement": 1.0,
+      "n_checked": 2000,
+      "ok": true
+     },
+     "input": "pixels",
+     "output": "probabilities",
+     "trace": {
+      "schema": "writerhand.trace/1",
+      "kind": "naive_bayes",
+      "preprocessing": [
+       {
+        "op": "scale",
+        "divisor": 255.0,
+        "note": "uint8 pixel -> [0, 1]"
+       },
+       {
+        "op": "standardize",
+        "mean": 0.13063468480215842,
+        "std": 0.3080791897808302,
+        "eps": 1e-08,
+        "formula": "(p - mean)/(std + eps)"
+       }
+      ],
+      "input": {
+       "name": "pixels",
+       "shape": [
+        "N",
+        784
+       ],
+       "range": [
+        0,
+        1
+       ],
+       "layout": "28x28 row-major"
+      },
+      "layers": [
+       {
+        "id": "image",
+        "op": "input",
+        "label": "image",
+        "out_shape": [
+         28,
+         28
+        ],
+        "inputs": []
+       },
+       {
+        "id": "flatten",
+        "op": "flatten",
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "image"
+        ]
+       },
+       {
+        "id": "standardize",
+        "op": "standardize",
+        "mean": 0.13063468480215842,
+        "std": 0.3080791897808302,
+        "eps": 1e-08,
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "flatten"
+        ],
+        "runtime": "x"
+       },
+       {
+        "id": "logits",
+        "op": "gaussian_loglik",
+        "params": {
+         "mean": "class_mean",
+         "variance": "class_var",
+         "log_prior": "log_prior"
+        },
+        "n_classes": 10,
+        "n_features": 784,
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "standardize"
+        ],
+        "runtime": "logits"
+       },
+       {
+        "id": "output",
+        "op": "softmax",
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "logits"
+        ],
+        "runtime": "probabilities"
+       }
+      ],
+      "runtime_outputs": [
+       {
+        "name": "x",
+        "layer": "standardize",
+        "shape": [
+         784
+        ],
+        "role": "standardized_input"
+       },
+       {
+        "name": "logits",
+        "layer": "logits",
+        "shape": [
+         10
+        ],
+        "role": "log_joint"
+       }
+      ],
+      "output": {
+       "name": "probabilities",
+       "kind": "softmax_probability",
+       "calibrated": true,
+       "classes": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+       ]
+      },
+      "n_parameters": 15690,
       "params": {
-        "var_smoothing": 0.1
-      },
-      "validation": {
-        "max_abs_prob_diff": 0.0001806818490259765,
-        "argmax_agreement": 1.0,
-        "n_checked": 10000,
-        "ok": true
-      },
-      "input": "pixels",
-      "output": "probabilities"
+       "file": "models/naive_bayes.params.bin",
+       "sha256": "ce91f4e58174a2bcfb9ef6395da1c30c1745294eb4f46194f7e719b747631c19",
+       "nbytes": 62760,
+       "tensors": [
+        {
+         "name": "class_mean",
+         "shape": [
+          10,
+          784
+         ],
+         "dtype": "float32",
+         "offset": 0,
+         "nbytes": 31360,
+         "layer": "logits",
+         "role": "class_mean"
+        },
+        {
+         "name": "class_var",
+         "shape": [
+          10,
+          784
+         ],
+         "dtype": "float32",
+         "offset": 31360,
+         "nbytes": 31360,
+         "layer": "logits",
+         "role": "class_variance"
+        },
+        {
+         "name": "log_prior",
+         "shape": [
+          10
+         ],
+         "dtype": "float32",
+         "offset": 62720,
+         "nbytes": 40,
+         "layer": "logits",
+         "role": "log_prior"
+        }
+       ]
+      }
+     },
+     "replay": null
     },
     "softmax": {
-      "title": "Softmax regression",
-      "class": "SoftmaxRegression",
-      "format": "onnx",
-      "file": "models/softmax.onnx",
-      "size_bytes": 31916,
+     "title": "Softmax regression",
+     "class": "SoftmaxRegression",
+     "format": "onnx",
+     "file": "models/softmax.onnx",
+     "sha256": "9a183cded622f2468566a720b5bf7177f202339d6ab98bf61729273b4fa5e515",
+     "size_bytes": 31823,
+     "params": {
+      "learning_rate": 0.03,
+      "l2": 0.0,
+      "epochs": 67,
+      "batch_size": 128,
+      "lr_decay": 0.0,
+      "tol": null,
+      "n_iter_no_change": 3,
+      "seed": 42,
+      "verbose": false
+     },
+     "validation": {
+      "max_abs_prob_diff": 3.4039994351031666e-06,
+      "argmax_agreement": 1.0,
+      "n_checked": 2000,
+      "ok": true
+     },
+     "input": "pixels",
+     "output": "probabilities",
+     "trace": {
+      "schema": "writerhand.trace/1",
+      "kind": "softmax",
+      "preprocessing": [
+       {
+        "op": "scale",
+        "divisor": 255.0,
+        "note": "uint8 pixel -> [0, 1]"
+       },
+       {
+        "op": "standardize",
+        "mean": 0.13063468480215842,
+        "std": 0.3080791897808302,
+        "eps": 1e-08,
+        "formula": "(p - mean)/(std + eps)"
+       }
+      ],
+      "input": {
+       "name": "pixels",
+       "shape": [
+        "N",
+        784
+       ],
+       "range": [
+        0,
+        1
+       ],
+       "layout": "28x28 row-major"
+      },
+      "layers": [
+       {
+        "id": "image",
+        "op": "input",
+        "label": "image",
+        "out_shape": [
+         28,
+         28
+        ],
+        "inputs": []
+       },
+       {
+        "id": "flatten",
+        "op": "flatten",
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "image"
+        ]
+       },
+       {
+        "id": "standardize",
+        "op": "standardize",
+        "mean": 0.13063468480215842,
+        "std": 0.3080791897808302,
+        "eps": 1e-08,
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "flatten"
+        ],
+        "runtime": "x"
+       },
+       {
+        "id": "logits",
+        "op": "dense",
+        "in_features": 784,
+        "out_features": 10,
+        "params": {
+         "weight": "W",
+         "bias": "b"
+        },
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "standardize"
+        ],
+        "runtime": "logits"
+       },
+       {
+        "id": "output",
+        "op": "softmax",
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "logits"
+        ],
+        "runtime": "probabilities"
+       }
+      ],
+      "runtime_outputs": [
+       {
+        "name": "x",
+        "layer": "standardize",
+        "shape": [
+         784
+        ],
+        "role": "standardized_input"
+       },
+       {
+        "name": "logits",
+        "layer": "logits",
+        "shape": [
+         10
+        ],
+        "role": "logits"
+       }
+      ],
+      "output": {
+       "name": "probabilities",
+       "kind": "softmax_probability",
+       "calibrated": true,
+       "classes": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+       ]
+      },
+      "n_parameters": 7850,
       "params": {
-        "learning_rate": 0.03,
-        "l2": 0.0,
-        "epochs": 67,
-        "batch_size": 128,
-        "lr_decay": 0.0,
-        "tol": null,
-        "n_iter_no_change": 3,
-        "seed": 42,
-        "verbose": false
-      },
-      "validation": {
-        "max_abs_prob_diff": 3.4039994351031666e-06,
-        "argmax_agreement": 1.0,
-        "n_checked": 10000,
-        "ok": true
-      },
-      "input": "pixels",
-      "output": "probabilities"
+       "file": "models/softmax.params.bin",
+       "sha256": "aa2ff6199fcbea43a92e264ebecfca729657076f3d4d981cb971184a23569a1b",
+       "nbytes": 31400,
+       "tensors": [
+        {
+         "name": "W",
+         "shape": [
+          784,
+          10
+         ],
+         "dtype": "float32",
+         "offset": 0,
+         "nbytes": 31360,
+         "layer": "logits",
+         "role": "weight"
+        },
+        {
+         "name": "b",
+         "shape": [
+          10
+         ],
+         "dtype": "float32",
+         "offset": 31360,
+         "nbytes": 40,
+         "layer": "logits",
+         "role": "bias"
+        }
+       ]
+      }
+     },
+     "replay": {
+      "file": "replay/softmax.replay.json",
+      "sha256": "f223abf9e37ee44e216e3b117e9d209370895140568b05f33758335b1951e7de",
+      "size_bytes": 827640
+     }
     },
     "mlp": {
-      "title": "Multilayer perceptron",
-      "class": "MLP",
-      "format": "onnx",
-      "file": "models/mlp.onnx",
-      "size_bytes": 2143893,
+     "title": "Multilayer perceptron",
+     "class": "MLP",
+     "format": "onnx",
+     "file": "models/mlp.onnx",
+     "sha256": "9ada8d972350a33883c7fe726ebd5e09eb5c5a240453b0d165f5e6b4184ba677",
+     "size_bytes": 2143976,
+     "params": {
+      "hidden_sizes": [
+       512,
+       256
+      ],
+      "learning_rate": 0.05,
+      "p_drop": 0.0,
+      "epochs": 40,
+      "batch_size": 128,
+      "momentum": 0.9,
+      "seed": 42,
+      "early_stopping": true,
+      "val_fraction": 0.08,
+      "patience": 5,
+      "min_delta": 0.0001,
+      "dtype": "float32",
+      "verbose": false
+     },
+     "validation": {
+      "max_abs_prob_diff": 1.6689300537109375e-06,
+      "argmax_agreement": 1.0,
+      "n_checked": 2000,
+      "ok": true
+     },
+     "input": "pixels",
+     "output": "probabilities",
+     "trace": {
+      "schema": "writerhand.trace/1",
+      "kind": "mlp",
+      "preprocessing": [
+       {
+        "op": "scale",
+        "divisor": 255.0,
+        "note": "uint8 pixel -> [0, 1]"
+       },
+       {
+        "op": "standardize",
+        "mean": 0.13063468480215842,
+        "std": 0.3080791897808302,
+        "eps": 1e-08,
+        "formula": "(p - mean)/(std + eps)"
+       }
+      ],
+      "input": {
+       "name": "pixels",
+       "shape": [
+        "N",
+        784
+       ],
+       "range": [
+        0,
+        1
+       ],
+       "layout": "28x28 row-major"
+      },
+      "layers": [
+       {
+        "id": "image",
+        "op": "input",
+        "label": "image",
+        "out_shape": [
+         28,
+         28
+        ],
+        "inputs": []
+       },
+       {
+        "id": "flatten",
+        "op": "flatten",
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "image"
+        ]
+       },
+       {
+        "id": "standardize",
+        "op": "standardize",
+        "mean": 0.13063468480215842,
+        "std": 0.3080791897808302,
+        "eps": 1e-08,
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "flatten"
+        ],
+        "runtime": "x"
+       },
+       {
+        "id": "z0",
+        "op": "dense",
+        "in_features": 784,
+        "out_features": 512,
+        "params": {
+         "weight": "W0",
+         "bias": "b0"
+        },
+        "out_shape": [
+         512
+        ],
+        "inputs": [
+         "standardize"
+        ],
+        "runtime": "z0"
+       },
+       {
+        "id": "a0",
+        "op": "relu",
+        "out_shape": [
+         512
+        ],
+        "inputs": [
+         "z0"
+        ],
+        "runtime": "a0"
+       },
+       {
+        "id": "z1",
+        "op": "dense",
+        "in_features": 512,
+        "out_features": 256,
+        "params": {
+         "weight": "W1",
+         "bias": "b1"
+        },
+        "out_shape": [
+         256
+        ],
+        "inputs": [
+         "a0"
+        ],
+        "runtime": "z1"
+       },
+       {
+        "id": "a1",
+        "op": "relu",
+        "out_shape": [
+         256
+        ],
+        "inputs": [
+         "z1"
+        ],
+        "runtime": "a1"
+       },
+       {
+        "id": "logits",
+        "op": "dense",
+        "in_features": 256,
+        "out_features": 10,
+        "params": {
+         "weight": "W2",
+         "bias": "b2"
+        },
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "a1"
+        ],
+        "runtime": "logits"
+       },
+       {
+        "id": "output",
+        "op": "softmax",
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "logits"
+        ],
+        "runtime": "probabilities"
+       }
+      ],
+      "runtime_outputs": [
+       {
+        "name": "x",
+        "layer": "standardize",
+        "shape": [
+         784
+        ],
+        "role": "standardized_input"
+       },
+       {
+        "name": "z0",
+        "layer": "z0",
+        "shape": [
+         512
+        ],
+        "role": "pre_activation"
+       },
+       {
+        "name": "a0",
+        "layer": "a0",
+        "shape": [
+         512
+        ],
+        "role": "activation"
+       },
+       {
+        "name": "z1",
+        "layer": "z1",
+        "shape": [
+         256
+        ],
+        "role": "pre_activation"
+       },
+       {
+        "name": "a1",
+        "layer": "a1",
+        "shape": [
+         256
+        ],
+        "role": "activation"
+       },
+       {
+        "name": "logits",
+        "layer": "logits",
+        "shape": [
+         10
+        ],
+        "role": "logits"
+       }
+      ],
+      "output": {
+       "name": "probabilities",
+       "kind": "softmax_probability",
+       "calibrated": true,
+       "classes": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+       ]
+      },
+      "n_parameters": 535818,
       "params": {
-        "hidden_sizes": [
+       "file": "models/mlp.params.bin",
+       "sha256": "70764806c98f18a0c988eb883b12a16c7a9ca420f462a1a89e8a6785d39106d1",
+       "nbytes": 2143272,
+       "tensors": [
+        {
+         "name": "W0",
+         "shape": [
+          784,
+          512
+         ],
+         "dtype": "float32",
+         "offset": 0,
+         "nbytes": 1605632,
+         "layer": "z0",
+         "role": "weight"
+        },
+        {
+         "name": "b0",
+         "shape": [
+          512
+         ],
+         "dtype": "float32",
+         "offset": 1605632,
+         "nbytes": 2048,
+         "layer": "z0",
+         "role": "bias"
+        },
+        {
+         "name": "W1",
+         "shape": [
           512,
           256
+         ],
+         "dtype": "float32",
+         "offset": 1607680,
+         "nbytes": 524288,
+         "layer": "z1",
+         "role": "weight"
+        },
+        {
+         "name": "b1",
+         "shape": [
+          256
+         ],
+         "dtype": "float32",
+         "offset": 2131968,
+         "nbytes": 1024,
+         "layer": "z1",
+         "role": "bias"
+        },
+        {
+         "name": "W2",
+         "shape": [
+          256,
+          10
+         ],
+         "dtype": "float32",
+         "offset": 2132992,
+         "nbytes": 10240,
+         "layer": "logits",
+         "role": "weight"
+        },
+        {
+         "name": "b2",
+         "shape": [
+          10
+         ],
+         "dtype": "float32",
+         "offset": 2143232,
+         "nbytes": 40,
+         "layer": "logits",
+         "role": "bias"
+        }
+       ]
+      }
+     },
+     "replay": {
+      "file": "replay/mlp.replay.json",
+      "sha256": "e5022476d424d3e5d5f578c2719d458e9c231e4080431483fac3655369fc56e8",
+      "size_bytes": 1108054
+     }
+    },
+    "cnn": {
+     "title": "Convolutional network",
+     "class": "CNN",
+     "format": "onnx",
+     "file": "models/cnn.onnx",
+     "sha256": "e3b9ff33eb909755333a763ce487222f9f94eb58e1a723d1896dce39b1cf65e0",
+     "size_bytes": 228189,
+     "params": {
+      "channels": [
+       16,
+       32
+      ],
+      "kernel_size": 3,
+      "pool": 2,
+      "dense": [
+       64
+      ],
+      "learning_rate": 0.01,
+      "momentum": 0.9,
+      "p_drop": 0.2,
+      "epochs": 20,
+      "batch_size": 128,
+      "seed": 42,
+      "early_stopping": true,
+      "val_fraction": 0.08,
+      "patience": 3,
+      "min_delta": 0.0001,
+      "dtype": "float32",
+      "verbose": false
+     },
+     "validation": {
+      "max_abs_prob_diff": 7.152557373046875e-07,
+      "argmax_agreement": 1.0,
+      "n_checked": 2000,
+      "ok": true
+     },
+     "input": "pixels",
+     "output": "probabilities",
+     "trace": {
+      "schema": "writerhand.trace/1",
+      "kind": "cnn",
+      "preprocessing": [
+       {
+        "op": "scale",
+        "divisor": 255.0,
+        "note": "uint8 pixel -> [0, 1]"
+       },
+       {
+        "op": "standardize",
+        "mean": 0.13063468480215842,
+        "std": 0.3080791897808302,
+        "eps": 1e-08,
+        "formula": "(p - mean)/(std + eps)"
+       }
+      ],
+      "input": {
+       "name": "pixels",
+       "shape": [
+        "N",
+        784
+       ],
+       "range": [
+        0,
+        1
+       ],
+       "layout": "28x28 row-major"
+      },
+      "layers": [
+       {
+        "id": "image",
+        "op": "input",
+        "label": "image",
+        "out_shape": [
+         28,
+         28
         ],
-        "learning_rate": 0.05,
-        "p_drop": 0.0,
-        "epochs": 40,
-        "batch_size": 128,
-        "momentum": 0.9,
-        "seed": 42,
-        "early_stopping": true,
-        "val_fraction": 0.08,
-        "patience": 5,
-        "min_delta": 0.0001,
-        "dtype": "float32",
-        "verbose": false
+        "inputs": []
+       },
+       {
+        "id": "flatten",
+        "op": "flatten",
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "image"
+        ]
+       },
+       {
+        "id": "standardize",
+        "op": "standardize",
+        "mean": 0.13063468480215842,
+        "std": 0.3080791897808302,
+        "eps": 1e-08,
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "flatten"
+        ],
+        "runtime": "x"
+       },
+       {
+        "id": "reshape",
+        "op": "reshape",
+        "out_shape": [
+         1,
+         28,
+         28
+        ],
+        "inputs": [
+         "standardize"
+        ]
+       },
+       {
+        "id": "conv0",
+        "op": "conv2d",
+        "kernel_shape": [
+         16,
+         1,
+         3,
+         3
+        ],
+        "stride": 1,
+        "padding": 0,
+        "params": {
+         "kernel": "K0",
+         "bias": "kb0"
+        },
+        "out_shape": [
+         16,
+         26,
+         26
+        ],
+        "inputs": [
+         "reshape"
+        ],
+        "runtime": "conv0"
+       },
+       {
+        "id": "act0",
+        "op": "relu",
+        "out_shape": [
+         16,
+         26,
+         26
+        ],
+        "inputs": [
+         "conv0"
+        ],
+        "runtime": "act0"
+       },
+       {
+        "id": "pool0",
+        "op": "maxpool2d",
+        "window": 2,
+        "stride": 2,
+        "out_shape": [
+         16,
+         13,
+         13
+        ],
+        "inputs": [
+         "act0"
+        ],
+        "runtime": "pool0"
+       },
+       {
+        "id": "conv1",
+        "op": "conv2d",
+        "kernel_shape": [
+         32,
+         16,
+         3,
+         3
+        ],
+        "stride": 1,
+        "padding": 0,
+        "params": {
+         "kernel": "K1",
+         "bias": "kb1"
+        },
+        "out_shape": [
+         32,
+         11,
+         11
+        ],
+        "inputs": [
+         "pool0"
+        ],
+        "runtime": "conv1"
+       },
+       {
+        "id": "act1",
+        "op": "relu",
+        "out_shape": [
+         32,
+         11,
+         11
+        ],
+        "inputs": [
+         "conv1"
+        ],
+        "runtime": "act1"
+       },
+       {
+        "id": "pool1",
+        "op": "maxpool2d",
+        "window": 2,
+        "stride": 2,
+        "out_shape": [
+         32,
+         5,
+         5
+        ],
+        "inputs": [
+         "act1"
+        ],
+        "runtime": "pool1"
+       },
+       {
+        "id": "flat",
+        "op": "flatten",
+        "out_shape": [
+         800
+        ],
+        "inputs": [
+         "pool1"
+        ]
+       },
+       {
+        "id": "z0",
+        "op": "dense",
+        "in_features": 800,
+        "out_features": 64,
+        "params": {
+         "weight": "W0",
+         "bias": "b0"
+        },
+        "out_shape": [
+         64
+        ],
+        "inputs": [
+         "flat"
+        ],
+        "runtime": "z0"
+       },
+       {
+        "id": "a0",
+        "op": "relu",
+        "out_shape": [
+         64
+        ],
+        "inputs": [
+         "z0"
+        ],
+        "runtime": "a0"
+       },
+       {
+        "id": "logits",
+        "op": "dense",
+        "in_features": 64,
+        "out_features": 10,
+        "params": {
+         "weight": "W1",
+         "bias": "b1"
+        },
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "a0"
+        ],
+        "runtime": "logits"
+       },
+       {
+        "id": "output",
+        "op": "softmax",
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "logits"
+        ],
+        "runtime": "probabilities"
+       }
+      ],
+      "runtime_outputs": [
+       {
+        "name": "x",
+        "layer": "standardize",
+        "shape": [
+         784
+        ],
+        "role": "standardized_input"
+       },
+       {
+        "name": "conv0",
+        "layer": "conv0",
+        "shape": [
+         16,
+         26,
+         26
+        ],
+        "role": "pre_activation"
+       },
+       {
+        "name": "act0",
+        "layer": "act0",
+        "shape": [
+         16,
+         26,
+         26
+        ],
+        "role": "activation"
+       },
+       {
+        "name": "pool0",
+        "layer": "pool0",
+        "shape": [
+         16,
+         13,
+         13
+        ],
+        "role": "pooled"
+       },
+       {
+        "name": "conv1",
+        "layer": "conv1",
+        "shape": [
+         32,
+         11,
+         11
+        ],
+        "role": "pre_activation"
+       },
+       {
+        "name": "act1",
+        "layer": "act1",
+        "shape": [
+         32,
+         11,
+         11
+        ],
+        "role": "activation"
+       },
+       {
+        "name": "pool1",
+        "layer": "pool1",
+        "shape": [
+         32,
+         5,
+         5
+        ],
+        "role": "pooled"
+       },
+       {
+        "name": "z0",
+        "layer": "z0",
+        "shape": [
+         64
+        ],
+        "role": "pre_activation"
+       },
+       {
+        "name": "a0",
+        "layer": "a0",
+        "shape": [
+         64
+        ],
+        "role": "activation"
+       },
+       {
+        "name": "logits",
+        "layer": "logits",
+        "shape": [
+         10
+        ],
+        "role": "logits"
+       }
+      ],
+      "output": {
+       "name": "probabilities",
+       "kind": "softmax_probability",
+       "calibrated": true,
+       "classes": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+       ]
       },
-      "validation": {
-        "max_abs_prob_diff": 1.9073486328125e-06,
-        "argmax_agreement": 1.0,
-        "n_checked": 10000,
-        "ok": true
-      },
-      "input": "pixels",
-      "output": "probabilities"
+      "n_parameters": 56714,
+      "params": {
+       "file": "models/cnn.params.bin",
+       "sha256": "a9edde47cac5807d88a6b4281d07db70abaceacc68bb0647fc59428c1405fbe0",
+       "nbytes": 226856,
+       "tensors": [
+        {
+         "name": "K0",
+         "shape": [
+          16,
+          1,
+          3,
+          3
+         ],
+         "dtype": "float32",
+         "offset": 0,
+         "nbytes": 576,
+         "layer": "conv0",
+         "role": "kernel"
+        },
+        {
+         "name": "kb0",
+         "shape": [
+          16
+         ],
+         "dtype": "float32",
+         "offset": 576,
+         "nbytes": 64,
+         "layer": "conv0",
+         "role": "bias"
+        },
+        {
+         "name": "K1",
+         "shape": [
+          32,
+          16,
+          3,
+          3
+         ],
+         "dtype": "float32",
+         "offset": 640,
+         "nbytes": 18432,
+         "layer": "conv1",
+         "role": "kernel"
+        },
+        {
+         "name": "kb1",
+         "shape": [
+          32
+         ],
+         "dtype": "float32",
+         "offset": 19072,
+         "nbytes": 128,
+         "layer": "conv1",
+         "role": "bias"
+        },
+        {
+         "name": "W0",
+         "shape": [
+          800,
+          64
+         ],
+         "dtype": "float32",
+         "offset": 19200,
+         "nbytes": 204800,
+         "layer": "z0",
+         "role": "weight"
+        },
+        {
+         "name": "b0",
+         "shape": [
+          64
+         ],
+         "dtype": "float32",
+         "offset": 224000,
+         "nbytes": 256,
+         "layer": "z0",
+         "role": "bias"
+        },
+        {
+         "name": "W1",
+         "shape": [
+          64,
+          10
+         ],
+         "dtype": "float32",
+         "offset": 224256,
+         "nbytes": 2560,
+         "layer": "logits",
+         "role": "weight"
+        },
+        {
+         "name": "b1",
+         "shape": [
+          10
+         ],
+         "dtype": "float32",
+         "offset": 226816,
+         "nbytes": 40,
+         "layer": "logits",
+         "role": "bias"
+        }
+       ]
+      }
+     },
+     "replay": {
+      "file": "replay/cnn.replay.json",
+      "sha256": "a1f89d4c30ab37bffb803e17359f34ab445ec9a5642e9a37e63a42fc92cf0f94",
+      "size_bytes": 424640
+     }
     },
     "adaboost": {
-      "title": "AdaBoost (SAMME)",
-      "class": "AdaBoostSAMME",
-      "format": "json",
-      "file": "models/adaboost.json",
-      "size_bytes": 15981079,
-      "params": {
+     "title": "AdaBoost (SAMME)",
+     "class": "AdaBoostSAMME",
+     "format": "binary",
+     "file": "models/adaboost.bin",
+     "sha256": "b2e057c149a1463809b90efa1299c5c7d658c2508f68bec3eb74da5609f420e8",
+     "size_bytes": 9683984,
+     "params": {
+      "n_estimators": 393,
+      "max_depth": 10,
+      "learning_rate": 0.1,
+      "n_bins": 32,
+      "max_features": 0.5,
+      "seed": 42,
+      "verbose": false
+     },
+     "validation": {
+      "max_abs_prob_diff": 0.0,
+      "argmax_agreement": 1.0,
+      "n_checked": 2000,
+      "ok": true
+     },
+     "input": "pixels",
+     "output": "vote_shares",
+     "trace": {
+      "schema": "writerhand.trace/1",
+      "kind": "adaboost",
+      "preprocessing": [
+       {
+        "op": "scale",
+        "divisor": 255.0,
+        "note": "uint8 pixel -> [0, 1]"
+       },
+       {
+        "op": "standardize",
+        "mean": 0.13063468480215842,
+        "std": 0.3080791897808302,
+        "eps": 1e-08,
+        "formula": "(p - mean)/(std + eps)"
+       }
+      ],
+      "input": {
+       "name": "pixels",
+       "shape": [
+        "N",
+        784
+       ],
+       "range": [
+        0,
+        1
+       ],
+       "layout": "28x28 row-major"
+      },
+      "layers": [
+       {
+        "id": "image",
+        "op": "input",
+        "label": "image",
+        "out_shape": [
+         28,
+         28
+        ],
+        "inputs": []
+       },
+       {
+        "id": "flatten",
+        "op": "flatten",
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "image"
+        ]
+       },
+       {
+        "id": "standardize",
+        "op": "standardize",
+        "mean": 0.13063468480215842,
+        "std": 0.3080791897808302,
+        "eps": 1e-08,
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "flatten"
+        ],
+        "runtime": "x"
+       },
+       {
+        "id": "trees",
+        "op": "tree_ensemble",
         "n_estimators": 393,
-        "max_depth": 10,
-        "learning_rate": 0.1,
-        "n_bins": 32,
-        "max_features": 0.5,
-        "seed": 42,
-        "verbose": false
+        "node_counts": [
+         1751,
+         1691,
+         1587,
+         1725,
+         1511,
+         1557,
+         1691,
+         1723,
+         1757,
+         1653,
+         1765,
+         1683,
+         1651,
+         1657,
+         1701,
+         1647,
+         1689,
+         1651,
+         1701,
+         1675,
+         1749,
+         1591,
+         1509,
+         1527,
+         1663,
+         1765,
+         1637,
+         1699,
+         1597,
+         1719,
+         1715,
+         1695,
+         1637,
+         1623,
+         1481,
+         1627,
+         1699,
+         1687,
+         1605,
+         1703,
+         1691,
+         1741,
+         1631,
+         1639,
+         1701,
+         1753,
+         1613,
+         1579,
+         1683,
+         1625,
+         1707,
+         1699,
+         1673,
+         1599,
+         1599,
+         1601,
+         1619,
+         1585,
+         1745,
+         1415,
+         1585,
+         1703,
+         1473,
+         1559,
+         1665,
+         1607,
+         1699,
+         1623,
+         1639,
+         1541,
+         1543,
+         1557,
+         1575,
+         1685,
+         1781,
+         1737,
+         1621,
+         1665,
+         1739,
+         1633,
+         1609,
+         1609,
+         1785,
+         1573,
+         1611,
+         1735,
+         1731,
+         1733,
+         1487,
+         1673,
+         1695,
+         1651,
+         1671,
+         1473,
+         1635,
+         1645,
+         1669,
+         1707,
+         1649,
+         1609,
+         1581,
+         1689,
+         1529,
+         1515,
+         1647,
+         1739,
+         1677,
+         1573,
+         1649,
+         1533,
+         1567,
+         1629,
+         1527,
+         1735,
+         1557,
+         1651,
+         1603,
+         1681,
+         1623,
+         1469,
+         1631,
+         1485,
+         1587,
+         1607,
+         1489,
+         1627,
+         1671,
+         1543,
+         1633,
+         1617,
+         1731,
+         1629,
+         1559,
+         1511,
+         1525,
+         1723,
+         1629,
+         1691,
+         1403,
+         1611,
+         1777,
+         1575,
+         1531,
+         1591,
+         1681,
+         1683,
+         1651,
+         1687,
+         1695,
+         1747,
+         1657,
+         1651,
+         1673,
+         1635,
+         1729,
+         1595,
+         1599,
+         1589,
+         1691,
+         1671,
+         1617,
+         1633,
+         1683,
+         1643,
+         1599,
+         1637,
+         1653,
+         1639,
+         1695,
+         1617,
+         1615,
+         1745,
+         1635,
+         1659,
+         1671,
+         1701,
+         1697,
+         1559,
+         1665,
+         1635,
+         1657,
+         1679,
+         1603,
+         1575,
+         1503,
+         1715,
+         1579,
+         1695,
+         1591,
+         1697,
+         1701,
+         1617,
+         1685,
+         1639,
+         1465,
+         1557,
+         1547,
+         1699,
+         1559,
+         1553,
+         1721,
+         1493,
+         1581,
+         1639,
+         1711,
+         1573,
+         1495,
+         1599,
+         1595,
+         1717,
+         1425,
+         1567,
+         1733,
+         1695,
+         1679,
+         1667,
+         1619,
+         1775,
+         1643,
+         1561,
+         1581,
+         1665,
+         1587,
+         1619,
+         1725,
+         1723,
+         1625,
+         1603,
+         1649,
+         1725,
+         1799,
+         1527,
+         1653,
+         1817,
+         1515,
+         1535,
+         1645,
+         1681,
+         1585,
+         1605,
+         1695,
+         1689,
+         1657,
+         1729,
+         1583,
+         1613,
+         1699,
+         1643,
+         1525,
+         1759,
+         1633,
+         1549,
+         1683,
+         1623,
+         1629,
+         1619,
+         1537,
+         1593,
+         1659,
+         1685,
+         1615,
+         1687,
+         1687,
+         1627,
+         1653,
+         1623,
+         1637,
+         1681,
+         1751,
+         1757,
+         1601,
+         1757,
+         1691,
+         1587,
+         1591,
+         1627,
+         1745,
+         1671,
+         1703,
+         1729,
+         1571,
+         1667,
+         1717,
+         1605,
+         1613,
+         1709,
+         1465,
+         1487,
+         1523,
+         1629,
+         1671,
+         1661,
+         1683,
+         1591,
+         1723,
+         1551,
+         1519,
+         1711,
+         1627,
+         1697,
+         1663,
+         1621,
+         1683,
+         1669,
+         1415,
+         1565,
+         1661,
+         1617,
+         1707,
+         1571,
+         1525,
+         1583,
+         1725,
+         1539,
+         1671,
+         1669,
+         1583,
+         1697,
+         1715,
+         1651,
+         1545,
+         1703,
+         1643,
+         1641,
+         1597,
+         1523,
+         1623,
+         1745,
+         1763,
+         1703,
+         1715,
+         1689,
+         1781,
+         1639,
+         1651,
+         1673,
+         1661,
+         1679,
+         1709,
+         1645,
+         1639,
+         1571,
+         1655,
+         1627,
+         1565,
+         1653,
+         1635,
+         1721,
+         1677,
+         1635,
+         1739,
+         1669,
+         1699,
+         1599,
+         1531,
+         1631,
+         1491,
+         1607,
+         1747,
+         1653,
+         1701,
+         1589,
+         1653,
+         1653,
+         1647,
+         1629,
+         1701,
+         1697,
+         1647,
+         1655,
+         1679,
+         1723,
+         1647,
+         1669,
+         1663,
+         1619,
+         1597,
+         1583,
+         1641,
+         1623,
+         1711,
+         1717,
+         1653,
+         1639,
+         1579,
+         1649,
+         1695,
+         1725,
+         1695,
+         1657,
+         1571,
+         1613,
+         1577
+        ],
+        "depths": [
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10,
+         10
+        ],
+        "split_rule": "go left when x[feature] < threshold",
+        "out_shape": [
+         393
+        ],
+        "inputs": [
+         "standardize"
+        ]
+       },
+       {
+        "id": "vote",
+        "op": "weighted_vote",
+        "n_classes": 10,
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "trees"
+        ],
+        "note": "score_k = sum over rounds of alpha_t * 1[tree_t predicts k]"
+       },
+       {
+        "id": "output",
+        "op": "normalize",
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "vote"
+        ],
+        "runtime": null
+       }
+      ],
+      "runtime_outputs": [],
+      "output": {
+       "name": "vote_share",
+       "kind": "vote_share",
+       "calibrated": false,
+       "classes": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+       ]
       },
-      "validation": {
-        "max_abs_prob_diff": 0.0,
-        "argmax_agreement": 1.0,
-        "n_checked": 1000,
-        "ok": true
-      },
-      "input": "pixels",
-      "output": "vote_shares"
+      "n_parameters": null,
+      "params": null
+     },
+     "replay": {
+      "file": "replay/adaboost.replay.json",
+      "sha256": "255ff6c94ed24b3c476f5d1e53b078ac0b9ab51fe8bcbbe4b3dbbb87dea84719",
+      "size_bytes": 46882
+     }
     }
+   }
+  },
+  "fashion_mnist": {
+   "title": "Fashion-MNIST",
+   "short": "Fashion",
+   "kind": "clothing",
+   "source": "Xiao et al. (2017); torchvision.datasets.FashionMNIST",
+   "classes": [
+    "T-shirt/top",
+    "Trouser",
+    "Pullover",
+    "Dress",
+    "Coat",
+    "Sandal",
+    "Shirt",
+    "Sneaker",
+    "Bag",
+    "Ankle boot"
+   ],
+   "preprocessing": {
+    "version": "mnist-global-standardize-v2-stratified",
+    "image": "28x28 grayscale, bright object on dark background",
+    "scale": "pixel/255",
+    "mean": 0.2858868583445317,
+    "std": 0.35293398878737514,
+    "eps": 1e-08,
+    "formula": "x = (pixel/255 - mean) / (std + eps)"
+   },
+   "dataset": {
+    "preprocess_version": "mnist-global-standardize-v2-stratified",
+    "seed": 42,
+    "dataset": "fashion_mnist",
+    "n_train": 50000,
+    "n_val": 10000,
+    "n_test": 10000,
+    "mean": 0.2858868583445317,
+    "std": 0.35293398878737514,
+    "split_fingerprint": "81af3b61a9090ad5"
+   },
+   "test_vectors": "fashion_mnist/test_vectors.json",
+   "results": "fashion_mnist/results.json",
+   "models": {
+    "naive_bayes": {
+     "title": "Gaussian Naive Bayes",
+     "class": "GaussianNB",
+     "format": "onnx",
+     "file": "models/naive_bayes.onnx",
+     "sha256": "041a169223e11457195d77e5a45821bb76361a7445cdc9521b0377e6441c9619",
+     "size_bytes": 63302,
+     "params": {
+      "var_smoothing": 0.1
+     },
+     "validation": {
+      "max_abs_prob_diff": 0.00019232744174646488,
+      "argmax_agreement": 1.0,
+      "n_checked": 2000,
+      "ok": true
+     },
+     "input": "pixels",
+     "output": "probabilities",
+     "trace": {
+      "schema": "writerhand.trace/1",
+      "kind": "naive_bayes",
+      "preprocessing": [
+       {
+        "op": "scale",
+        "divisor": 255.0,
+        "note": "uint8 pixel -> [0, 1]"
+       },
+       {
+        "op": "standardize",
+        "mean": 0.2858868583445317,
+        "std": 0.35293398878737514,
+        "eps": 1e-08,
+        "formula": "(p - mean)/(std + eps)"
+       }
+      ],
+      "input": {
+       "name": "pixels",
+       "shape": [
+        "N",
+        784
+       ],
+       "range": [
+        0,
+        1
+       ],
+       "layout": "28x28 row-major"
+      },
+      "layers": [
+       {
+        "id": "image",
+        "op": "input",
+        "label": "image",
+        "out_shape": [
+         28,
+         28
+        ],
+        "inputs": []
+       },
+       {
+        "id": "flatten",
+        "op": "flatten",
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "image"
+        ]
+       },
+       {
+        "id": "standardize",
+        "op": "standardize",
+        "mean": 0.2858868583445317,
+        "std": 0.35293398878737514,
+        "eps": 1e-08,
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "flatten"
+        ],
+        "runtime": "x"
+       },
+       {
+        "id": "logits",
+        "op": "gaussian_loglik",
+        "params": {
+         "mean": "class_mean",
+         "variance": "class_var",
+         "log_prior": "log_prior"
+        },
+        "n_classes": 10,
+        "n_features": 784,
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "standardize"
+        ],
+        "runtime": "logits"
+       },
+       {
+        "id": "output",
+        "op": "softmax",
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "logits"
+        ],
+        "runtime": "probabilities"
+       }
+      ],
+      "runtime_outputs": [
+       {
+        "name": "x",
+        "layer": "standardize",
+        "shape": [
+         784
+        ],
+        "role": "standardized_input"
+       },
+       {
+        "name": "logits",
+        "layer": "logits",
+        "shape": [
+         10
+        ],
+        "role": "log_joint"
+       }
+      ],
+      "output": {
+       "name": "probabilities",
+       "kind": "softmax_probability",
+       "calibrated": true,
+       "classes": [
+        "T-shirt/top",
+        "Trouser",
+        "Pullover",
+        "Dress",
+        "Coat",
+        "Sandal",
+        "Shirt",
+        "Sneaker",
+        "Bag",
+        "Ankle boot"
+       ]
+      },
+      "n_parameters": 15690,
+      "params": {
+       "file": "models/naive_bayes.params.bin",
+       "sha256": "bf6a7df26dccdb9155c86080042f6fa7c2d03029f2d3f5d63b572dddccc5a7dc",
+       "nbytes": 62760,
+       "tensors": [
+        {
+         "name": "class_mean",
+         "shape": [
+          10,
+          784
+         ],
+         "dtype": "float32",
+         "offset": 0,
+         "nbytes": 31360,
+         "layer": "logits",
+         "role": "class_mean"
+        },
+        {
+         "name": "class_var",
+         "shape": [
+          10,
+          784
+         ],
+         "dtype": "float32",
+         "offset": 31360,
+         "nbytes": 31360,
+         "layer": "logits",
+         "role": "class_variance"
+        },
+        {
+         "name": "log_prior",
+         "shape": [
+          10
+         ],
+         "dtype": "float32",
+         "offset": 62720,
+         "nbytes": 40,
+         "layer": "logits",
+         "role": "log_prior"
+        }
+       ]
+      }
+     },
+     "replay": null
+    },
+    "softmax": {
+     "title": "Softmax regression",
+     "class": "SoftmaxRegression",
+     "format": "onnx",
+     "file": "models/softmax.onnx",
+     "sha256": "e4c3ec64b69b9773932b2b9cd6299d56cd399d1c17365ed33eafe475e22dd962",
+     "size_bytes": 31823,
+     "params": {
+      "learning_rate": 0.03,
+      "l2": 0.0001,
+      "epochs": 39,
+      "batch_size": 128,
+      "lr_decay": 0.0,
+      "tol": null,
+      "n_iter_no_change": 3,
+      "seed": 42,
+      "verbose": false
+     },
+     "validation": {
+      "max_abs_prob_diff": 2.609148942900319e-06,
+      "argmax_agreement": 1.0,
+      "n_checked": 2000,
+      "ok": true
+     },
+     "input": "pixels",
+     "output": "probabilities",
+     "trace": {
+      "schema": "writerhand.trace/1",
+      "kind": "softmax",
+      "preprocessing": [
+       {
+        "op": "scale",
+        "divisor": 255.0,
+        "note": "uint8 pixel -> [0, 1]"
+       },
+       {
+        "op": "standardize",
+        "mean": 0.2858868583445317,
+        "std": 0.35293398878737514,
+        "eps": 1e-08,
+        "formula": "(p - mean)/(std + eps)"
+       }
+      ],
+      "input": {
+       "name": "pixels",
+       "shape": [
+        "N",
+        784
+       ],
+       "range": [
+        0,
+        1
+       ],
+       "layout": "28x28 row-major"
+      },
+      "layers": [
+       {
+        "id": "image",
+        "op": "input",
+        "label": "image",
+        "out_shape": [
+         28,
+         28
+        ],
+        "inputs": []
+       },
+       {
+        "id": "flatten",
+        "op": "flatten",
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "image"
+        ]
+       },
+       {
+        "id": "standardize",
+        "op": "standardize",
+        "mean": 0.2858868583445317,
+        "std": 0.35293398878737514,
+        "eps": 1e-08,
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "flatten"
+        ],
+        "runtime": "x"
+       },
+       {
+        "id": "logits",
+        "op": "dense",
+        "in_features": 784,
+        "out_features": 10,
+        "params": {
+         "weight": "W",
+         "bias": "b"
+        },
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "standardize"
+        ],
+        "runtime": "logits"
+       },
+       {
+        "id": "output",
+        "op": "softmax",
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "logits"
+        ],
+        "runtime": "probabilities"
+       }
+      ],
+      "runtime_outputs": [
+       {
+        "name": "x",
+        "layer": "standardize",
+        "shape": [
+         784
+        ],
+        "role": "standardized_input"
+       },
+       {
+        "name": "logits",
+        "layer": "logits",
+        "shape": [
+         10
+        ],
+        "role": "logits"
+       }
+      ],
+      "output": {
+       "name": "probabilities",
+       "kind": "softmax_probability",
+       "calibrated": true,
+       "classes": [
+        "T-shirt/top",
+        "Trouser",
+        "Pullover",
+        "Dress",
+        "Coat",
+        "Sandal",
+        "Shirt",
+        "Sneaker",
+        "Bag",
+        "Ankle boot"
+       ]
+      },
+      "n_parameters": 7850,
+      "params": {
+       "file": "models/softmax.params.bin",
+       "sha256": "ae47b191b0af0dbdc68da2f428d3ad62736e3dab49aa46fc1e4767d120512f82",
+       "nbytes": 31400,
+       "tensors": [
+        {
+         "name": "W",
+         "shape": [
+          784,
+          10
+         ],
+         "dtype": "float32",
+         "offset": 0,
+         "nbytes": 31360,
+         "layer": "logits",
+         "role": "weight"
+        },
+        {
+         "name": "b",
+         "shape": [
+          10
+         ],
+         "dtype": "float32",
+         "offset": 31360,
+         "nbytes": 40,
+         "layer": "logits",
+         "role": "bias"
+        }
+       ]
+      }
+     },
+     "replay": {
+      "file": "replay/softmax.replay.json",
+      "sha256": "c0343b94e2136e1a5ebd6d687d5dace62128de702481d86f5394a91bb5c519bd",
+      "size_bytes": 752620
+     }
+    },
+    "mlp": {
+     "title": "Multilayer perceptron",
+     "class": "MLP",
+     "format": "onnx",
+     "file": "models/mlp.onnx",
+     "sha256": "b1c9ff06ec960d3323c0ecf43a046418fd5295428c28d736a41023d37be6e7e4",
+     "size_bytes": 2143976,
+     "params": {
+      "hidden_sizes": [
+       512,
+       256
+      ],
+      "learning_rate": 0.02,
+      "p_drop": 0.2,
+      "epochs": 40,
+      "batch_size": 128,
+      "momentum": 0.9,
+      "seed": 42,
+      "early_stopping": true,
+      "val_fraction": 0.08,
+      "patience": 5,
+      "min_delta": 0.0001,
+      "dtype": "float32",
+      "verbose": false
+     },
+     "validation": {
+      "max_abs_prob_diff": 1.3113021850585938e-06,
+      "argmax_agreement": 1.0,
+      "n_checked": 2000,
+      "ok": true
+     },
+     "input": "pixels",
+     "output": "probabilities",
+     "trace": {
+      "schema": "writerhand.trace/1",
+      "kind": "mlp",
+      "preprocessing": [
+       {
+        "op": "scale",
+        "divisor": 255.0,
+        "note": "uint8 pixel -> [0, 1]"
+       },
+       {
+        "op": "standardize",
+        "mean": 0.2858868583445317,
+        "std": 0.35293398878737514,
+        "eps": 1e-08,
+        "formula": "(p - mean)/(std + eps)"
+       }
+      ],
+      "input": {
+       "name": "pixels",
+       "shape": [
+        "N",
+        784
+       ],
+       "range": [
+        0,
+        1
+       ],
+       "layout": "28x28 row-major"
+      },
+      "layers": [
+       {
+        "id": "image",
+        "op": "input",
+        "label": "image",
+        "out_shape": [
+         28,
+         28
+        ],
+        "inputs": []
+       },
+       {
+        "id": "flatten",
+        "op": "flatten",
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "image"
+        ]
+       },
+       {
+        "id": "standardize",
+        "op": "standardize",
+        "mean": 0.2858868583445317,
+        "std": 0.35293398878737514,
+        "eps": 1e-08,
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "flatten"
+        ],
+        "runtime": "x"
+       },
+       {
+        "id": "z0",
+        "op": "dense",
+        "in_features": 784,
+        "out_features": 512,
+        "params": {
+         "weight": "W0",
+         "bias": "b0"
+        },
+        "out_shape": [
+         512
+        ],
+        "inputs": [
+         "standardize"
+        ],
+        "runtime": "z0"
+       },
+       {
+        "id": "a0",
+        "op": "relu",
+        "out_shape": [
+         512
+        ],
+        "inputs": [
+         "z0"
+        ],
+        "runtime": "a0"
+       },
+       {
+        "id": "z1",
+        "op": "dense",
+        "in_features": 512,
+        "out_features": 256,
+        "params": {
+         "weight": "W1",
+         "bias": "b1"
+        },
+        "out_shape": [
+         256
+        ],
+        "inputs": [
+         "a0"
+        ],
+        "runtime": "z1"
+       },
+       {
+        "id": "a1",
+        "op": "relu",
+        "out_shape": [
+         256
+        ],
+        "inputs": [
+         "z1"
+        ],
+        "runtime": "a1"
+       },
+       {
+        "id": "logits",
+        "op": "dense",
+        "in_features": 256,
+        "out_features": 10,
+        "params": {
+         "weight": "W2",
+         "bias": "b2"
+        },
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "a1"
+        ],
+        "runtime": "logits"
+       },
+       {
+        "id": "output",
+        "op": "softmax",
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "logits"
+        ],
+        "runtime": "probabilities"
+       }
+      ],
+      "runtime_outputs": [
+       {
+        "name": "x",
+        "layer": "standardize",
+        "shape": [
+         784
+        ],
+        "role": "standardized_input"
+       },
+       {
+        "name": "z0",
+        "layer": "z0",
+        "shape": [
+         512
+        ],
+        "role": "pre_activation"
+       },
+       {
+        "name": "a0",
+        "layer": "a0",
+        "shape": [
+         512
+        ],
+        "role": "activation"
+       },
+       {
+        "name": "z1",
+        "layer": "z1",
+        "shape": [
+         256
+        ],
+        "role": "pre_activation"
+       },
+       {
+        "name": "a1",
+        "layer": "a1",
+        "shape": [
+         256
+        ],
+        "role": "activation"
+       },
+       {
+        "name": "logits",
+        "layer": "logits",
+        "shape": [
+         10
+        ],
+        "role": "logits"
+       }
+      ],
+      "output": {
+       "name": "probabilities",
+       "kind": "softmax_probability",
+       "calibrated": true,
+       "classes": [
+        "T-shirt/top",
+        "Trouser",
+        "Pullover",
+        "Dress",
+        "Coat",
+        "Sandal",
+        "Shirt",
+        "Sneaker",
+        "Bag",
+        "Ankle boot"
+       ]
+      },
+      "n_parameters": 535818,
+      "params": {
+       "file": "models/mlp.params.bin",
+       "sha256": "360f8c89bb82060686b1ccbe6d6b9237b6a5da03006a8645820a66ec034f7c02",
+       "nbytes": 2143272,
+       "tensors": [
+        {
+         "name": "W0",
+         "shape": [
+          784,
+          512
+         ],
+         "dtype": "float32",
+         "offset": 0,
+         "nbytes": 1605632,
+         "layer": "z0",
+         "role": "weight"
+        },
+        {
+         "name": "b0",
+         "shape": [
+          512
+         ],
+         "dtype": "float32",
+         "offset": 1605632,
+         "nbytes": 2048,
+         "layer": "z0",
+         "role": "bias"
+        },
+        {
+         "name": "W1",
+         "shape": [
+          512,
+          256
+         ],
+         "dtype": "float32",
+         "offset": 1607680,
+         "nbytes": 524288,
+         "layer": "z1",
+         "role": "weight"
+        },
+        {
+         "name": "b1",
+         "shape": [
+          256
+         ],
+         "dtype": "float32",
+         "offset": 2131968,
+         "nbytes": 1024,
+         "layer": "z1",
+         "role": "bias"
+        },
+        {
+         "name": "W2",
+         "shape": [
+          256,
+          10
+         ],
+         "dtype": "float32",
+         "offset": 2132992,
+         "nbytes": 10240,
+         "layer": "logits",
+         "role": "weight"
+        },
+        {
+         "name": "b2",
+         "shape": [
+          10
+         ],
+         "dtype": "float32",
+         "offset": 2143232,
+         "nbytes": 40,
+         "layer": "logits",
+         "role": "bias"
+        }
+       ]
+      }
+     },
+     "replay": {
+      "file": "replay/mlp.replay.json",
+      "sha256": "d284d519394cec309ba0b7f43fb876334cd56243a3130f64d70123d25ca5c1dd",
+      "size_bytes": 1113397
+     }
+    },
+    "cnn": {
+     "title": "Convolutional network",
+     "class": "CNN",
+     "format": "onnx",
+     "file": "models/cnn.onnx",
+     "sha256": "7f0ff912a2940a985a21b4a2169c01bdbd474f7eebf23ad4d2963a5c61422b8e",
+     "size_bytes": 52449,
+     "params": {
+      "channels": [
+       16,
+       32
+      ],
+      "kernel_size": 3,
+      "pool": 2,
+      "dense": [],
+      "learning_rate": 0.01,
+      "momentum": 0.9,
+      "p_drop": 0.0,
+      "epochs": 20,
+      "batch_size": 128,
+      "seed": 42,
+      "early_stopping": true,
+      "val_fraction": 0.08,
+      "patience": 3,
+      "min_delta": 0.0001,
+      "dtype": "float32",
+      "verbose": false
+     },
+     "validation": {
+      "max_abs_prob_diff": 9.5367431640625e-07,
+      "argmax_agreement": 1.0,
+      "n_checked": 2000,
+      "ok": true
+     },
+     "input": "pixels",
+     "output": "probabilities",
+     "trace": {
+      "schema": "writerhand.trace/1",
+      "kind": "cnn",
+      "preprocessing": [
+       {
+        "op": "scale",
+        "divisor": 255.0,
+        "note": "uint8 pixel -> [0, 1]"
+       },
+       {
+        "op": "standardize",
+        "mean": 0.2858868583445317,
+        "std": 0.35293398878737514,
+        "eps": 1e-08,
+        "formula": "(p - mean)/(std + eps)"
+       }
+      ],
+      "input": {
+       "name": "pixels",
+       "shape": [
+        "N",
+        784
+       ],
+       "range": [
+        0,
+        1
+       ],
+       "layout": "28x28 row-major"
+      },
+      "layers": [
+       {
+        "id": "image",
+        "op": "input",
+        "label": "image",
+        "out_shape": [
+         28,
+         28
+        ],
+        "inputs": []
+       },
+       {
+        "id": "flatten",
+        "op": "flatten",
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "image"
+        ]
+       },
+       {
+        "id": "standardize",
+        "op": "standardize",
+        "mean": 0.2858868583445317,
+        "std": 0.35293398878737514,
+        "eps": 1e-08,
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "flatten"
+        ],
+        "runtime": "x"
+       },
+       {
+        "id": "reshape",
+        "op": "reshape",
+        "out_shape": [
+         1,
+         28,
+         28
+        ],
+        "inputs": [
+         "standardize"
+        ]
+       },
+       {
+        "id": "conv0",
+        "op": "conv2d",
+        "kernel_shape": [
+         16,
+         1,
+         3,
+         3
+        ],
+        "stride": 1,
+        "padding": 0,
+        "params": {
+         "kernel": "K0",
+         "bias": "kb0"
+        },
+        "out_shape": [
+         16,
+         26,
+         26
+        ],
+        "inputs": [
+         "reshape"
+        ],
+        "runtime": "conv0"
+       },
+       {
+        "id": "act0",
+        "op": "relu",
+        "out_shape": [
+         16,
+         26,
+         26
+        ],
+        "inputs": [
+         "conv0"
+        ],
+        "runtime": "act0"
+       },
+       {
+        "id": "pool0",
+        "op": "maxpool2d",
+        "window": 2,
+        "stride": 2,
+        "out_shape": [
+         16,
+         13,
+         13
+        ],
+        "inputs": [
+         "act0"
+        ],
+        "runtime": "pool0"
+       },
+       {
+        "id": "conv1",
+        "op": "conv2d",
+        "kernel_shape": [
+         32,
+         16,
+         3,
+         3
+        ],
+        "stride": 1,
+        "padding": 0,
+        "params": {
+         "kernel": "K1",
+         "bias": "kb1"
+        },
+        "out_shape": [
+         32,
+         11,
+         11
+        ],
+        "inputs": [
+         "pool0"
+        ],
+        "runtime": "conv1"
+       },
+       {
+        "id": "act1",
+        "op": "relu",
+        "out_shape": [
+         32,
+         11,
+         11
+        ],
+        "inputs": [
+         "conv1"
+        ],
+        "runtime": "act1"
+       },
+       {
+        "id": "pool1",
+        "op": "maxpool2d",
+        "window": 2,
+        "stride": 2,
+        "out_shape": [
+         32,
+         5,
+         5
+        ],
+        "inputs": [
+         "act1"
+        ],
+        "runtime": "pool1"
+       },
+       {
+        "id": "flat",
+        "op": "flatten",
+        "out_shape": [
+         800
+        ],
+        "inputs": [
+         "pool1"
+        ]
+       },
+       {
+        "id": "logits",
+        "op": "dense",
+        "in_features": 800,
+        "out_features": 10,
+        "params": {
+         "weight": "W0",
+         "bias": "b0"
+        },
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "flat"
+        ],
+        "runtime": "logits"
+       },
+       {
+        "id": "output",
+        "op": "softmax",
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "logits"
+        ],
+        "runtime": "probabilities"
+       }
+      ],
+      "runtime_outputs": [
+       {
+        "name": "x",
+        "layer": "standardize",
+        "shape": [
+         784
+        ],
+        "role": "standardized_input"
+       },
+       {
+        "name": "conv0",
+        "layer": "conv0",
+        "shape": [
+         16,
+         26,
+         26
+        ],
+        "role": "pre_activation"
+       },
+       {
+        "name": "act0",
+        "layer": "act0",
+        "shape": [
+         16,
+         26,
+         26
+        ],
+        "role": "activation"
+       },
+       {
+        "name": "pool0",
+        "layer": "pool0",
+        "shape": [
+         16,
+         13,
+         13
+        ],
+        "role": "pooled"
+       },
+       {
+        "name": "conv1",
+        "layer": "conv1",
+        "shape": [
+         32,
+         11,
+         11
+        ],
+        "role": "pre_activation"
+       },
+       {
+        "name": "act1",
+        "layer": "act1",
+        "shape": [
+         32,
+         11,
+         11
+        ],
+        "role": "activation"
+       },
+       {
+        "name": "pool1",
+        "layer": "pool1",
+        "shape": [
+         32,
+         5,
+         5
+        ],
+        "role": "pooled"
+       },
+       {
+        "name": "logits",
+        "layer": "logits",
+        "shape": [
+         10
+        ],
+        "role": "logits"
+       }
+      ],
+      "output": {
+       "name": "probabilities",
+       "kind": "softmax_probability",
+       "calibrated": true,
+       "classes": [
+        "T-shirt/top",
+        "Trouser",
+        "Pullover",
+        "Dress",
+        "Coat",
+        "Sandal",
+        "Shirt",
+        "Sneaker",
+        "Bag",
+        "Ankle boot"
+       ]
+      },
+      "n_parameters": 12810,
+      "params": {
+       "file": "models/cnn.params.bin",
+       "sha256": "804229627fc97af6217c86fcbfefebd0f2711c55d184a7c485e6e26199963d10",
+       "nbytes": 51240,
+       "tensors": [
+        {
+         "name": "K0",
+         "shape": [
+          16,
+          1,
+          3,
+          3
+         ],
+         "dtype": "float32",
+         "offset": 0,
+         "nbytes": 576,
+         "layer": "conv0",
+         "role": "kernel"
+        },
+        {
+         "name": "kb0",
+         "shape": [
+          16
+         ],
+         "dtype": "float32",
+         "offset": 576,
+         "nbytes": 64,
+         "layer": "conv0",
+         "role": "bias"
+        },
+        {
+         "name": "K1",
+         "shape": [
+          32,
+          16,
+          3,
+          3
+         ],
+         "dtype": "float32",
+         "offset": 640,
+         "nbytes": 18432,
+         "layer": "conv1",
+         "role": "kernel"
+        },
+        {
+         "name": "kb1",
+         "shape": [
+          32
+         ],
+         "dtype": "float32",
+         "offset": 19072,
+         "nbytes": 128,
+         "layer": "conv1",
+         "role": "bias"
+        },
+        {
+         "name": "W0",
+         "shape": [
+          800,
+          10
+         ],
+         "dtype": "float32",
+         "offset": 19200,
+         "nbytes": 32000,
+         "layer": "logits",
+         "role": "weight"
+        },
+        {
+         "name": "b0",
+         "shape": [
+          10
+         ],
+         "dtype": "float32",
+         "offset": 51200,
+         "nbytes": 40,
+         "layer": "logits",
+         "role": "bias"
+        }
+       ]
+      }
+     },
+     "replay": {
+      "file": "replay/cnn.replay.json",
+      "sha256": "0e92ca314b72889294d5bb00bc1a0a04cb5e02a399970492a1b16b7b43a9907e",
+      "size_bytes": 384696
+     }
+    },
+    "adaboost": {
+     "title": "AdaBoost (SAMME)",
+     "class": "AdaBoostSAMME",
+     "format": "binary",
+     "file": "models/adaboost.bin",
+     "sha256": "6c0dce63fce9d7ead79cb902f2d3ebcc0e48dca6e491b09e32b0ea8d42122c50",
+     "size_bytes": 1305656,
+     "params": {
+      "n_estimators": 199,
+      "max_depth": 8,
+      "learning_rate": 1.0,
+      "n_bins": 32,
+      "max_features": 1.0,
+      "seed": 42,
+      "verbose": false
+     },
+     "validation": {
+      "max_abs_prob_diff": 0.0,
+      "argmax_agreement": 1.0,
+      "n_checked": 2000,
+      "ok": true
+     },
+     "input": "pixels",
+     "output": "vote_shares",
+     "trace": {
+      "schema": "writerhand.trace/1",
+      "kind": "adaboost",
+      "preprocessing": [
+       {
+        "op": "scale",
+        "divisor": 255.0,
+        "note": "uint8 pixel -> [0, 1]"
+       },
+       {
+        "op": "standardize",
+        "mean": 0.2858868583445317,
+        "std": 0.35293398878737514,
+        "eps": 1e-08,
+        "formula": "(p - mean)/(std + eps)"
+       }
+      ],
+      "input": {
+       "name": "pixels",
+       "shape": [
+        "N",
+        784
+       ],
+       "range": [
+        0,
+        1
+       ],
+       "layout": "28x28 row-major"
+      },
+      "layers": [
+       {
+        "id": "image",
+        "op": "input",
+        "label": "image",
+        "out_shape": [
+         28,
+         28
+        ],
+        "inputs": []
+       },
+       {
+        "id": "flatten",
+        "op": "flatten",
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "image"
+        ]
+       },
+       {
+        "id": "standardize",
+        "op": "standardize",
+        "mean": 0.2858868583445317,
+        "std": 0.35293398878737514,
+        "eps": 1e-08,
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "flatten"
+        ],
+        "runtime": "x"
+       },
+       {
+        "id": "trees",
+        "op": "tree_ensemble",
+        "n_estimators": 199,
+        "node_counts": [
+         441,
+         475,
+         473,
+         493,
+         451,
+         455,
+         463,
+         421,
+         475,
+         427,
+         473,
+         477,
+         467,
+         435,
+         459,
+         469,
+         365,
+         479,
+         479,
+         469,
+         459,
+         469,
+         461,
+         457,
+         469,
+         435,
+         459,
+         387,
+         381,
+         457,
+         465,
+         485,
+         437,
+         445,
+         429,
+         459,
+         459,
+         481,
+         255,
+         457,
+         415,
+         475,
+         393,
+         429,
+         459,
+         453,
+         457,
+         439,
+         407,
+         377,
+         475,
+         465,
+         453,
+         409,
+         425,
+         377,
+         435,
+         427,
+         437,
+         459,
+         369,
+         459,
+         445,
+         377,
+         409,
+         449,
+         457,
+         459,
+         445,
+         425,
+         459,
+         489,
+         335,
+         457,
+         411,
+         455,
+         477,
+         479,
+         457,
+         477,
+         447,
+         421,
+         425,
+         485,
+         309,
+         453,
+         401,
+         457,
+         461,
+         479,
+         453,
+         431,
+         465,
+         403,
+         429,
+         441,
+         469,
+         437,
+         489,
+         427,
+         443,
+         393,
+         487,
+         463,
+         399,
+         443,
+         451,
+         461,
+         447,
+         421,
+         379,
+         421,
+         415,
+         463,
+         361,
+         367,
+         477,
+         455,
+         459,
+         433,
+         455,
+         331,
+         425,
+         413,
+         437,
+         405,
+         419,
+         481,
+         413,
+         433,
+         437,
+         447,
+         455,
+         411,
+         417,
+         449,
+         465,
+         359,
+         485,
+         461,
+         361,
+         477,
+         407,
+         419,
+         449,
+         449,
+         397,
+         459,
+         411,
+         355,
+         421,
+         475,
+         435,
+         405,
+         431,
+         441,
+         449,
+         395,
+         443,
+         423,
+         387,
+         457,
+         427,
+         439,
+         445,
+         475,
+         383,
+         455,
+         403,
+         447,
+         431,
+         465,
+         393,
+         447,
+         461,
+         351,
+         407,
+         425,
+         469,
+         403,
+         471,
+         483,
+         313,
+         425,
+         417,
+         413,
+         433,
+         473,
+         359,
+         431,
+         349,
+         433,
+         427,
+         441,
+         375,
+         431,
+         441,
+         439,
+         427
+        ],
+        "depths": [
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8
+        ],
+        "split_rule": "go left when x[feature] < threshold",
+        "out_shape": [
+         199
+        ],
+        "inputs": [
+         "standardize"
+        ]
+       },
+       {
+        "id": "vote",
+        "op": "weighted_vote",
+        "n_classes": 10,
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "trees"
+        ],
+        "note": "score_k = sum over rounds of alpha_t * 1[tree_t predicts k]"
+       },
+       {
+        "id": "output",
+        "op": "normalize",
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "vote"
+        ],
+        "runtime": null
+       }
+      ],
+      "runtime_outputs": [],
+      "output": {
+       "name": "vote_share",
+       "kind": "vote_share",
+       "calibrated": false,
+       "classes": [
+        "T-shirt/top",
+        "Trouser",
+        "Pullover",
+        "Dress",
+        "Coat",
+        "Sandal",
+        "Shirt",
+        "Sneaker",
+        "Bag",
+        "Ankle boot"
+       ]
+      },
+      "n_parameters": null,
+      "params": null
+     },
+     "replay": {
+      "file": "replay/adaboost.replay.json",
+      "sha256": "18613cd84c6b027ddf6b4b8f96abc91af79793ad9320ceca20530ea6a0de1844",
+      "size_bytes": 44984
+     }
+    }
+   }
+  },
+  "emnist_digits": {
+   "title": "EMNIST Digits",
+   "short": "EMNIST",
+   "kind": "digits",
+   "source": "Cohen et al. (2017); torchvision.datasets.EMNIST(split='digits')",
+   "classes": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9"
+   ],
+   "preprocessing": {
+    "version": "mnist-global-standardize-v2-stratified",
+    "image": "28x28 grayscale, bright object on dark background",
+    "scale": "pixel/255",
+    "mean": 0.17335704386493875,
+    "std": 0.331787794183938,
+    "eps": 1e-08,
+    "formula": "x = (pixel/255 - mean) / (std + eps)"
+   },
+   "dataset": {
+    "preprocess_version": "mnist-global-standardize-v2-stratified",
+    "seed": 42,
+    "dataset": "emnist_digits",
+    "pool_fingerprint": "3000d5fa5cb2dc77",
+    "n_train": 50000,
+    "n_val": 10000,
+    "n_test": 40000,
+    "mean": 0.17335704386493875,
+    "std": 0.331787794183938,
+    "split_fingerprint": "da8f39a40d251249"
+   },
+   "test_vectors": "emnist_digits/test_vectors.json",
+   "results": "emnist_digits/results.json",
+   "models": {
+    "naive_bayes": {
+     "title": "Gaussian Naive Bayes",
+     "class": "GaussianNB",
+     "format": "onnx",
+     "file": "models/naive_bayes.onnx",
+     "sha256": "6f51b3b218ebc1e01d81be9defb0741b547dede9087aae7e0eeaf1496a1805da",
+     "size_bytes": 63302,
+     "params": {
+      "var_smoothing": 0.1
+     },
+     "validation": {
+      "max_abs_prob_diff": 0.00010321552379013998,
+      "argmax_agreement": 1.0,
+      "n_checked": 2000,
+      "ok": true
+     },
+     "input": "pixels",
+     "output": "probabilities",
+     "trace": {
+      "schema": "writerhand.trace/1",
+      "kind": "naive_bayes",
+      "preprocessing": [
+       {
+        "op": "scale",
+        "divisor": 255.0,
+        "note": "uint8 pixel -> [0, 1]"
+       },
+       {
+        "op": "standardize",
+        "mean": 0.17335704386493875,
+        "std": 0.331787794183938,
+        "eps": 1e-08,
+        "formula": "(p - mean)/(std + eps)"
+       }
+      ],
+      "input": {
+       "name": "pixels",
+       "shape": [
+        "N",
+        784
+       ],
+       "range": [
+        0,
+        1
+       ],
+       "layout": "28x28 row-major"
+      },
+      "layers": [
+       {
+        "id": "image",
+        "op": "input",
+        "label": "image",
+        "out_shape": [
+         28,
+         28
+        ],
+        "inputs": []
+       },
+       {
+        "id": "flatten",
+        "op": "flatten",
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "image"
+        ]
+       },
+       {
+        "id": "standardize",
+        "op": "standardize",
+        "mean": 0.17335704386493875,
+        "std": 0.331787794183938,
+        "eps": 1e-08,
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "flatten"
+        ],
+        "runtime": "x"
+       },
+       {
+        "id": "logits",
+        "op": "gaussian_loglik",
+        "params": {
+         "mean": "class_mean",
+         "variance": "class_var",
+         "log_prior": "log_prior"
+        },
+        "n_classes": 10,
+        "n_features": 784,
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "standardize"
+        ],
+        "runtime": "logits"
+       },
+       {
+        "id": "output",
+        "op": "softmax",
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "logits"
+        ],
+        "runtime": "probabilities"
+       }
+      ],
+      "runtime_outputs": [
+       {
+        "name": "x",
+        "layer": "standardize",
+        "shape": [
+         784
+        ],
+        "role": "standardized_input"
+       },
+       {
+        "name": "logits",
+        "layer": "logits",
+        "shape": [
+         10
+        ],
+        "role": "log_joint"
+       }
+      ],
+      "output": {
+       "name": "probabilities",
+       "kind": "softmax_probability",
+       "calibrated": true,
+       "classes": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+       ]
+      },
+      "n_parameters": 15690,
+      "params": {
+       "file": "models/naive_bayes.params.bin",
+       "sha256": "75a56078114d6f2a66008408181b9dbd8ba3bca6a87545db488e6eb72abd98ef",
+       "nbytes": 62760,
+       "tensors": [
+        {
+         "name": "class_mean",
+         "shape": [
+          10,
+          784
+         ],
+         "dtype": "float32",
+         "offset": 0,
+         "nbytes": 31360,
+         "layer": "logits",
+         "role": "class_mean"
+        },
+        {
+         "name": "class_var",
+         "shape": [
+          10,
+          784
+         ],
+         "dtype": "float32",
+         "offset": 31360,
+         "nbytes": 31360,
+         "layer": "logits",
+         "role": "class_variance"
+        },
+        {
+         "name": "log_prior",
+         "shape": [
+          10
+         ],
+         "dtype": "float32",
+         "offset": 62720,
+         "nbytes": 40,
+         "layer": "logits",
+         "role": "log_prior"
+        }
+       ]
+      }
+     },
+     "replay": null
+    },
+    "softmax": {
+     "title": "Softmax regression",
+     "class": "SoftmaxRegression",
+     "format": "onnx",
+     "file": "models/softmax.onnx",
+     "sha256": "414d2d6bec36f7a3b7e4c17ab66ca4ab1041d273eb4f7076d5f7ee7a1c227a8f",
+     "size_bytes": 31823,
+     "params": {
+      "learning_rate": 0.03,
+      "l2": 0.0,
+      "epochs": 27,
+      "batch_size": 128,
+      "lr_decay": 0.0,
+      "tol": null,
+      "n_iter_no_change": 3,
+      "seed": 42,
+      "verbose": false
+     },
+     "validation": {
+      "max_abs_prob_diff": 4.620950379785604e-06,
+      "argmax_agreement": 1.0,
+      "n_checked": 2000,
+      "ok": true
+     },
+     "input": "pixels",
+     "output": "probabilities",
+     "trace": {
+      "schema": "writerhand.trace/1",
+      "kind": "softmax",
+      "preprocessing": [
+       {
+        "op": "scale",
+        "divisor": 255.0,
+        "note": "uint8 pixel -> [0, 1]"
+       },
+       {
+        "op": "standardize",
+        "mean": 0.17335704386493875,
+        "std": 0.331787794183938,
+        "eps": 1e-08,
+        "formula": "(p - mean)/(std + eps)"
+       }
+      ],
+      "input": {
+       "name": "pixels",
+       "shape": [
+        "N",
+        784
+       ],
+       "range": [
+        0,
+        1
+       ],
+       "layout": "28x28 row-major"
+      },
+      "layers": [
+       {
+        "id": "image",
+        "op": "input",
+        "label": "image",
+        "out_shape": [
+         28,
+         28
+        ],
+        "inputs": []
+       },
+       {
+        "id": "flatten",
+        "op": "flatten",
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "image"
+        ]
+       },
+       {
+        "id": "standardize",
+        "op": "standardize",
+        "mean": 0.17335704386493875,
+        "std": 0.331787794183938,
+        "eps": 1e-08,
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "flatten"
+        ],
+        "runtime": "x"
+       },
+       {
+        "id": "logits",
+        "op": "dense",
+        "in_features": 784,
+        "out_features": 10,
+        "params": {
+         "weight": "W",
+         "bias": "b"
+        },
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "standardize"
+        ],
+        "runtime": "logits"
+       },
+       {
+        "id": "output",
+        "op": "softmax",
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "logits"
+        ],
+        "runtime": "probabilities"
+       }
+      ],
+      "runtime_outputs": [
+       {
+        "name": "x",
+        "layer": "standardize",
+        "shape": [
+         784
+        ],
+        "role": "standardized_input"
+       },
+       {
+        "name": "logits",
+        "layer": "logits",
+        "shape": [
+         10
+        ],
+        "role": "logits"
+       }
+      ],
+      "output": {
+       "name": "probabilities",
+       "kind": "softmax_probability",
+       "calibrated": true,
+       "classes": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+       ]
+      },
+      "n_parameters": 7850,
+      "params": {
+       "file": "models/softmax.params.bin",
+       "sha256": "2e575fd74a614015ac2d71af3be99b4f42710c257428cd90b016bdf01a5b9ce0",
+       "nbytes": 31400,
+       "tensors": [
+        {
+         "name": "W",
+         "shape": [
+          784,
+          10
+         ],
+         "dtype": "float32",
+         "offset": 0,
+         "nbytes": 31360,
+         "layer": "logits",
+         "role": "weight"
+        },
+        {
+         "name": "b",
+         "shape": [
+          10
+         ],
+         "dtype": "float32",
+         "offset": 31360,
+         "nbytes": 40,
+         "layer": "logits",
+         "role": "bias"
+        }
+       ]
+      }
+     },
+     "replay": {
+      "file": "replay/softmax.replay.json",
+      "sha256": "a10775f055ad647aa87a6ec9e04ca0069708c7032a3d575bc5ac5cbd6c15d2b5",
+      "size_bytes": 677908
+     }
+    },
+    "mlp": {
+     "title": "Multilayer perceptron",
+     "class": "MLP",
+     "format": "onnx",
+     "file": "models/mlp.onnx",
+     "sha256": "2368023bf0145effb9a9f065d1f6d6018326926991f26db20fcbb0885640be6b",
+     "size_bytes": 1628774,
+     "params": {
+      "hidden_sizes": [
+       512
+      ],
+      "learning_rate": 0.05,
+      "p_drop": 0.0,
+      "epochs": 40,
+      "batch_size": 128,
+      "momentum": 0.9,
+      "seed": 42,
+      "early_stopping": true,
+      "val_fraction": 0.08,
+      "patience": 5,
+      "min_delta": 0.0001,
+      "dtype": "float32",
+      "verbose": false
+     },
+     "validation": {
+      "max_abs_prob_diff": 1.5497207641601562e-06,
+      "argmax_agreement": 1.0,
+      "n_checked": 2000,
+      "ok": true
+     },
+     "input": "pixels",
+     "output": "probabilities",
+     "trace": {
+      "schema": "writerhand.trace/1",
+      "kind": "mlp",
+      "preprocessing": [
+       {
+        "op": "scale",
+        "divisor": 255.0,
+        "note": "uint8 pixel -> [0, 1]"
+       },
+       {
+        "op": "standardize",
+        "mean": 0.17335704386493875,
+        "std": 0.331787794183938,
+        "eps": 1e-08,
+        "formula": "(p - mean)/(std + eps)"
+       }
+      ],
+      "input": {
+       "name": "pixels",
+       "shape": [
+        "N",
+        784
+       ],
+       "range": [
+        0,
+        1
+       ],
+       "layout": "28x28 row-major"
+      },
+      "layers": [
+       {
+        "id": "image",
+        "op": "input",
+        "label": "image",
+        "out_shape": [
+         28,
+         28
+        ],
+        "inputs": []
+       },
+       {
+        "id": "flatten",
+        "op": "flatten",
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "image"
+        ]
+       },
+       {
+        "id": "standardize",
+        "op": "standardize",
+        "mean": 0.17335704386493875,
+        "std": 0.331787794183938,
+        "eps": 1e-08,
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "flatten"
+        ],
+        "runtime": "x"
+       },
+       {
+        "id": "z0",
+        "op": "dense",
+        "in_features": 784,
+        "out_features": 512,
+        "params": {
+         "weight": "W0",
+         "bias": "b0"
+        },
+        "out_shape": [
+         512
+        ],
+        "inputs": [
+         "standardize"
+        ],
+        "runtime": "z0"
+       },
+       {
+        "id": "a0",
+        "op": "relu",
+        "out_shape": [
+         512
+        ],
+        "inputs": [
+         "z0"
+        ],
+        "runtime": "a0"
+       },
+       {
+        "id": "logits",
+        "op": "dense",
+        "in_features": 512,
+        "out_features": 10,
+        "params": {
+         "weight": "W1",
+         "bias": "b1"
+        },
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "a0"
+        ],
+        "runtime": "logits"
+       },
+       {
+        "id": "output",
+        "op": "softmax",
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "logits"
+        ],
+        "runtime": "probabilities"
+       }
+      ],
+      "runtime_outputs": [
+       {
+        "name": "x",
+        "layer": "standardize",
+        "shape": [
+         784
+        ],
+        "role": "standardized_input"
+       },
+       {
+        "name": "z0",
+        "layer": "z0",
+        "shape": [
+         512
+        ],
+        "role": "pre_activation"
+       },
+       {
+        "name": "a0",
+        "layer": "a0",
+        "shape": [
+         512
+        ],
+        "role": "activation"
+       },
+       {
+        "name": "logits",
+        "layer": "logits",
+        "shape": [
+         10
+        ],
+        "role": "logits"
+       }
+      ],
+      "output": {
+       "name": "probabilities",
+       "kind": "softmax_probability",
+       "calibrated": true,
+       "classes": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+       ]
+      },
+      "n_parameters": 407050,
+      "params": {
+       "file": "models/mlp.params.bin",
+       "sha256": "79fdbf022f90cc431445d8f96e252341dca4547339a1ad1e529482eb3cf8e047",
+       "nbytes": 1628200,
+       "tensors": [
+        {
+         "name": "W0",
+         "shape": [
+          784,
+          512
+         ],
+         "dtype": "float32",
+         "offset": 0,
+         "nbytes": 1605632,
+         "layer": "z0",
+         "role": "weight"
+        },
+        {
+         "name": "b0",
+         "shape": [
+          512
+         ],
+         "dtype": "float32",
+         "offset": 1605632,
+         "nbytes": 2048,
+         "layer": "z0",
+         "role": "bias"
+        },
+        {
+         "name": "W1",
+         "shape": [
+          512,
+          10
+         ],
+         "dtype": "float32",
+         "offset": 1607680,
+         "nbytes": 20480,
+         "layer": "logits",
+         "role": "weight"
+        },
+        {
+         "name": "b1",
+         "shape": [
+          10
+         ],
+         "dtype": "float32",
+         "offset": 1628160,
+         "nbytes": 40,
+         "layer": "logits",
+         "role": "bias"
+        }
+       ]
+      }
+     },
+     "replay": {
+      "file": "replay/mlp.replay.json",
+      "sha256": "240dfd7ebca242673b38c4e5dc0bb325dcf421c044a73d3cff92b147a1560c2a",
+      "size_bytes": 989017
+     }
+    },
+    "cnn": {
+     "title": "Convolutional network",
+     "class": "CNN",
+     "format": "onnx",
+     "file": "models/cnn.onnx",
+     "sha256": "3761b6d0cab2918b4514d8cefb7c9626da1e5056425620b340298992c92a1bb5",
+     "size_bytes": 52449,
+     "params": {
+      "channels": [
+       16,
+       32
+      ],
+      "kernel_size": 3,
+      "pool": 2,
+      "dense": [],
+      "learning_rate": 0.01,
+      "momentum": 0.9,
+      "p_drop": 0.0,
+      "epochs": 20,
+      "batch_size": 128,
+      "seed": 42,
+      "early_stopping": true,
+      "val_fraction": 0.08,
+      "patience": 3,
+      "min_delta": 0.0001,
+      "dtype": "float32",
+      "verbose": false
+     },
+     "validation": {
+      "max_abs_prob_diff": 1.1324882507324219e-06,
+      "argmax_agreement": 1.0,
+      "n_checked": 2000,
+      "ok": true
+     },
+     "input": "pixels",
+     "output": "probabilities",
+     "trace": {
+      "schema": "writerhand.trace/1",
+      "kind": "cnn",
+      "preprocessing": [
+       {
+        "op": "scale",
+        "divisor": 255.0,
+        "note": "uint8 pixel -> [0, 1]"
+       },
+       {
+        "op": "standardize",
+        "mean": 0.17335704386493875,
+        "std": 0.331787794183938,
+        "eps": 1e-08,
+        "formula": "(p - mean)/(std + eps)"
+       }
+      ],
+      "input": {
+       "name": "pixels",
+       "shape": [
+        "N",
+        784
+       ],
+       "range": [
+        0,
+        1
+       ],
+       "layout": "28x28 row-major"
+      },
+      "layers": [
+       {
+        "id": "image",
+        "op": "input",
+        "label": "image",
+        "out_shape": [
+         28,
+         28
+        ],
+        "inputs": []
+       },
+       {
+        "id": "flatten",
+        "op": "flatten",
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "image"
+        ]
+       },
+       {
+        "id": "standardize",
+        "op": "standardize",
+        "mean": 0.17335704386493875,
+        "std": 0.331787794183938,
+        "eps": 1e-08,
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "flatten"
+        ],
+        "runtime": "x"
+       },
+       {
+        "id": "reshape",
+        "op": "reshape",
+        "out_shape": [
+         1,
+         28,
+         28
+        ],
+        "inputs": [
+         "standardize"
+        ]
+       },
+       {
+        "id": "conv0",
+        "op": "conv2d",
+        "kernel_shape": [
+         16,
+         1,
+         3,
+         3
+        ],
+        "stride": 1,
+        "padding": 0,
+        "params": {
+         "kernel": "K0",
+         "bias": "kb0"
+        },
+        "out_shape": [
+         16,
+         26,
+         26
+        ],
+        "inputs": [
+         "reshape"
+        ],
+        "runtime": "conv0"
+       },
+       {
+        "id": "act0",
+        "op": "relu",
+        "out_shape": [
+         16,
+         26,
+         26
+        ],
+        "inputs": [
+         "conv0"
+        ],
+        "runtime": "act0"
+       },
+       {
+        "id": "pool0",
+        "op": "maxpool2d",
+        "window": 2,
+        "stride": 2,
+        "out_shape": [
+         16,
+         13,
+         13
+        ],
+        "inputs": [
+         "act0"
+        ],
+        "runtime": "pool0"
+       },
+       {
+        "id": "conv1",
+        "op": "conv2d",
+        "kernel_shape": [
+         32,
+         16,
+         3,
+         3
+        ],
+        "stride": 1,
+        "padding": 0,
+        "params": {
+         "kernel": "K1",
+         "bias": "kb1"
+        },
+        "out_shape": [
+         32,
+         11,
+         11
+        ],
+        "inputs": [
+         "pool0"
+        ],
+        "runtime": "conv1"
+       },
+       {
+        "id": "act1",
+        "op": "relu",
+        "out_shape": [
+         32,
+         11,
+         11
+        ],
+        "inputs": [
+         "conv1"
+        ],
+        "runtime": "act1"
+       },
+       {
+        "id": "pool1",
+        "op": "maxpool2d",
+        "window": 2,
+        "stride": 2,
+        "out_shape": [
+         32,
+         5,
+         5
+        ],
+        "inputs": [
+         "act1"
+        ],
+        "runtime": "pool1"
+       },
+       {
+        "id": "flat",
+        "op": "flatten",
+        "out_shape": [
+         800
+        ],
+        "inputs": [
+         "pool1"
+        ]
+       },
+       {
+        "id": "logits",
+        "op": "dense",
+        "in_features": 800,
+        "out_features": 10,
+        "params": {
+         "weight": "W0",
+         "bias": "b0"
+        },
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "flat"
+        ],
+        "runtime": "logits"
+       },
+       {
+        "id": "output",
+        "op": "softmax",
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "logits"
+        ],
+        "runtime": "probabilities"
+       }
+      ],
+      "runtime_outputs": [
+       {
+        "name": "x",
+        "layer": "standardize",
+        "shape": [
+         784
+        ],
+        "role": "standardized_input"
+       },
+       {
+        "name": "conv0",
+        "layer": "conv0",
+        "shape": [
+         16,
+         26,
+         26
+        ],
+        "role": "pre_activation"
+       },
+       {
+        "name": "act0",
+        "layer": "act0",
+        "shape": [
+         16,
+         26,
+         26
+        ],
+        "role": "activation"
+       },
+       {
+        "name": "pool0",
+        "layer": "pool0",
+        "shape": [
+         16,
+         13,
+         13
+        ],
+        "role": "pooled"
+       },
+       {
+        "name": "conv1",
+        "layer": "conv1",
+        "shape": [
+         32,
+         11,
+         11
+        ],
+        "role": "pre_activation"
+       },
+       {
+        "name": "act1",
+        "layer": "act1",
+        "shape": [
+         32,
+         11,
+         11
+        ],
+        "role": "activation"
+       },
+       {
+        "name": "pool1",
+        "layer": "pool1",
+        "shape": [
+         32,
+         5,
+         5
+        ],
+        "role": "pooled"
+       },
+       {
+        "name": "logits",
+        "layer": "logits",
+        "shape": [
+         10
+        ],
+        "role": "logits"
+       }
+      ],
+      "output": {
+       "name": "probabilities",
+       "kind": "softmax_probability",
+       "calibrated": true,
+       "classes": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+       ]
+      },
+      "n_parameters": 12810,
+      "params": {
+       "file": "models/cnn.params.bin",
+       "sha256": "3ed26c81dea62e28ef6901ac96f3ff598dbddf49720cb5ba4034f8871525322f",
+       "nbytes": 51240,
+       "tensors": [
+        {
+         "name": "K0",
+         "shape": [
+          16,
+          1,
+          3,
+          3
+         ],
+         "dtype": "float32",
+         "offset": 0,
+         "nbytes": 576,
+         "layer": "conv0",
+         "role": "kernel"
+        },
+        {
+         "name": "kb0",
+         "shape": [
+          16
+         ],
+         "dtype": "float32",
+         "offset": 576,
+         "nbytes": 64,
+         "layer": "conv0",
+         "role": "bias"
+        },
+        {
+         "name": "K1",
+         "shape": [
+          32,
+          16,
+          3,
+          3
+         ],
+         "dtype": "float32",
+         "offset": 640,
+         "nbytes": 18432,
+         "layer": "conv1",
+         "role": "kernel"
+        },
+        {
+         "name": "kb1",
+         "shape": [
+          32
+         ],
+         "dtype": "float32",
+         "offset": 19072,
+         "nbytes": 128,
+         "layer": "conv1",
+         "role": "bias"
+        },
+        {
+         "name": "W0",
+         "shape": [
+          800,
+          10
+         ],
+         "dtype": "float32",
+         "offset": 19200,
+         "nbytes": 32000,
+         "layer": "logits",
+         "role": "weight"
+        },
+        {
+         "name": "b0",
+         "shape": [
+          10
+         ],
+         "dtype": "float32",
+         "offset": 51200,
+         "nbytes": 40,
+         "layer": "logits",
+         "role": "bias"
+        }
+       ]
+      }
+     },
+     "replay": {
+      "file": "replay/cnn.replay.json",
+      "sha256": "dfb70b4fc9c043665e7d4777a64c1ff83d7ef13e88193eddaafc476427d3458e",
+      "size_bytes": 336689
+     }
+    },
+    "adaboost": {
+     "title": "AdaBoost (SAMME)",
+     "class": "AdaBoostSAMME",
+     "format": "binary",
+     "file": "models/adaboost.bin",
+     "sha256": "80e8a3d99590ea9b1f4e39de4192ed231f0a50006f70cdc15f93b2ca3d0fb486",
+     "size_bytes": 1392048,
+     "params": {
+      "n_estimators": 197,
+      "max_depth": 8,
+      "learning_rate": 1.0,
+      "n_bins": 32,
+      "max_features": 1.0,
+      "seed": 42,
+      "verbose": false
+     },
+     "validation": {
+      "max_abs_prob_diff": 0.0,
+      "argmax_agreement": 1.0,
+      "n_checked": 2000,
+      "ok": true
+     },
+     "input": "pixels",
+     "output": "vote_shares",
+     "trace": {
+      "schema": "writerhand.trace/1",
+      "kind": "adaboost",
+      "preprocessing": [
+       {
+        "op": "scale",
+        "divisor": 255.0,
+        "note": "uint8 pixel -> [0, 1]"
+       },
+       {
+        "op": "standardize",
+        "mean": 0.17335704386493875,
+        "std": 0.331787794183938,
+        "eps": 1e-08,
+        "formula": "(p - mean)/(std + eps)"
+       }
+      ],
+      "input": {
+       "name": "pixels",
+       "shape": [
+        "N",
+        784
+       ],
+       "range": [
+        0,
+        1
+       ],
+       "layout": "28x28 row-major"
+      },
+      "layers": [
+       {
+        "id": "image",
+        "op": "input",
+        "label": "image",
+        "out_shape": [
+         28,
+         28
+        ],
+        "inputs": []
+       },
+       {
+        "id": "flatten",
+        "op": "flatten",
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "image"
+        ]
+       },
+       {
+        "id": "standardize",
+        "op": "standardize",
+        "mean": 0.17335704386493875,
+        "std": 0.331787794183938,
+        "eps": 1e-08,
+        "out_shape": [
+         784
+        ],
+        "inputs": [
+         "flatten"
+        ],
+        "runtime": "x"
+       },
+       {
+        "id": "trees",
+        "op": "tree_ensemble",
+        "n_estimators": 197,
+        "node_counts": [
+         505,
+         493,
+         505,
+         483,
+         469,
+         489,
+         495,
+         495,
+         477,
+         497,
+         491,
+         447,
+         489,
+         457,
+         509,
+         431,
+         457,
+         491,
+         489,
+         469,
+         505,
+         499,
+         371,
+         481,
+         459,
+         487,
+         475,
+         373,
+         425,
+         481,
+         473,
+         481,
+         479,
+         475,
+         489,
+         491,
+         501,
+         481,
+         473,
+         411,
+         495,
+         483,
+         487,
+         507,
+         481,
+         489,
+         499,
+         455,
+         497,
+         467,
+         467,
+         485,
+         415,
+         501,
+         435,
+         505,
+         493,
+         469,
+         473,
+         447,
+         481,
+         489,
+         441,
+         473,
+         483,
+         481,
+         449,
+         495,
+         487,
+         437,
+         495,
+         503,
+         491,
+         473,
+         441,
+         429,
+         417,
+         387,
+         471,
+         495,
+         445,
+         439,
+         489,
+         469,
+         465,
+         477,
+         433,
+         477,
+         467,
+         457,
+         493,
+         475,
+         471,
+         501,
+         443,
+         477,
+         481,
+         481,
+         495,
+         495,
+         475,
+         505,
+         437,
+         497,
+         467,
+         503,
+         485,
+         491,
+         483,
+         457,
+         497,
+         491,
+         505,
+         447,
+         499,
+         367,
+         487,
+         491,
+         457,
+         489,
+         477,
+         475,
+         467,
+         437,
+         367,
+         497,
+         433,
+         407,
+         477,
+         489,
+         415,
+         471,
+         479,
+         489,
+         447,
+         477,
+         471,
+         457,
+         443,
+         479,
+         435,
+         467,
+         459,
+         465,
+         477,
+         445,
+         491,
+         387,
+         373,
+         497,
+         503,
+         495,
+         367,
+         479,
+         435,
+         421,
+         469,
+         459,
+         463,
+         505,
+         473,
+         505,
+         475,
+         489,
+         453,
+         465,
+         469,
+         489,
+         495,
+         487,
+         479,
+         469,
+         487,
+         471,
+         489,
+         413,
+         483,
+         441,
+         461,
+         475,
+         461,
+         465,
+         469,
+         439,
+         439,
+         495,
+         473,
+         457,
+         477,
+         477,
+         327,
+         423,
+         493,
+         473,
+         435,
+         481,
+         469
+        ],
+        "depths": [
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8,
+         8
+        ],
+        "split_rule": "go left when x[feature] < threshold",
+        "out_shape": [
+         197
+        ],
+        "inputs": [
+         "standardize"
+        ]
+       },
+       {
+        "id": "vote",
+        "op": "weighted_vote",
+        "n_classes": 10,
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "trees"
+        ],
+        "note": "score_k = sum over rounds of alpha_t * 1[tree_t predicts k]"
+       },
+       {
+        "id": "output",
+        "op": "normalize",
+        "out_shape": [
+         10
+        ],
+        "inputs": [
+         "vote"
+        ],
+        "runtime": null
+       }
+      ],
+      "runtime_outputs": [],
+      "output": {
+       "name": "vote_share",
+       "kind": "vote_share",
+       "calibrated": false,
+       "classes": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+       ]
+      },
+      "n_parameters": null,
+      "params": null
+     },
+     "replay": {
+      "file": "replay/adaboost.replay.json",
+      "sha256": "fa5ee5076631bb8a9cfcaab44a04287c32acabd414c4869f0209853f45d3e0bd",
+      "size_bytes": 41512
+     }
+    }
+   }
   }
+ }
 }

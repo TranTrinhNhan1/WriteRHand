@@ -40,49 +40,45 @@ npm run preview      # serves dist/ under /WriteRHand/
 
 ## Environment variables (build time)
 
-| Variable               | Default                                                                       | Meaning                                              |
-| ---------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `VITE_BASE`            | `/WriteRHand/` for `build`, `/` for `dev`                                     | Public base path (GitHub Pages project site)         |
-| `VITE_MODEL_BASE_URL`  | production: `https://huggingface.co/TranTrinhNhan1111/WriteRHand-MNIST/resolve/main`; dev: `${BASE_URL}bundle` | Where `models/*` of the model bundle are fetched from |
+| Variable               | Default                                                              | Meaning                                         |
+| ---------------------- | -------------------------------------------------------------------- | ----------------------------------------------- |
+| `VITE_BASE`            | `/WriteRHand/` for `build`, `/` for `dev`                            | Public base path (GitHub Pages project site)    |
+| `VITE_MODEL_BASE_URL`  | production: the revision pinned in `model-lock.json`; dev: `${BASE_URL}bundle` | Where model files are fetched from (override for tests, e.g. `/bundle`) |
 
-`VITE_MODEL_BASE_URL` may also be a same-origin path such as `/WriteRHand/bundle`.
+## The pinned model bundle
 
-## Data
+* `model-lock.json` (written by `uv run python -m src upload --write-lock`) pins the Hugging Face repo, the **commit
+  revision**, the `bundle_id` and the SHA-256 of `manifest.json`. Production builds fetch
+  `https://huggingface.co/<repo>/resolve/<revision>/...` only, never `main`.
+* `public/data/manifest.json` and `public/data/<dataset>/results.json` are committed same-origin copies written by
+  `uv run python -m src export --site`. At start-up the site compares the SHA-256 of the manifest with the lock and
+  refuses to run on a mismatch. Every downloaded model file is checked against the hash in the manifest.
+* `npm run bundle:check` verifies that the committed manifest, the lock and the remote manifest agree;
+  `npm run bundle:fetch` downloads the pinned bundle into `public/bundle/` (git-ignored) with every file verified.
+* The trace contract that the explorer draws from is in `../docs/TRACE_CONTRACT.md`.
 
-* `public/data/manifest.json` and `public/data/results.json` are committed, same-origin copies produced by the Python
-  pipeline. All numbers on the Models, Results and About pages are read from them at run time; nothing is hard-coded.
-  Replace them with the real files after the final training run.
-* `public/bundle/` (git-ignored) holds a local copy of the model bundle for development and tests: `manifest.json`,
-  `models/{naive_bayes,softmax,mlp}.onnx`, `models/adaboost.json`, `test_vectors.json`. In production the models are
-  loaded from `VITE_MODEL_BASE_URL`. If `public/bundle/` exists when you run `npm run build`, Vite copies it into
-  `dist/bundle/` as well; remove it before building if you do not want that.
+## How inference and the explorer work
 
-## How inference works
-
-* Models are loaded lazily on first selection (the default, MLP, starts loading when you first touch the canvas).
-* ONNX models (Naive Bayes, softmax, MLP) run with `onnxruntime-web/wasm`. The runtime is a dynamic import and its
-  `.wasm` file is emitted by Vite as a hashed asset, so it is served from the site itself under the configured base
-  path (no CDN). `ort.env.wasm.numThreads = 1` because GitHub Pages cannot send COOP/COEP headers.
-* AdaBoost is exported as JSON and evaluated by `src/lib/adaboost.ts`.
-* "Look inside" (`src/components/inside/`): the ONNX files carry extra, optional outputs next to `probabilities`
-  (MLP hidden activations, softmax weights, Naive Bayes class means and variances; see `src/export/onnx_export.py`),
-  and `src/lib/trace.ts` walks every AdaBoost tree for the drawing. The views only draw these numbers; they never
-  change a prediction. If a model file has no trace outputs the panel says so and everything else still works.
-* Input to every model: 784 pixels in [0, 1], white digit on black. The (p - mean) / (std + eps) standardisation is part
-  of the ONNX graphs / the AdaBoost evaluator.
-* Preprocessing (`src/lib/preprocess.ts`, pure functions on a grayscale buffer): ink bounding box, area-averaged
-  resize so the longer side is 20 px, paste into 28 x 28, shift (bilinear) so the centre of mass is at (14, 14).
-  Uploads are inverted when the mean luminance is above 0.5, background-subtracted and contrast-stretched first.
+* `src/engine/` is the data layer: `contract.ts` validates the manifest and the per-model trace
+  (`writerhand.trace/1`), `store.ts` loads models lazily and produces an `Execution` stamped with the bundle, dataset,
+  model and an input fingerprint (a stale execution is never shown after the model or input changes), `reconstruct.ts`
+  recomputes selected quantities from `params.bin` for comparison with the runtime output, `adaboost.ts` reads the
+  binary ensemble and walks the real trees.
+* ONNX models (Naive Bayes, softmax, MLP, CNN) run with `onnxruntime-web/wasm`; the runtime outputs requested are exactly
+  those listed in `trace.runtime_outputs`. `ort.env.wasm.numThreads = 1` because GitHub Pages cannot send COOP/COEP headers.
+* `src/components/explorer/` draws the diagrams and animations from the trace metadata only (no hard-coded architecture).
+  Activations are shown as what a layer computed for this input; they are not presented as an explanation of the decision.
+  The training replay shows only recorded checkpoints and metrics (`writerhand.replay/1`).
+* Input to every model: 784 pixels in [0, 1]; the (p - mean) / (std + eps) standardisation is part of the graphs / the
+  AdaBoost evaluator. Preprocessing of drawings (`src/lib/preprocess.ts`): ink bounding box, area-averaged resize so the
+  longer side is 20 px, paste into 28 x 28, shift so the centre of mass is at (14, 14).
 
 ## Tests
 
-`npm test` runs Vitest in Node:
-
-* `tests/preprocess.test.ts`: centring, scale, aspect ratio, empty input, invert detection, noise, determinism.
-* `tests/parity.test.ts`: loads `test_vectors.json` and the models from `public/bundle` (or `PARITY_BUNDLE_DIR`) and
-  checks that the TypeScript AdaBoost evaluator and the ONNX models (run with onnxruntime-web's WebAssembly backend
-  inside Node) reproduce the Python outputs, plus the 28 -> 280 -> 28 round trip of real MNIST digits.
-  The Python side stores probabilities rounded to six decimals, so the AdaBoost comparison tolerance is 5e-7
-  (argmax must be identical); ONNX tolerance is 1e-3. These tests are **skipped when the bundle is not present**, so
-  fetch the bundle first in CI (for example with the Hugging Face CLI into `web/public/bundle`).
-* `tests/results.test.ts`, `tests/scale.test.ts`: data helpers and chart scales.
+* `npm test` (Vitest, Node): engine contract and Python parity for every dataset/model (ONNX Runtime Web, AdaBoost
+  binary), reconstructions, stale-result guard, hash mismatch, explorer maths, preprocessing, results helpers.
+  The bundle tests are skipped locally when `public/bundle` is absent, but **fail** when `REQUIRE_BUNDLE=1` (CI and
+  release) so a missing bundle can never pass silently.
+* `npm run test:e2e` (Playwright, Chromium): builds the site, serves it with the pinned bundle and drives it like a
+  visitor (draw, choose a model, look inside, step the animation, change the input). Set `PW_CHROMIUM` to an existing
+  browser binary to avoid a download.

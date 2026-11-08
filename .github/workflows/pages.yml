@@ -30,11 +30,12 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - run: npm ci
       - run: npm run typecheck
+      - name: Pinned bundle must match the committed manifest and the remote revision
+        run: npm run bundle:check
       - run: npm run build
         env:
           VITE_BASE: /WriteRHand/
-          # models are fetched from the Hugging Face model repo at run time
-          VITE_MODEL_BASE_URL: https://huggingface.co/TranTrinhNhan1111/WriteRHand-MNIST/resolve/main
+          # production fetches the revision pinned in web/model-lock.json from Hugging Face
       - uses: actions/upload-pages-artifact@v3
         with:
           path: web/dist

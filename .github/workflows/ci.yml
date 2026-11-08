@@ -47,9 +47,9 @@ jobs:
           test -f "$out/art/bundle/manifest.json"
 
   web:
-    name: Web (typecheck, test, build)
+    name: Web (typecheck, parity tests, build, browser E2E)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: web
@@ -62,14 +62,27 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - run: npm ci
       - run: npm run typecheck
-      - name: Fetch model bundle from Hugging Face (public) for parity tests
-        run: |
-          base="https://huggingface.co/TranTrinhNhan1111/WriteRHand-MNIST/resolve/main"
-          mkdir -p public/bundle/models
-          for f in manifest.json results.json test_vectors.json models/naive_bayes.onnx models/softmax.onnx models/mlp.onnx models/adaboost.json; do
-            curl -fsSL "$base/$f" -o "public/bundle/$f" || echo "could not fetch $f"
-          done
-      - run: npm test
+      - name: Pinned bundle (committed manifest, model-lock.json and Hugging Face revision must agree)
+        run: npm run bundle:check
+      - name: Fetch the pinned bundle (every file verified against its SHA-256)
+        run: npm run bundle:fetch
+      - name: Unit and parity tests (a missing bundle is a failure, not a skip)
+        run: npm test
+        env:
+          REQUIRE_BUNDLE: "1"
       - run: npm run build
         env:
           VITE_BASE: /WriteRHand/
+      - name: Install Chromium for the end-to-end tests
+        run: npx playwright install --with-deps chromium
+      - name: End-to-end tests (browser, built site, pinned bundle served locally)
+        run: npm run test:e2e
+        env:
+          REQUIRE_BUNDLE: "1"
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: web/playwright-report
+          retention-days: 7

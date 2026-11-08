@@ -1,0 +1,20 @@
+/* Shared pieces of the Model Execution Explorer: heat maps, playback bar, basic architecture list. */
+.ex-heat { position: relative; width: 100%; background: #070908; border-radius: 6px; overflow: hidden; touch-action: none; }
+.ex-heat canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.ex-heat__sel, .ex-heat__mark { position: absolute; box-sizing: border-box; pointer-events: none; }
+.ex-heat__sel { outline: 1.5px solid #fff; outline-offset: 0; mix-blend-mode: difference; }
+.ex-heat__mark { border: 1px solid var(--accent); }
+.ex-heat__box { position: absolute; box-sizing: border-box; border: 1.5px solid var(--accent); pointer-events: none; }
+.ex-heat:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.ex-playback { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ex-playback__scrub { flex: 1 1 140px; min-width: 120px; accent-color: var(--accent); }
+.ex-playback__count { color: var(--ink-3); font-size: 0.8rem; }
+.ex-playback__caption { color: var(--ink-2); font-size: 0.85rem; flex-basis: 100%; }
+
+.ex-arch { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 0; }
+.ex-arch__node { display: grid; gap: 2px; padding: 6px 10px; background: var(--raised); border: 1px solid var(--line-2); border-radius: 6px; color: var(--ink); text-align: left; cursor: pointer; }
+.ex-arch__node[data-reached='false'] { opacity: 0.45; }
+.ex-arch__node[aria-pressed='true'] { border-color: var(--accent); }
+.ex-arch__op { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); }
+.ex-arch__shape { font-size: 0.85rem; }

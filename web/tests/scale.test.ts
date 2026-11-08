@@ -34,7 +34,8 @@ describe('scale helpers', () => {
   })
 
   it('labels hyper-parameter values', () => {
-    expect(paramValue([128, 64])).toBe('128×64')
+    expect(paramValue([128, 64])).toBe('[128, 64]')
+    expect(paramValue([])).toBe(translate(activeLang(), 'common.none'))
     expect(paramValue(0.001)).toBe('0.001')
     expect(paramValue(1e-5)).toBe('1e−5')
     expect(paramValue(null)).toBe(translate(activeLang(), 'common.none'))

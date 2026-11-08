@@ -1,16 +1,18 @@
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react'
+import { Moon, Sun } from '@phosphor-icons/react'
+import { loadBundle, type Booted } from './engine/boot'
+import { BundleContext, type Bundle } from './engine/react'
+import { ModelRegistry } from './engine/store'
 import { LANGS, useI18n, type Key } from './i18n'
-import { ModelStoreContext, SiteDataContext } from './lib/context'
-import { MODEL_BASE_URL, HF_URL, REPO_URL } from './lib/config'
-import { loadSiteData } from './lib/data'
+import { ChoiceProvider } from './lib/choice'
+import { REPO_URL, hfRepoUrl, hfRevisionUrl, shortHash } from './lib/config'
 import { CodedError } from './lib/errors'
 import { date } from './lib/format'
 import { useDocumentTitle } from './lib/hooks'
+import { loadOrt } from './lib/ortLoader'
+import { sanitizeResults } from './lib/results'
 import { useTheme } from './lib/theme'
-import { Moon, Sun } from '@phosphor-icons/react'
-import { ModelStore } from './lib/modelStore'
 import { ROUTES, useRoute, type Route } from './lib/route'
-import type { SiteData } from './lib/types'
 import Recognise from './pages/Recognise'
 
 const Models = lazy(() => import('./pages/Models'))
@@ -90,14 +92,11 @@ function Header({ route }: { route: Route }) {
   )
 }
 
-function Footer({ data }: { data: SiteData | null }) {
+function Footer({ bundle }: { bundle: Bundle | null }) {
   const { t } = useI18n()
-  const git = data?.results.git
-  const bits = [
-    data?.manifest.version ? t('footer.bundle', { version: data.manifest.version }) : null,
-    git?.short ? `${t('footer.commit', { sha: git.short })}${git.dirty ? ` (${t('footer.dirty')})` : ''}` : null,
-    data?.results.generated ? t('footer.generated', { date: date(data.results.generated) }) : null,
-  ].filter(Boolean)
+  const lock = bundle?.lock ?? null
+  const first = bundle ? bundle.results[bundle.manifest.default_dataset] : null
+  const revUrl = hfRevisionUrl(lock)
   const [before, rest] = t('footer.about', { github: '\u0000', hf: '\u0001' }).split('\u0000')
   const [between, after] = rest.split('\u0001')
   return (
@@ -108,10 +107,34 @@ function Footer({ data }: { data: SiteData | null }) {
           {before}
           <a href={REPO_URL}>{t('footer.github')}</a>
           {between}
-          <a href={HF_URL}>{t('footer.hf')}</a>
+          <a href={hfRepoUrl(lock)}>{t('footer.hf')}</a>
           {after}
         </p>
-        {bits.length > 0 && <p className="num site-footer__meta">{bits.join(' · ')}</p>}
+        {bundle && (
+          <p className="num site-footer__meta">
+            <span>{t('footer.bundleId', { id: shortHash(bundle.manifest.bundle_id) })}</span>
+            {' · '}
+            {lock && revUrl ? (
+              <a href={revUrl} title={lock.revision}>
+                {t('footer.revision', { rev: shortHash(lock.revision, 7) })}
+              </a>
+            ) : (
+              <span>{t('footer.localBundle')}</span>
+            )}
+            {first?.git?.short ? (
+              <>
+                {' · '}
+                <span>{`${t('footer.commit', { sha: first.git.short })}${first.git.dirty ? ` (${t('footer.dirty')})` : ''}`}</span>
+              </>
+            ) : null}
+            {first?.generated ? (
+              <>
+                {' · '}
+                <span>{t('footer.generated', { date: date(first.generated) })}</span>
+              </>
+            ) : null}
+          </p>
+        )}
       </div>
     </footer>
   )
@@ -120,7 +143,7 @@ function Footer({ data }: { data: SiteData | null }) {
 export default function App() {
   const { t, lang } = useI18n()
   const route = useRoute()
-  const [data, setData] = useState<SiteData | null>(null)
+  const [booted, setBooted] = useState<Booted | null>(null)
   const [error, setError] = useState<CodedError | null>(null)
   const [attempt, setAttempt] = useState(0)
   const mainRef = useRef<HTMLElement>(null)
@@ -134,8 +157,8 @@ export default function App() {
   useEffect(() => {
     let cancelled = false
     setError(null)
-    loadSiteData().then(
-      (d) => !cancelled && setData(d),
+    loadBundle().then(
+      (b) => !cancelled && setBooted(b),
       (e: unknown) => !cancelled && setError(e instanceof CodedError ? e : new CodedError('fatal.reach')),
     )
     return () => {
@@ -143,7 +166,11 @@ export default function App() {
     }
   }, [attempt])
 
-  const store = useMemo(() => (data ? new ModelStore(data.manifest, MODEL_BASE_URL) : null), [data])
+  const bundle = useMemo<Bundle | null>(() => {
+    if (!booted) return null
+    const results = Object.fromEntries(Object.entries(booted.results).map(([id, r]) => [id, sanitizeResults(r)]))
+    return { ...booted, results, registry: new ModelRegistry(booted.manifest, booted.baseUrl, { ortLoader: loadOrt }) }
+  }, [booted])
 
   // Hash navigation does not reset scroll or focus on its own.
   const first = useRef(true)
@@ -169,7 +196,7 @@ export default function App() {
         </div>
       </div>
     )
-  } else if (!data || !store) {
+  } else if (!bundle) {
     body = (
       <div className="wrap">
         <PageSkeleton />
@@ -177,8 +204,8 @@ export default function App() {
     )
   } else {
     body = (
-      <SiteDataContext.Provider value={data}>
-        <ModelStoreContext.Provider value={store}>
+      <BundleContext.Provider value={bundle}>
+        <ChoiceProvider>
           <Suspense
             fallback={
               <div className="wrap">
@@ -193,8 +220,8 @@ export default function App() {
               {route === 'about' && <About />}
             </div>
           </Suspense>
-        </ModelStoreContext.Provider>
-      </SiteDataContext.Provider>
+        </ChoiceProvider>
+      </BundleContext.Provider>
     )
   }
 
@@ -214,7 +241,7 @@ export default function App() {
       <main id="main" ref={mainRef} tabIndex={-1}>
         {body}
       </main>
-      <Footer data={data} />
+      <Footer bundle={bundle} />
     </>
   )
 }

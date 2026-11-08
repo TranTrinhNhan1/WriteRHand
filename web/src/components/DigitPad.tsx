@@ -28,6 +28,12 @@ export interface DigitPadHandle {
   clear(): void
   /** Draws a built-in digit stroke by stroke, as if by hand. */
   drawSample(digit: SampleDigit): void
+  /**
+   * Shows a ready-made 28 x 28 image (784 values in [0, 1]) on the pad, pixel for pixel. It does not
+   * emit a change: the caller feeds those pixels to the models itself. Drawing, clearing or uploading
+   * replaces it and emits as usual.
+   */
+  showImage(pixels: Float32Array): void
 }
 
 /** Crop rectangle in fractions of the drawing box (from the preprocessing bounding box). */
@@ -121,6 +127,7 @@ export const DigitPad = forwardRef<DigitPadHandle, Props>(function DigitPad({ on
   const strokes = useRef<Pt[][]>([])
   const active = useRef<{ id: number; stroke: Pt[] } | null>(null)
   const upload = useRef<{ canvas: HTMLCanvasElement; image: GrayImage; inverted: boolean; name: string } | null>(null)
+  const shown = useRef<HTMLCanvasElement | null>(null)
   const raf = useRef(0)
   const timer = useRef(0)
   const lastEmit = useRef(0)
@@ -147,7 +154,20 @@ export const DigitPad = forwardRef<DigitPadHandle, Props>(function DigitPad({ on
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0)
     const ink = getComputedStyle(canvas).getPropertyValue('--pad-ink').trim() || '#1b1f1a'
-    if (upload.current) {
+    if (shown.current) {
+      // A ready-made 28 x 28 image: scaled up without smoothing so every pixel stays visible.
+      ctx.clearRect(0, 0, px, px)
+      const tint = document.createElement('canvas')
+      tint.width = px
+      tint.height = px
+      const tctx = tint.getContext('2d')!
+      tctx.imageSmoothingEnabled = false
+      tctx.drawImage(shown.current, 0, 0, px, px)
+      tctx.globalCompositeOperation = 'source-in'
+      tctx.fillStyle = ink
+      tctx.fillRect(0, 0, px, px)
+      ctx.drawImage(tint, 0, 0)
+    } else if (upload.current) {
       // The uploaded picture is stored as an ink mask (white with alpha). Tint it with the ink colour.
       ctx.clearRect(0, 0, px, px)
       const { canvas: uc } = upload.current
@@ -223,6 +243,7 @@ export const DigitPad = forwardRef<DigitPadHandle, Props>(function DigitPad({ on
     strokes.current = []
     active.current = null
     upload.current = null
+    shown.current = null
     setHasContent(false)
     setCanUndo(false)
     setError(null)
@@ -237,6 +258,7 @@ export const DigitPad = forwardRef<DigitPadHandle, Props>(function DigitPad({ on
       stopAnim()
       active.current = null
       upload.current = null
+      shown.current = null
       setError(null)
       setNote(null)
       const template = SAMPLE_STROKES[digit]
@@ -279,7 +301,37 @@ export const DigitPad = forwardRef<DigitPadHandle, Props>(function DigitPad({ on
     [emit, emitSoon, onIntent, paint, schedulePaint, stopAnim],
   )
 
-  useImperativeHandle(handle, () => ({ clear, drawSample }), [clear, drawSample])
+  const showImage = useCallback(
+    (pixels: Float32Array) => {
+      stopAnim()
+      active.current = null
+      upload.current = null
+      strokes.current = []
+      const c = document.createElement('canvas')
+      c.width = 28
+      c.height = 28
+      const cctx = c.getContext('2d')!
+      const img = cctx.createImageData(28, 28)
+      for (let i = 0; i < 784; i++) {
+        img.data[4 * i] = 255
+        img.data[4 * i + 1] = 255
+        img.data[4 * i + 2] = 255
+        img.data[4 * i + 3] = Math.round(Math.min(1, Math.max(0, pixels[i])) * 255)
+      }
+      cctx.putImageData(img, 0, 0)
+      shown.current = c
+      setHasContent(true)
+      setCanUndo(false)
+      setError(null)
+      setNote(null)
+      window.clearTimeout(timer.current)
+      timer.current = 0
+      paint()
+    },
+    [paint, stopAnim],
+  )
+
+  useImperativeHandle(handle, () => ({ clear, drawSample, showImage }), [clear, drawSample, showImage])
 
   useEffect(() => {
     paint()
@@ -314,8 +366,9 @@ export const DigitPad = forwardRef<DigitPadHandle, Props>(function DigitPad({ on
       // A sample is still being drawn: keep what is there and let the pen take over.
       stopAnim()
     }
-    if (upload.current) {
+    if (upload.current || shown.current) {
       upload.current = null
+      shown.current = null
       strokes.current = []
     }
     e.currentTarget.setPointerCapture(e.pointerId)
@@ -424,6 +477,7 @@ export const DigitPad = forwardRef<DigitPadHandle, Props>(function DigitPad({ on
       }
       vctx.putImageData(out, 0, 0)
       strokes.current = []
+      shown.current = null
       upload.current = { canvas: view, image, inverted, name: file.name }
       setHasContent(true)
       setCanUndo(false)
@@ -468,7 +522,7 @@ export const DigitPad = forwardRef<DigitPadHandle, Props>(function DigitPad({ on
           onPointerLeave={hideBrush}
           onContextMenu={(e) => e.preventDefault()}
         />
-        {crop && !upload.current && (
+        {crop && !upload.current && !shown.current && (
           <div
             className="pad__crop"
             aria-hidden="true"

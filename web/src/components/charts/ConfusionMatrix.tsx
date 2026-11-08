@@ -4,17 +4,21 @@ import { int, pct } from '../../lib/format'
 import { useElementWidth } from '../../lib/hooks'
 import { topConfusions } from '../../lib/results'
 import { cellOpacity } from '../../lib/scale'
+import { shortClassNames } from '../../lib/selection'
 import { Segmented } from '../Segmented'
 
 interface Props {
   matrix: number[][]
-  classes: number[]
+  /** display names of the classes (index = row / column) */
+  classes: readonly string[]
   /** Used in the accessible name, e.g. "MLP, test split". */
   name: string
 }
 
-const LEFT = 34
-const TOP = 44
+/** Axis label that fits: the class name when it is short, else its first characters (the full name is in a tooltip and the key below). */
+export function axisLabel(name: string, max = 5): string {
+  return name.length <= max ? name : `${name.slice(0, max - 1).trimEnd()}…`
+}
 
 export function ConfusionMatrix({ matrix, classes, name }: Props) {
   const { t } = useI18n()
@@ -23,6 +27,10 @@ export function ConfusionMatrix({ matrix, classes, name }: Props) {
   const [view, setView] = useState<'all' | 'errors'>('all')
   const [sel, setSel] = useState<{ r: number; c: number } | null>(null)
   const n = matrix.length
+  const short = shortClassNames(classes)
+  // long names: row labels get room for a few characters, column labels are turned 50 degrees
+  const LEFT = short ? 34 : 74
+  const TOP = short ? 44 : 70
 
   useEffect(() => setSel(null), [matrix])
 
@@ -31,7 +39,8 @@ export function ConfusionMatrix({ matrix, classes, name }: Props) {
   const top = useMemo(() => topConfusions(matrix, 5), [matrix])
   const isTop = (r: number, c: number) => top.some((t) => t.trueDigit === r && t.predDigit === c)
 
-  const side = Math.max(240, Math.min(width, 600))
+  const RIGHT = short ? 0 : 30
+  const side = Math.max(240, Math.min(width - RIGHT, 600))
   const cell = (side - LEFT) / n
   const showCount = cell >= 27
   const fontSize = Math.max(9, Math.min(13, cell * 0.36))
@@ -81,8 +90,8 @@ export function ConfusionMatrix({ matrix, classes, name }: Props) {
       <div ref={ref} className="cm__plot">
         {width > 0 && (
           <svg
-            width={side}
-            height={side + TOP - LEFT + 0}
+            width={side + RIGHT}
+            height={side + TOP - LEFT}
             role="group"
             aria-labelledby={titleId}
             tabIndex={0}
@@ -97,12 +106,20 @@ export function ConfusionMatrix({ matrix, classes, name }: Props) {
               {t('cm.truth')}
             </text>
             {classes.map((c, i) => (
-              <g key={c}>
-                <text x={LEFT + i * cell + cell / 2} y={TOP - 8} textAnchor="middle" className="axis-text">
-                  {c}
-                </text>
+              <g key={`${i}-${c}`}>
+                {short ? (
+                  <text x={LEFT + i * cell + cell / 2} y={TOP - 8} textAnchor="middle" className="axis-text">
+                    {c}
+                  </text>
+                ) : (
+                  <text transform={`translate(${LEFT + i * cell + cell / 2 + 3} ${TOP - 6}) rotate(-50)`} textAnchor="start" className="axis-text">
+                    <title>{c}</title>
+                    {axisLabel(c, 8)}
+                  </text>
+                )}
                 <text x={LEFT - 8} y={TOP + i * cell + cell / 2 + 4} textAnchor="end" className="axis-text">
-                  {c}
+                  {!short && <title>{c}</title>}
+                  {short ? c : axisLabel(c, 8)}
                 </text>
               </g>
             ))}
@@ -144,6 +161,20 @@ export function ConfusionMatrix({ matrix, classes, name }: Props) {
         {readout}
       </p>
 
+      {!short && classes.some((c) => axisLabel(c, 8) !== c) && (
+        <div className="cm__key">
+          <p className="label">{t('cm.key')}</p>
+          <ol className="cm__keylist">
+            {classes.map((c, i) => axisLabel(c, 8) === c ? null : (
+              <li key={`${i}-${c}`}>
+                <span className="num">{axisLabel(c, 8)}</span>
+                <span>{c}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
       <div className="cm__top-list">
         <p className="label">{t('cm.pairs')}</p>
         {top.length === 0 ? (
@@ -179,8 +210,8 @@ export function ConfusionMatrix({ matrix, classes, name }: Props) {
                 <th scope="col" className="is-left">
                   {t('cm.corner')}
                 </th>
-                {classes.map((c) => (
-                  <th key={c} scope="col">
+                {classes.map((c, i) => (
+                  <th key={`${i}-${c}`} scope="col">
                     {c}
                   </th>
                 ))}

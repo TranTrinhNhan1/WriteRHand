@@ -1,24 +1,53 @@
 import { useState } from 'react'
 import '../styles/results.css'
 import '../styles/models.css'
+import { Segmented } from '../components/Segmented'
 import { Tex } from '../components/Tex'
+import { modelsOf, type ModelKind } from '../engine/contract'
+import { useBundle } from '../engine/react'
 import { useI18n } from '../i18n'
-import { useSiteData } from '../lib/context'
+import { parameterCount, summarizeLayers } from '../lib/architecture'
+import { useChoice } from '../lib/choice'
 import { bytes, int, paramName, paramValue, pct } from '../lib/format'
-import { MODEL_IDS, type ModelId } from '../lib/types'
+import { datasetIdsOf, downloadBytes } from '../lib/selection'
 import { MODEL_TEX } from './modelContent'
 
 const HIDDEN_PARAMS = new Set(['verbose', 'dtype'])
 
-function ModelArticle({ id }: { id: ModelId }) {
+function Architecture({ dataset, id }: { dataset: string; id: ModelKind }) {
+  const { t } = useI18n()
+  const { manifest } = useBundle()
+  const entry = manifest.datasets[dataset].models[id]!
+  const layers = summarizeLayers(entry.trace)
+  return (
+    <figure className="arch">
+      <figcaption className="caption">{t('models.arch.caption', { dataset: manifest.datasets[dataset].title })}</figcaption>
+      <ol className="arch__chain">
+        {layers.map((l) => (
+          <li key={l.id} className={`arch__node arch__node--${l.op}`}>
+            <span className="arch__op">{t(`models.op.${l.op}`)}</span>
+            {l.detail && <span className="arch__detail num">{l.detail}</span>}
+            <span className="arch__shape num">{l.shape}</span>
+            {l.params != null && <span className="arch__params num">{t('models.arch.params', { n: int(l.params) })}</span>}
+          </li>
+        ))}
+      </ol>
+    </figure>
+  )
+}
+
+function ModelArticle({ dataset, id }: { dataset: string; id: ModelKind }) {
   const { t, tl } = useI18n()
-  const { manifest, results } = useSiteData()
-  const entry = manifest.models[id]
-  const res = results.models.find((m) => m.id === id)
-  const params = Object.entries(res?.params ?? entry?.params ?? {}).filter(([k]) => !HIDDEN_PARAMS.has(k))
+  const { manifest, results } = useBundle()
+  const ds = manifest.datasets[dataset]
+  const entry = ds.models[id]!
+  const res = results[dataset]?.models.find((m) => m.id === id)
+  const params = Object.entries(entry.params ?? res?.params ?? {}).filter(([k]) => !HIDDEN_PARAMS.has(k))
   const test = res?.splits?.test
-  const v = entry?.validation
+  const v = entry.validation
   const captions = tl(`models.content.${id}.eq`)
+  const nParams = parameterCount(entry.trace)
+  const out = entry.trace.output
 
   return (
     <article id={`model-${id}`} className="model" aria-labelledby={`model-${id}-h`}>
@@ -33,15 +62,25 @@ function ModelArticle({ id }: { id: ModelId }) {
             <dd>{t(`models.content.${id}.family`)}</dd>
           </div>
           <div>
-            <dt>{t('models.testAcc')}</dt>
+            <dt>{t('models.testAcc', { dataset: ds.title })}</dt>
             <dd className="num">{pct(test?.accuracy, 2)}</dd>
           </div>
           <div>
+            <dt>{t('models.nParams')}</dt>
+            <dd className="num">{nParams != null ? int(nParams) : t(id === 'adaboost' ? 'models.nParamsTrees' : 'common.na', { n: int(entry.trace.layers.find((l) => l.op === 'tree_ensemble')?.n_estimators) })}</dd>
+          </div>
+          <div>
             <dt>{t('models.size')}</dt>
-            <dd className="num">{bytes(entry?.size_bytes)}</dd>
+            <dd className="num">{bytes(downloadBytes(entry))}</dd>
+          </div>
+          <div>
+            <dt>{t('models.output')}</dt>
+            <dd>{out.kind === 'vote_share' ? t('models.outVote') : t('models.outProb')}</dd>
           </div>
         </dl>
       </header>
+
+      <Architecture dataset={dataset} id={id} />
 
       <div className="model__body">
         <div className="model__col">
@@ -68,7 +107,7 @@ function ModelArticle({ id }: { id: ModelId }) {
           ))}
           {params.length > 0 && (
             <>
-              <p className="label">{t('models.params')}</p>
+              <p className="label">{t('models.params', { dataset: ds.title })}</p>
               <dl className="params params--grid">
                 {params.map(([k, val]) => (
                   <div key={k}>
@@ -79,11 +118,11 @@ function ModelArticle({ id }: { id: ModelId }) {
               </dl>
             </>
           )}
-          {res && (res.best_epoch || res.stopped_epoch) && (
+          {res && (res.best_epoch || res.stopped_epoch) ? (
             <p className="caption">
               {t('models.earlyStop', { stopped: res.stopped_epoch ?? res.best_epoch ?? 0, best: res.best_epoch ?? res.stopped_epoch ?? 0 })}
             </p>
-          )}
+          ) : null}
         </div>
 
         <div className="model__pros">
@@ -116,6 +155,18 @@ function ModelArticle({ id }: { id: ModelId }) {
               <dt>{t('models.library')}</dt>
               <dd>{t(`models.content.${id}.library`)}</dd>
             </div>
+            {id === 'cnn' && (
+              <>
+                <div>
+                  <dt>{t('models.notUsed')}</dt>
+                  <dd>{t('models.content.cnn.notUsed')}</dd>
+                </div>
+                <div>
+                  <dt>{t('models.verified')}</dt>
+                  <dd>{t('models.content.cnn.verified')}</dd>
+                </div>
+              </>
+            )}
             <div>
               <dt>{t('models.here')}</dt>
               <dd>
@@ -126,10 +177,11 @@ function ModelArticle({ id }: { id: ModelId }) {
                     {t('models.checked', {
                       n: int(v.n_checked),
                       agree: pct(v.argmax_agreement, 1),
-                      diff: v.max_abs_prob_diff == null ? t('common.na') : v.max_abs_prob_diff === 0 ? '0' : v.max_abs_prob_diff.toExponential(1),
+                      diff: v.max_abs_prob_diff === 0 ? '0' : v.max_abs_prob_diff.toExponential(1),
                     })}
                   </>
                 ) : null}
+                {v && !v.ok ? <strong className="impl__warn"> {t('models.checkFailed')}</strong> : null}
               </dd>
             </div>
           </dl>
@@ -141,16 +193,27 @@ function ModelArticle({ id }: { id: ModelId }) {
 
 export default function Models() {
   const { t } = useI18n()
-  const { manifest } = useSiteData()
-  const ids = MODEL_IDS.filter((id) => manifest.models[id])
-  const [active, setActive] = useState<ModelId>(ids[0])
+  const { manifest } = useBundle()
+  const { dataset, setDataset } = useChoice()
+  const ds = manifest.datasets[dataset]
+  const ids = modelsOf(ds)
+  const [active, setActive] = useState<ModelKind | null>(null)
+  const dsIds = datasetIdsOf(manifest)
 
   return (
     <div className="models sheet">
       <header className="page-head">
         <p className="eyebrow">{t('nav.models')}</p>
-        <h1 className="display">{t('models.title')}</h1>
+        <h1 className="display">{t('models.title', { n: ids.length })}</h1>
         <p className="lede">{t('models.lede')}</p>
+        {dsIds.length > 1 && (
+          <Segmented
+            legend={t('models.datasetLegend')}
+            value={dataset}
+            onChange={setDataset}
+            options={dsIds.map((id) => ({ value: id, label: manifest.datasets[id].title }))}
+          />
+        )}
         <nav aria-label={t('models.jump')} className="jump">
           <ul>
             {ids.map((id) => (
@@ -172,7 +235,7 @@ export default function Models() {
         </nav>
       </header>
       {ids.map((id) => (
-        <ModelArticle key={id} id={id} />
+        <ModelArticle key={`${dataset}-${id}`} dataset={dataset} id={id} />
       ))}
     </div>
   )

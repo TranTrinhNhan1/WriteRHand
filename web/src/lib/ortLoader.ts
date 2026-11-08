@@ -1,13 +1,13 @@
-import type { Ort } from './onnx'
+import type { OrtLike } from '../engine/store'
 
-let pending: Promise<Ort> | null = null
+let pending: Promise<OrtLike> | null = null
 
 /**
  * Loads ONNX Runtime Web on first use. The runtime and its ~14 MB WebAssembly binary are
  * served from this site (the binary is emitted as a hashed asset under the Vite base path),
  * so no CDN is involved. GitHub Pages cannot send COOP/COEP headers, hence single-threaded.
  */
-export function loadOrt(): Promise<Ort> {
+export function loadOrt(): Promise<OrtLike> {
   pending ??= (async () => {
     const [ort, wasm] = await Promise.all([
       import('onnxruntime-web/wasm'),
@@ -17,7 +17,7 @@ export function loadOrt(): Promise<Ort> {
     ort.env.wasm.proxy = false
     ort.env.wasm.wasmPaths = { wasm: wasm.default }
     ort.env.logLevel = 'error'
-    return ort
+    return ort as unknown as OrtLike
   })().catch((err) => {
     pending = null
     throw err

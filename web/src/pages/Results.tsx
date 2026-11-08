@@ -1,16 +1,21 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState } from 'react'
+import { Section } from '../components/Section'
 import '../styles/results.css'
 import { Segmented } from '../components/Segmented'
 import { BarChart } from '../components/charts/BarChart'
 import { ChartFigure, type LegendItem } from '../components/charts/ChartFigure'
 import { ConfusionMatrix } from '../components/charts/ConfusionMatrix'
 import { LineChart, type LineSeries } from '../components/charts/LineChart'
+import { MODEL_ORDER } from '../engine/contract'
+import { useBundle } from '../engine/react'
 import { useI18n } from '../i18n'
-import { useSiteData } from '../lib/context'
+import { useChoice } from '../lib/choice'
 import { date, int, ms, num, paramName, paramValue, pct, seconds } from '../lib/format'
 import { curvePanel, historyPanels, isValidMatrix, splitOf, sweepPanels, type SeriesRole } from '../lib/results'
-import { SPLIT_IDS, type ModelId, type ResultModel, type SplitId } from '../lib/types'
+import { datasetIdsOf } from '../lib/selection'
+import { SPLIT_IDS, type ModelKind, type ResultModel, type SplitId } from '../lib/types'
 import { finite } from '../lib/scale'
+import { AllDatasets, AugmentationSection, CnnVsMlpSection, CrossEvalSection } from './resultsExtra'
 
 const SPLIT_COLOR: Record<SplitId, string> = { train: 'var(--c-train)', val: 'var(--c-val)', test: 'var(--c-test)' }
 
@@ -19,20 +24,6 @@ const ROLE_STYLE: Record<SeriesRole, { color: string; marker: 'circle' | 'square
   val: { color: 'var(--c-val)', marker: 'square' },
   holdout: { color: 'var(--c-val)', marker: 'diamond', dashed: true },
   neutral: { color: 'var(--ink-2)', marker: 'circle' },
-}
-
-function Section({ id, title, children, intro }: { id: string; title: string; intro: ReactNode; children: ReactNode }) {
-  return (
-    <section className="rsection" aria-labelledby={id}>
-      <div className="rsection__head">
-        <h2 id={id} className="h2">
-          {title}
-        </h2>
-        <div className="rsection__intro">{intro}</div>
-      </div>
-      <div className="rsection__body">{children}</div>
-    </section>
-  )
 }
 
 /** Bolds the best value of each column so it is not carried by colour alone. */
@@ -89,19 +80,54 @@ function MetricsTable({ models, split }: { models: ResultModel[]; split: SplitId
   )
 }
 
+const ALL = '__all'
+
 export default function Results() {
+  const { t } = useI18n()
+  const { manifest } = useBundle()
+  const { dataset, setDataset } = useChoice()
+  const [all, setAll] = useState(false)
+  const ids = datasetIdsOf(manifest)
+  const tab = all ? ALL : dataset
+  const options = [...ids.map((id) => ({ value: id, label: manifest.datasets[id].title })), ...(ids.length > 1 ? [{ value: ALL, label: t('results.tabs.all') }] : [])]
+  return (
+    <div className="results sheet">
+      <header className="page-head">
+        <p className="eyebrow">{t('nav.results')}</p>
+        <h1 className="display">{t('results.title')}</h1>
+        <Segmented
+          legend={t('results.tabs.legend')}
+          value={tab}
+          onChange={(v) => {
+            if (v === ALL) setAll(true)
+            else {
+              setAll(false)
+              setDataset(v)
+            }
+          }}
+          options={options}
+        />
+      </header>
+      {tab === ALL ? <AllDatasets /> : <DatasetResults key={dataset} dataset={dataset} />}
+    </div>
+  )
+}
+
+function DatasetResults({ dataset }: { dataset: string }) {
   const { t, lang } = useI18n()
-  const { results, manifest } = useSiteData()
-  const models = results.models
-  const classes = manifest.classes
+  const bundle = useBundle()
+  const entry = bundle.manifest.datasets[dataset]
+  const results = bundle.results[dataset] ?? { models: [] }
+  const models = [...results.models].sort((a, b) => MODEL_ORDER.indexOf(a.id) - MODEL_ORDER.indexOf(b.id))
+  const classes = entry.classes
   const hw = results.hardware
-  const ds = results.dataset ?? manifest.dataset
+  const ds = results.dataset ?? entry.dataset
 
   const [split, setSplit] = useState<SplitId>('test')
-  const [cmModel, setCmModel] = useState<ModelId>(models.find((m) => m.id === 'mlp')?.id ?? models[0]?.id)
+  const [cmModel, setCmModel] = useState<ModelKind>(models.find((m) => m.id === 'cnn')?.id ?? models.find((m) => m.id === 'mlp')?.id ?? models[0]?.id)
   const [cmSplit, setCmSplit] = useState<SplitId>('test')
-  const [curveModel, setCurveModel] = useState<ModelId>(models.find((m) => m.history && Object.keys(m.history).length)?.id ?? models[0]?.id)
-  const [tuneModel, setTuneModel] = useState<ModelId>(models.find((m) => results.tuning?.[m.id]?.sweeps)?.id ?? models[0]?.id)
+  const [curveModel, setCurveModel] = useState<ModelKind>(models.find((m) => m.history && Object.keys(m.history).length)?.id ?? models[0]?.id)
+  const [tuneModel, setTuneModel] = useState<ModelKind>(models.find((m) => results.tuning?.[m.id]?.sweeps)?.id ?? models[0]?.id)
 
   const splitOptions = SPLIT_IDS.map((s) => ({ value: s, label: t(`split.${s}`) }))
   const legendOf = (): LegendItem[] => SPLIT_IDS.map((s) => ({ label: t(`split.${s}`), color: SPLIT_COLOR[s] }))
@@ -135,23 +161,29 @@ export default function Results() {
 
   const sk = models.filter((m) => m.sklearn)
 
-  const modelName = (id: ModelId) => t(`model.${id}`)
+  const modelName = (id: ModelKind) => t(`model.${id}`)
   const unit = (v: number | null | undefined) => (finite(v) ? String(v!.toPrecision(4)) : '\u2013')
   const hwLine = [hw?.cpu ?? t('results.facts.unknownCpu'), hw?.logical_cores ? t('results.facts.cores', { n: hw.logical_cores }) : '', hw?.device ?? '']
     .filter(Boolean)
     .join(', ')
 
+  if (models.length === 0) {
+    return <p className="caption rsection">{t('results.noData', { title: entry.title })}</p>
+  }
+
   return (
-    <div className="results sheet">
-      <header className="page-head">
-        <p className="eyebrow">{t('nav.results')}</p>
-        <h1 className="display">{t('results.title')}</h1>
+    <>
+      <div className="results__intro">
         <p className="lede">
           {finite(ds?.n_train) && finite(ds?.n_val) && finite(ds?.n_test)
-            ? t('results.lede', { train: int(ds?.n_train), val: int(ds?.n_val), test: int(ds?.n_test) })
+            ? t('results.lede', { title: entry.title, train: int(ds?.n_train), val: int(ds?.n_val), test: int(ds?.n_test) })
             : t('results.ledeFallback')}
         </p>
         <dl className="facts">
+          <div>
+            <dt>{t('results.facts.dataset')}</dt>
+            <dd>{entry.title}</dd>
+          </div>
           <div>
             <dt>{t('results.facts.sizes')}</dt>
             <dd className="num">{t('results.facts.sizesValue', { train: int(ds?.n_train), val: int(ds?.n_val), test: int(ds?.n_test) })}</dd>
@@ -168,7 +200,7 @@ export default function Results() {
             </dd>
           </div>
         </dl>
-      </header>
+      </div>
 
       <Section
         id="r-metrics"
@@ -535,6 +567,10 @@ export default function Results() {
           </div>
         )}
       </Section>
-    </div>
+
+      {results.cnn_vs_mlp && <CnnVsMlpSection data={results.cnn_vs_mlp} />}
+      {results.augmentation && <AugmentationSection studies={results.augmentation} />}
+      {results.cross_eval && <CrossEvalSection dataset={dataset} entries={results.cross_eval} />}
+    </>
   )
 }

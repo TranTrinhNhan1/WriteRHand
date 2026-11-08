@@ -1,37 +1,9 @@
-export type ModelId = 'naive_bayes' | 'softmax' | 'mlp' | 'adaboost'
+import type { ModelKind } from '../engine/contract'
+
+export type { ModelKind }
 export type SplitId = 'train' | 'val' | 'test'
 
-export const MODEL_IDS: ModelId[] = ['naive_bayes', 'softmax', 'mlp', 'adaboost']
 export const SPLIT_IDS: SplitId[] = ['train', 'val', 'test']
-
-export interface Validation {
-  max_abs_prob_diff?: number | null
-  argmax_agreement?: number | null
-  n_checked?: number | null
-  ok?: boolean | null
-}
-
-export interface ManifestModel {
-  title: string
-  class?: string
-  format: 'onnx' | 'json'
-  file: string
-  size_bytes?: number | null
-  params?: Record<string, unknown> | null
-  validation?: Validation | null
-  input?: string
-  output?: 'probabilities' | 'vote_shares' | string
-}
-
-export interface Preproc {
-  mean: number
-  std: number
-  eps: number
-  scale?: string
-  formula?: string
-  image?: string
-  version?: string
-}
 
 export interface DatasetInfo {
   n_train?: number
@@ -40,16 +12,6 @@ export interface DatasetInfo {
   seed?: number
   split_fingerprint?: string
   preprocess_version?: string
-}
-
-export interface Manifest {
-  name?: string
-  version?: string
-  created?: string
-  preprocessing: Preproc
-  classes: number[]
-  dataset?: DatasetInfo
-  models: Partial<Record<ModelId, ManifestModel>>
 }
 
 export interface SplitMetrics {
@@ -70,7 +32,7 @@ export interface SklearnRef {
 }
 
 export interface ResultModel {
-  id: ModelId
+  id: ModelKind
   name: string
   class?: string
   params?: Record<string, unknown> | null
@@ -113,6 +75,82 @@ export interface Hardware {
   sklearn?: string
 }
 
+// ---------------------------------------------------------------- augmentation study
+/** Strength of each transformation: a number, or a [lo, hi] range for scaling. */
+export type AugStrengths = Record<string, number | [number, number] | number[]>
+
+export interface AugRun {
+  seed: number
+  n_train: number
+  fit_time_sec: number
+  train_acc: number
+  val_acc: number
+  test_acc: number
+  val_f1_macro: number
+  test_f1_macro: number
+  robust_test_acc: Record<string, number>
+  stopped_epoch?: number
+}
+
+export interface AugCondition {
+  ops: string[]
+  runs: AugRun[]
+  train_acc_mean: number
+  train_acc_std: number
+  val_acc_mean: number
+  val_acc_std: number
+  test_acc_mean: number
+  test_acc_std: number
+  robust_test_acc_mean: Record<string, number>
+  val_delta_vs_baseline_mean?: number
+  val_delta_vs_baseline_sd?: number
+  augmentation_time_sec: number
+}
+
+/** What `src/experiments/augment.py::run_ablation` writes. */
+export interface AugStudy {
+  schema: number
+  model: string
+  params: Record<string, unknown>
+  k_copies: number
+  seeds: number[]
+  defaults: AugStrengths
+  stress: AugStrengths
+  selection_rule: string
+  selected_by_validation: string
+  conditions: Record<string, AugCondition>
+}
+
+// ---------------------------------------------------------------- CNN vs MLP
+export interface CnnVsMlpRow {
+  id: 'mlp' | 'cnn'
+  n_parameters: number
+  onnx_bytes: number
+  train_time_sec: number
+  latency_ms: number
+  predict_time_10k_sec: number
+  epochs: number | null
+  accuracy: { train: number; val: number; test: number }
+  precision_macro: number
+  recall_macro: number
+  f1_macro: number
+  generalization_gap: number
+  robust: Record<string, number>
+}
+
+export interface CnnVsMlp {
+  rows: CnnVsMlpRow[]
+  mcnemar?: { only_mlp: number; only_cnn: number; p: number }
+  interpretability_note?: string
+}
+
+/** A model trained on dataset `trained_on`, evaluated on the test set of the dataset whose results hold this entry. */
+export interface CrossEval {
+  trained_on: string
+  rows: { model: string; accuracy: number }[]
+  note: string
+}
+
 export interface Results {
   generated?: string
   dataset?: DatasetInfo
@@ -120,19 +158,8 @@ export interface Results {
   git?: { commit?: string; short?: string; dirty?: boolean }
   protocol?: string
   models: ResultModel[]
-  tuning?: Partial<Record<ModelId, TuningEntry>>
-}
-
-export interface SiteData {
-  manifest: Manifest
-  results: Results
-}
-
-export interface Prediction {
-  /** Class probabilities (or vote shares), length 10, sums to 1. */
-  probs: Float64Array
-  /** Index of the largest entry. */
-  top: number
-  /** Wall-clock inference time in milliseconds. */
-  ms: number
+  tuning?: Partial<Record<ModelKind, TuningEntry>>
+  augmentation?: { mlp?: AugStudy; cnn?: AugStudy }
+  cnn_vs_mlp?: CnnVsMlp
+  cross_eval?: CrossEval[]
 }

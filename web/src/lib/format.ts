@@ -68,7 +68,8 @@ export function date(iso: string | undefined, lang: Lang = activeLang()): string
 export function paramValue(v: unknown): string {
   const lang = activeLang()
   if (v == null) return translate(lang, 'common.none')
-  if (Array.isArray(v)) return v.length ? v.map(paramValue).join('\u00d7') : translate(lang, 'common.none')
+  // lists (layer widths, channels per stage) are written as lists, so [8, 16] never reads as a product
+  if (Array.isArray(v)) return v.length ? `[${v.map(paramValue).join(', ')}]` : translate(lang, 'common.none')
   if (typeof v === 'number') {
     if (Number.isInteger(v)) return int(v)
     return Math.abs(v) < 1e-3 || Math.abs(v) >= 1e4 ? v.toExponential(0).replace('e-', 'e\u2212').replace('e+', 'e') : String(Number(v.toPrecision(3)))
@@ -80,7 +81,7 @@ export function paramValue(v: unknown): string {
 const PARAM_KEYS = [
   'learning_rate', 'l2', 'epochs', 'batch_size', 'hidden_sizes', 'momentum', 'p_drop', 'n_estimators', 'max_depth',
   'n_bins', 'max_features', 'var_smoothing', 'seed', 'lr_decay', 'tol', 'n_iter_no_change', 'early_stopping',
-  'val_fraction', 'patience', 'min_delta',
+  'val_fraction', 'patience', 'min_delta', 'channels', 'kernel_size', 'pool', 'dense',
 ] as const
 
 export function paramName(key: string): string {

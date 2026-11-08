@@ -165,3 +165,86 @@
 .model__impl {
   grid-column: 1 / -1;
 }
+
+/* architecture read from the trace ------------------------------------------------ */
+
+.arch {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.arch__chain {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 0;
+  counter-reset: layer;
+}
+
+.arch__node {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  align-content: start;
+  min-width: 0;
+  margin-right: 22px;
+  padding: 8px 11px 9px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--sunken);
+}
+
+/* a short rule between boxes: the order of computation */
+.arch__node:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -17px;
+  width: 12px;
+  height: 1px;
+  background: var(--ink-3);
+}
+
+.arch__node:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  top: calc(50% - 3px);
+  right: -18px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 3.5px 0 3.5px 5px;
+  border-color: transparent transparent transparent var(--ink-3);
+}
+
+.arch__op {
+  font: 600 0.8125rem/1.25 var(--sans);
+  color: var(--ink);
+}
+
+.arch__detail,
+.arch__shape,
+.arch__params {
+  font: 400 0.6875rem/1.35 var(--mono);
+  color: var(--ink-2);
+}
+
+.arch__shape::before {
+  content: '\2192\00a0';
+  color: var(--ink-3);
+}
+
+.arch__params {
+  color: var(--accent);
+}
+
+.arch__node--conv2d,
+.arch__node--dense,
+.arch__node--gaussian_loglik,
+.arch__node--tree_ensemble {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line-2));
+}
+
+.impl__warn {
+  color: var(--danger);
+}
