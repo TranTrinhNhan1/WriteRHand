@@ -4,6 +4,8 @@
 
 \textbf{Huấn luyện cuối và chỉ số.} Cấu hình được chọn được huấn luyện lại trên $50\,000$ ảnh train (seed 42), rồi báo cáo accuracy, macro precision, macro recall, macro F1 và ma trận nhầm lẫn trên train, validation và test. Với ma trận nhầm lẫn $C$, $\mathrm{TP}_k=C_{kk}$, $\mathrm{FP}_k=\sum_i C_{ik}-\mathrm{TP}_k$, $\mathrm{FN}_k=\sum_j C_{kj}-\mathrm{TP}_k$; precision, recall và $F_1$ tính theo từng lớp rồi lấy trung bình không trọng số.
 
+\textbf{Kiểm tra chéo.} Ngoài lần chia cố định, nhóm gộp train và validation thành \kfoldPool ảnh và chia thành \kfoldK phần phân tầng theo lớp (xáo trộn, seed 42); lần lượt giữ một phần để đánh giá, huấn luyện trên các phần còn lại và đo thêm trên test chung (\cref{sec:kfold}). Siêu tham số giữ nguyên cấu hình đã chọn trên validation cũ, không tune lại trong từng fold; mean và std dùng để chuẩn hóa chỉ lấy từ phần train của fold đó.
+
 \textbf{Đo thời gian.} Thời gian đo trên CPU, không dùng GPU (\input{generated/hardware}): huấn luyện là thời gian \texttt{fit} trên $50\,000$ ảnh, dự đoán là trung vị của 5 lần dự đoán $10\,000$ ảnh test, độ trễ là trung vị của 200 lần dự đoán một ảnh. Thời gian chỉ nên so ở mức bậc độ lớn vì có thể chênh khi máy chạy đồng thời việc khác.
 
 \textbf{Đối chiếu với scikit-learn.} Naïve Bayes, softmax, SVM, MLP và AdaBoost được huấn luyện lại bằng scikit-learn (SVM: \texttt{LinearSVC} với $C=1/(\lambda n)$) với cùng siêu tham số và cùng dữ liệu. Ngoài ra bộ kiểm thử tự động (\input{generated/ntests} kiểm thử) kiểm tra tham số và xác suất của Naïve Bayes khớp \texttt{GaussianNB}, gradient của softmax, SVM (hinge bình phương), MLP và CNN khớp sai phân hữu hạn và autograd của PyTorch trên mạng nhỏ, và tích chập im2col khớp cài đặt ngây thơ.

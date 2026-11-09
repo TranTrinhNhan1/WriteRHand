@@ -72,6 +72,26 @@ Naïve Bayes trùng khớp với scikit-learn (\cref{tab:sklearn}). SVM (hinge) 
 
 Meta-learner chọn $\lambda=\stackL$ bằng kiểm định chéo 5 phần trên validation, cho accuracy kiểm định chéo \stackCV\%. Trên test, stacking đạt $99.05\%$ (\cref{tab:stacking}), cao hơn CNN $0.25$ điểm và cao hơn rõ rệt phép bỏ phiếu mềm không học (\stackVote\%, thấp hơn cả CNN). Số lỗi giảm từ $120$ (CNN) xuống $95$ ảnh. Meta-learner đặt trọng số lớn nhất cho CNN, MLP và AdaBoost. Các lưu ý: (1) mức tăng $0.25$ điểm trên $10\,000$ ảnh test là một lần chạy một seed, chưa đo biến thiên; (2) meta-learner được huấn luyện trên chỉ $10\,000$ ảnh validation; (3) accuracy train ($99.83\%$) và validation ($99.12\%$) của stacking không phải ước lượng sạch vì validation là dữ liệu của meta-learner; (4) chi phí suy luận là tổng của sáu mô hình.
 
+\subsection{Kiểm tra chéo \kfoldK{} phần}
+\label{sec:kfold}
+Một lần chia train/validation chưa cho biết kết quả dao động bao nhiêu khi đổi cách chia. Nhóm gộp train và validation thành \kfoldPool ảnh, chia thành \kfoldK{} phần phân tầng theo lớp, và với mỗi phần huấn luyện trên các phần còn lại rồi đo accuracy trên phần được giữ và trên test chung (\cref{tab:kfold}, \cref{fig:kfold}). Siêu tham số là cấu hình đã chọn ở \cref{sec:protocol}, không tune lại trong từng fold, và validation cũ nằm trong tập gộp nên điểm trên fold giữ lại có thể hơi lạc quan; test không dùng để chọn gì.
+
+\begin{table}[H]
+\centering\small
+\input{generated/kfold}
+\caption{Accuracy (\%) trung bình $\pm$ độ lệch chuẩn mẫu trên \kfoldK{} fold, trên fold giữ lại và trên test chung; cột cuối là fold thấp nhất và cao nhất. Chữ đậm là mô hình cao nhất.}
+\label{tab:kfold}
+\end{table}
+
+\begin{figure}[tbp]
+\centering
+\includegraphics[width=0.85\textwidth]{../results/figures/kfold.pdf}
+\caption{Accuracy trên fold giữ lại của từng fold (chấm) và trung bình (vạch đen).}
+\label{fig:kfold}
+\end{figure}
+
+Thứ tự các nhóm mô hình giống bảng chính (\cref{tab:accuracy}) và độ lệch chuẩn giữa các fold của MLP (\kfValSdMLP) và SVM (\kfValSdSVMP) nhỏ so với khoảng cách giữa các nhóm. Softmax là ngoại lệ: một fold chỉ đạt \kfMinSM\% trong khi fold cao nhất đạt \kfMaxSM\%. Ở fold đó validation accuracy vẫn khoảng $92\%$ qua phần lớn quá trình huấn luyện, rồi loss tăng đột ngột ở các epoch cuối và mô hình giữ trạng thái ở epoch cuối. Đây là tính không ổn định của SGD với learning rate hằng số, không phải lỗi chia dữ liệu; số liệu được giữ nguyên, nên trung bình và độ lệch chuẩn của softmax (\kfValSM$\pm$\kfValSdSM) phản ánh cả lần dao động đó.
+
 \subsection{So sánh ưu và nhược điểm}
 \begin{table}[H]
 \centering\footnotesize

@@ -340,6 +340,13 @@ def _write_site_extra(names):
     manifest = json.loads(man.read_text(encoding="utf-8")) if man.is_file() else None
     out = write_extra_models({n: dataset_dirs(n)[0] for n in names}, path, manifest)
     print(f"extra models -> {path} ({', '.join(out['datasets']) or 'none'})")
+    from src.experiments.extras_report import kfold_site_json
+
+    kf = kfold_site_json()
+    if kf:
+        kpath = data / "kfold.json"
+        kpath.write_text(json.dumps(kf, separators=(",", ":")) + "\n", encoding="utf-8")
+        print(f"k-fold -> {kpath} ({len(kf['models'])} models, k={kf['k']})")
 
 
 def cmd_site_extra(args):
