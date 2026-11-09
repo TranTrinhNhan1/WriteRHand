@@ -1,0 +1,138 @@
+{
+  "model": "MLP",
+  "k": 5,
+  "seed": 42,
+  "params": {
+    "hidden_sizes": [
+      512,
+      256
+    ],
+    "learning_rate": 0.05,
+    "momentum": 0.9,
+    "p_drop": 0.0,
+    "batch_size": 128,
+    "epochs": 40,
+    "seed": 42
+  },
+  "n_pool": 60000,
+  "n_test": 10000,
+  "folds": {
+    "0": {
+      "n_train": 48000,
+      "n_val": 12000,
+      "mean": 0.13075194805330415,
+      "std": 0.30821671846058435,
+      "val": {
+        "accuracy": 0.9806666666666667,
+        "precision_macro": 0.9806178584278961,
+        "recall_macro": 0.9804757229383052,
+        "f1_macro": 0.9805317972386203
+      },
+      "test": {
+        "accuracy": 0.9828,
+        "precision_macro": 0.9827405434377898,
+        "recall_macro": 0.9826265982001423,
+        "f1_macro": 0.982673924691348
+      },
+      "train_time_sec": 39.76,
+      "stopped_epoch": 15
+    },
+    "1": {
+      "n_train": 48000,
+      "n_val": 12000,
+      "mean": 0.13064446860310538,
+      "std": 0.3080901686434688,
+      "val": {
+        "accuracy": 0.9748333333333333,
+        "precision_macro": 0.9745565858350368,
+        "recall_macro": 0.9745937852663396,
+        "f1_macro": 0.9745024869062661
+      },
+      "test": {
+        "accuracy": 0.9774,
+        "precision_macro": 0.9772376649641188,
+        "recall_macro": 0.9772847512145454,
+        "f1_macro": 0.9772014427090182
+      },
+      "train_time_sec": 23.97,
+      "stopped_epoch": 9
+    },
+    "2": {
+      "n_train": 47999,
+      "n_val": 12001,
+      "mean": 0.13072226545028418,
+      "std": 0.30817419444378386,
+      "val": {
+        "accuracy": 0.9797516873593867,
+        "precision_macro": 0.979738977752611,
+        "recall_macro": 0.9795288650532846,
+        "f1_macro": 0.9796145821798365
+      },
+      "test": {
+        "accuracy": 0.9816,
+        "precision_macro": 0.9815906504537978,
+        "recall_macro": 0.9814522419268951,
+        "f1_macro": 0.9815045859099378
+      },
+      "train_time_sec": 37.33,
+      "stopped_epoch": 14
+    },
+    "3": {
+      "n_train": 48000,
+      "n_val": 12000,
+      "mean": 0.13058317721177248,
+      "std": 0.30801202810201317,
+      "val": {
+        "accuracy": 0.9810833333333333,
+        "precision_macro": 0.9809535060095206,
+        "recall_macro": 0.9809194474213754,
+        "f1_macro": 0.9809312155940294
+      },
+      "test": {
+        "accuracy": 0.9808,
+        "precision_macro": 0.9807229098815823,
+        "recall_macro": 0.9805839675741777,
+        "f1_macro": 0.9806432983522868
+      },
+      "train_time_sec": 35.25,
+      "stopped_epoch": 13
+    },
+    "4": {
+      "n_train": 48001,
+      "n_val": 11999,
+      "mean": 0.1306005302297358,
+      "std": 0.3080458573886975,
+      "val": {
+        "accuracy": 0.9785815484623719,
+        "precision_macro": 0.9783045895788408,
+        "recall_macro": 0.9784494043040256,
+        "f1_macro": 0.9783612964354841
+      },
+      "test": {
+        "accuracy": 0.9773,
+        "precision_macro": 0.9771375685094567,
+        "recall_macro": 0.9772607064013735,
+        "f1_macro": 0.9771798685846358
+      },
+      "train_time_sec": 23.87,
+      "stopped_epoch": 9
+    }
+  },
+  "git": {
+    "commit": "4968990099f2c33031501b2ad3c9d788d2af7822",
+    "short": "49689900",
+    "dirty": true
+  },
+  "hardware": {
+    "cpu": "13th Gen Intel(R) Core(TM) i7-13620H",
+    "logical_cores": 16,
+    "torch_threads": 2,
+    "device": "cpu",
+    "os": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+    "python": "3.12.14",
+    "numpy": "2.5.4",
+    "torch": "2.15.0+cpu",
+    "sklearn": "1.9.1"
+  },
+  "note": "hyper-parameters were chosen on the original validation split (a subset of this pool) and are not re-tuned per fold; standardisation uses the fold's training part; test is never used for any choice"
+}

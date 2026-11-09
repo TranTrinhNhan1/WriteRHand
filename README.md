@@ -65,6 +65,7 @@ uv run python -m src stack                    # stacking: meta-learner trên val
 uv run python -m src augment-select --model mlp   # chọn mức xoay của bản tăng cường trên validation -> results/augmentation_deploy_mlp.json
 uv run python -m src train --model cnn --augment --wandb disabled   # bản <Model>_aug (lặp cho từng mô hình)
 uv run python -m src augment-pairs            # so sánh thường / tăng cường (ảnh sạch, ảnh xoay) -> results/augmentation_pairs.json
+uv run python -m src kfold --model all --k 5   # kiểm tra chéo 5 phần (siêu tham số giữ nguyên) -> results/kfold/<Model>.json
 uv run python -m src augment --model mlp --seeds 3   # đối chứng tăng cường dữ liệu (mlp | cnn) -> results/augmentation_<model>.json
 uv run python -m src compare                  # CNN so với MLP (McNemar, độ bền) -> results/cnn_vs_mlp.json
 uv run python -m src replay --model mlp       # ghi lại điểm kiểm tra huấn luyện thật cho trình khám phá -> artifacts/replay/

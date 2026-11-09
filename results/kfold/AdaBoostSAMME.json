@@ -1,0 +1,129 @@
+{
+  "model": "AdaBoostSAMME",
+  "k": 5,
+  "seed": 42,
+  "params": {
+    "n_estimators": 393,
+    "max_depth": 10,
+    "learning_rate": 0.1,
+    "n_bins": 32,
+    "max_features": 0.5,
+    "seed": 42
+  },
+  "n_pool": 60000,
+  "n_test": 10000,
+  "folds": {
+    "4": {
+      "n_train": 48001,
+      "n_val": 11999,
+      "mean": 0.1306005302297358,
+      "std": 0.3080458573886975,
+      "val": {
+        "accuracy": 0.9733311109259105,
+        "precision_macro": 0.9731333281974065,
+        "recall_macro": 0.9731385610177687,
+        "f1_macro": 0.9731106831718076
+      },
+      "test": {
+        "accuracy": 0.9757,
+        "precision_macro": 0.9754793921120705,
+        "recall_macro": 0.9754787446068918,
+        "f1_macro": 0.9754725429170659
+      },
+      "train_time_sec": 1856.58
+    },
+    "0": {
+      "n_train": 48000,
+      "n_val": 12000,
+      "mean": 0.13075194805330415,
+      "std": 0.30821671846058435,
+      "val": {
+        "accuracy": 0.9745833333333334,
+        "precision_macro": 0.9744815531097146,
+        "recall_macro": 0.9744542323723314,
+        "f1_macro": 0.9744169400289676
+      },
+      "test": {
+        "accuracy": 0.9763,
+        "precision_macro": 0.9760081670437059,
+        "recall_macro": 0.9760703060342648,
+        "f1_macro": 0.9760289878089784
+      },
+      "train_time_sec": 1859.91
+    },
+    "1": {
+      "n_train": 48000,
+      "n_val": 12000,
+      "mean": 0.13064446860310538,
+      "std": 0.3080901686434688,
+      "val": {
+        "accuracy": 0.9733333333333334,
+        "precision_macro": 0.9730433638356526,
+        "recall_macro": 0.9731378968550588,
+        "f1_macro": 0.9730701243855995
+      },
+      "test": {
+        "accuracy": 0.9746,
+        "precision_macro": 0.9743348932954387,
+        "recall_macro": 0.9744087906758934,
+        "f1_macro": 0.9743627810571149
+      },
+      "train_time_sec": 1861.52
+    },
+    "2": {
+      "n_train": 47999,
+      "n_val": 12001,
+      "mean": 0.13072226545028418,
+      "std": 0.30817419444378386,
+      "val": {
+        "accuracy": 0.9740021664861261,
+        "precision_macro": 0.9739239321603428,
+        "recall_macro": 0.9736873124920417,
+        "f1_macro": 0.9737964553493029
+      },
+      "test": {
+        "accuracy": 0.9752,
+        "precision_macro": 0.974946430171588,
+        "recall_macro": 0.974978597671728,
+        "f1_macro": 0.9749546196852237
+      },
+      "train_time_sec": 1861.86
+    },
+    "3": {
+      "n_train": 48000,
+      "n_val": 12000,
+      "mean": 0.13058317721177248,
+      "std": 0.30801202810201317,
+      "val": {
+        "accuracy": 0.9755,
+        "precision_macro": 0.9754071020226703,
+        "recall_macro": 0.9752236181556778,
+        "f1_macro": 0.9752856330075484
+      },
+      "test": {
+        "accuracy": 0.975,
+        "precision_macro": 0.974733052354727,
+        "recall_macro": 0.9746992110532211,
+        "f1_macro": 0.9747097036059064
+      },
+      "train_time_sec": 1863.16
+    }
+  },
+  "git": {
+    "commit": "28246cf0c82fd1982cdb146d30e0d37568859a0b",
+    "short": "28246cf0",
+    "dirty": true
+  },
+  "hardware": {
+    "cpu": "13th Gen Intel(R) Core(TM) i7-13620H",
+    "logical_cores": 16,
+    "torch_threads": 2,
+    "device": "cpu",
+    "os": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+    "python": "3.12.14",
+    "numpy": "2.5.4",
+    "torch": "2.15.0+cpu",
+    "sklearn": "1.9.1"
+  },
+  "note": "hyper-parameters were chosen on the original validation split (a subset of this pool) and are not re-tuned per fold; standardisation uses the fold's training part; test is never used for any choice"
+}

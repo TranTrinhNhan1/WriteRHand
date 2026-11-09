@@ -221,20 +221,17 @@
 \end{frame}
 
 \begin{frame}{Kiểm tra chéo \kfoldK{} phần}
-  \begin{columns}[T]
-    \column{0.62\linewidth}
-    \footnotesize
-    \input{../../report/generated/kfold}\par\smallskip
-    {\footnotesize Accuracy (\%), trung bình $\pm$ độ lệch chuẩn mẫu trên \kfoldK{} fold; cột cuối: fold thấp nhất và cao nhất.}
-    \column{0.36\linewidth}
+  \centering\small
+  \input{../../report/generated/kfold}\par\smallskip
+  {\footnotesize Accuracy (\%), trung bình $\pm$ độ lệch chuẩn mẫu trên \kfoldK{} fold; cột cuối: fold thấp nhất và cao nhất.}\par\medskip
+  \begin{minipage}{0.94\linewidth}
     \small
     \begin{itemize}
-      \item Gộp train và validation (\kfoldPool ảnh), chia phân tầng theo lớp, seed 42.
-      \item Siêu tham số giữ nguyên, không tune lại trong fold; mean/std chuẩn hóa lấy từ phần train của fold.
-      \item MLP và SVM dao động rất ít giữa các fold.
+      \item Gộp train và validation (\kfoldPool{} ảnh), chia phân tầng theo lớp, seed 42; siêu tham số giữ nguyên, không tune lại trong fold.
+      \item Trừ softmax, độ lệch chuẩn giữa các fold không quá \kfValSdMLP{} điểm.
       \item Softmax có một fold rơi xuống \kfMinSM\%: loss tăng đột ngột ở epoch cuối (learning rate hằng số).
     \end{itemize}
-  \end{columns}
+  \end{minipage}
 \end{frame}
 
 % 8
