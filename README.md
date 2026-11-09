@@ -9,7 +9,7 @@
 | 2 | Hồi quy logistic đa lớp (softmax) | mini-batch Gradient Descent, L2 | `src/models/logistic_regression.py` |
 | 3 | MLP (ReLU, dropout, momentum) | lan truyền ngược viết tay, early stopping | `src/models/mlp.py` |
 | 4 | AdaBoost-SAMME (cây Gini có trọng số) | boosting tuần tự | `src/models/adaboost.py` |
-| 5 | SVM tuyến tính (hinge, một-chống-còn-lại) | mini-batch Gradient Descent trên đạo hàm dưới, L2 | `src/models/svm.py` |
+| 5 | SVM tuyến tính (hinge, one-vs-rest) | mini-batch Gradient Descent trên subgradient, L2 | `src/models/svm.py` |
 | 6 | Stacking (meta-learner softmax trên sáu mô hình) | hold-out: học trên tập validation, chọn λ bằng CV 5 phần | `src/models/stacking.py`, `src/experiments/stacking.py` |
 | 7 | CNN nhỏ (conv-ReLU-max-pool ×2, dense) | im2col/col2im, backprop và SGD momentum viết tay | `src/models/cnn.py` |
 

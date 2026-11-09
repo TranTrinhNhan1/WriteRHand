@@ -11,7 +11,7 @@ Thành phần & Nhóm tự viết (NumPy) & Thư viện \\
 Tiền xử lý, chỉ số & Chia phân tầng, chuẩn hóa, ma trận nhầm lẫn, precision/recall/F1 macro & \texttt{sklearn.metrics} chỉ trong kiểm thử \\
 Naïve Bayes & Ước lượng tham số, log-likelihood, log-sum-exp & \texttt{GaussianNB} để đối chiếu \\
 Softmax & Hàm mất mát, gradient giải tích, mini-batch GD & \texttt{LogisticRegression} để đối chiếu \\
-SVM tuyến tính & Hàm mất mát hinge, đạo hàm dưới, mini-batch GD & \texttt{LinearSVC} để đối chiếu \\
+SVM tuyến tính & Hàm mất mát hinge, subgradient, mini-batch GD & \texttt{LinearSVC} để đối chiếu \\
 MLP & Lan truyền tiến và ngược, khởi tạo He, dropout, SGD có momentum, dừng sớm & Tensor, \texttt{matmul}, bộ sinh số ngẫu nhiên của PyTorch; \texttt{autograd} và \texttt{optim} chỉ trong kiểm thử \\
 AdaBoost-SAMME & Cập nhật SAMME, cây CART có trọng số dựng bằng histogram & \texttt{AdaBoostClassifier} để đối chiếu \\
 CNN & im2col/col2im, tích chập, gộp cực đại, gradient của từng lớp & Như MLP; \texttt{F.conv2d}, \texttt{F.max\_pool2d} chỉ trong kiểm thử \\
@@ -33,7 +33,7 @@ Mô hình sinh giả thiết các pixel độc lập có điều kiện theo l�
 
 \subsection{Hồi quy softmax (logistic đa lớp)}
 \label{sec:softmax}
-Với $\bm z=W^{\top}\bm x+\bm b$ và $p_k=e^{z_k}/\sum_m e^{z_m}$, hàm mất mát trên mini-batch $\mathcal B$ gồm cross-entropy và phạt $\ell_2$ (không phạt bias):
+Với $\bm z=W^{\top}\bm x+\bm b$ và $p_k=e^{z_k}/\sum_m e^{z_m}$, hàm mất mát trên mini-batch $\mathcal B$ gồm cross-entropy và regularization $\ell_2$ (không áp lên bias):
 \begin{equation}
 L(W,\bm b)=-\frac1{|\mathcal B|}\sum_{i\in\mathcal B}\log p_{y_i}(\bm x_i)+\frac{\lambda}{2}\lVert W\rVert_F^2 .
 \end{equation}
@@ -46,12 +46,12 @@ Softmax và cross-entropy được tính ở dạng ổn định số (trừ $\m
 
 \subsection{SVM tuyến tính}
 \label{sec:svm}
-Bộ phân lớp tuyến tính thứ hai dùng hàm mất mát hinge của SVM \citep{bishop2006}. Với mỗi lớp $k$ có một điểm số $z_k=\bm w_k^{\top}\bm x+b_k$ (một bộ phân lớp một-chống-còn-lại) và nhãn $t_{ik}=+1$ nếu $y_i=k$, ngược lại $t_{ik}=-1$. Trên mini-batch $\mathcal B$:
+Bộ phân lớp tuyến tính thứ hai dùng hàm mất mát hinge của SVM \citep{bishop2006}. Với mỗi lớp $k$ có một điểm số $z_k=\bm w_k^{\top}\bm x+b_k$ (một bộ phân lớp one-vs-rest) và nhãn $t_{ik}=+1$ nếu $y_i=k$, ngược lại $t_{ik}=-1$. Trên mini-batch $\mathcal B$:
 \begin{equation}
 L(W,\bm b)=\frac1{|\mathcal B|}\sum_{i\in\mathcal B}\sum_{k=1}^{K}\max\big(0,\,1-t_{ik}z_{ik}\big)+\frac{\lambda}{2}\lVert W\rVert_F^2 .
 \label{eq:svm}
 \end{equation}
-Hàm hinge không khả vi tại biên, nên dùng đạo hàm dưới: $\partial L/\partial z_{ik}=-t_{ik}\,\indic{t_{ik}z_{ik}<1}/B$, rồi $\nabla_W L=X^{\top}(\partial L/\partial Z)+\lambda W$ và $\nabla_{\bm b}L=\bm 1^{\top}(\partial L/\partial Z)$, cập nhật $\theta\leftarrow\theta-\eta\nabla_\theta L$ như softmax. Dự đoán là $\argmax_k z_k$. Biến thể hinge bình phương $\max(0,1-tz)^2$ (khả vi) cũng được cài đặt và được thử trong lượt quét. Hệ số $\lambda$ tương ứng với $1/(Cn)$ trong ký hiệu thường dùng của SVM. SVM chỉ cho điểm số chứ không cho xác suất.
+Hàm hinge không khả vi tại biên, nên dùng subgradient: $\partial L/\partial z_{ik}=-t_{ik}\,\indic{t_{ik}z_{ik}<1}/B$, rồi $\nabla_W L=X^{\top}(\partial L/\partial Z)+\lambda W$ và $\nabla_{\bm b}L=\bm 1^{\top}(\partial L/\partial Z)$, cập nhật $\theta\leftarrow\theta-\eta\nabla_\theta L$ như softmax. Dự đoán là $\argmax_k z_k$. Biến thể hinge bình phương $\max(0,1-tz)^2$ (khả vi) cũng được cài đặt và được thử trong lượt quét. Hệ số $\lambda$ tương ứng với $1/(Cn)$ trong ký hiệu thường dùng của SVM. SVM chỉ cho điểm số chứ không cho xác suất.
 
 \subsection{Perceptron nhiều lớp và lan truyền ngược}
 Các lớp ẩn tính $\bm z_l=\bm a_{l-1}W_l+\bm b_l$, $\bm a_l=\mathrm{ReLU}(\bm z_l)\odot\bm m_l$ với $\bm a_0=\bm x$; lớp cuối cho logits và softmax; mất mát là cross-entropy trung bình. Trọng số khởi tạo theo He \citep{he2015}, $W_l\sim\mathcal N(0,2/\mathrm{fan\_in})$. Dropout dạng \emph{inverted} \citep{srivastava2014} dùng mặt nạ $m_{l,j}\in\{0,1/(1-p)\}$, chỉ bật khi huấn luyện. Lan truyền ngược \citep{rumelhart1986} được viết tay:
@@ -74,7 +74,7 @@ Cập nhật dùng SGD có momentum \citep{sutskever2013}: $\bm v\leftarrow\mu\b
 
 \subsection{AdaBoost-SAMME với cây quyết định có trọng số}
 \label{sec:ada}
-Boosting là ensemble thực sự: các bộ học yếu được huấn luyện tuần tự và mỗi bộ tập trung vào mẫu mà các bộ trước phân lớp sai. SAMME \citep{zhu2009} mở rộng AdaBoost \citep{freund1997} sang $K$ lớp. Khởi tạo $w_i=1/N$; ở vòng $t$, huấn luyện cây $h_t$ với trọng số mẫu $w$, đặt $\mathrm{err}_t=\sum_i w_i\indic{h_t(\bm x_i)\ne y_i}$ (với $\sum_i w_i=1$) và
+Boosting là ensemble thực sự: các weak learner được huấn luyện tuần tự và mỗi bộ tập trung vào mẫu mà các bộ trước phân lớp sai. SAMME \citep{zhu2009} mở rộng AdaBoost \citep{freund1997} sang $K$ lớp. Khởi tạo $w_i=1/N$; ở vòng $t$, huấn luyện cây $h_t$ với trọng số mẫu $w$, đặt $\mathrm{err}_t=\sum_i w_i\indic{h_t(\bm x_i)\ne y_i}$ (với $\sum_i w_i=1$) và
 \begin{equation}
 \begin{gathered}
 \alpha_t=\nu\Big(\ln\frac{1-\mathrm{err}_t}{\mathrm{err}_t}+\ln(K-1)\Big),\qquad
@@ -83,11 +83,11 @@ H(\bm x)=\argmax_k\sum_{t}\alpha_t\indic{h_t(\bm x)=k},
 \end{gathered}
 \label{eq:samme}
 \end{equation}
-với $\nu$ là hệ số co. Số hạng $\ln(K-1)$ chỉ yêu cầu bộ học yếu tốt hơn đoán ngẫu nhiên ($\mathrm{err}<1-1/K$); vòng lặp dừng khi điều kiện này bị vi phạm. Bộ học yếu là cây CART độ sâu tối đa $d$ giảm tạp chất Gini có trọng số \citep{breiman1984}. Để huấn luyện được trên $50\,000\times784$, mỗi đặc trưng được lượng tử hóa một lần thành $n_{\text{bins}}$ khoảng đều nhau và trọng số theo (nút, đặc trưng, bin, lớp) được cộng dồn bằng histogram, nên mọi ngưỡng của mọi đặc trưng được đánh giá trong $O(ND)$ mỗi tầng; ngưỡng thực được lưu cho dự đoán. Mỗi cây chỉ xét một tập con ngẫu nhiên các đặc trưng (\texttt{max\_features}); Thuật toán~\ref{alg:ada} tóm tắt quy trình. Chi phí huấn luyện $O(T\,d\,N\,D)$ với $T$ cây và dự đoán $O(T\,d)$; điểm số đầu ra là tỉ lệ phiếu có trọng số chứ không phải xác suất đã hiệu chỉnh.
+với $\nu$ là shrinkage (learning rate). Số hạng $\ln(K-1)$ chỉ yêu cầu weak learner tốt hơn đoán ngẫu nhiên ($\mathrm{err}<1-1/K$); vòng lặp dừng khi điều kiện này bị vi phạm. Weak learner là cây CART độ sâu tối đa $d$ giảm Gini impurity có trọng số \citep{breiman1984}. Để huấn luyện được trên $50\,000\times784$, mỗi đặc trưng được lượng tử hóa một lần thành $n_{\text{bins}}$ khoảng đều nhau và trọng số theo (nút, đặc trưng, bin, lớp) được cộng dồn bằng histogram, nên mọi ngưỡng của mọi đặc trưng được đánh giá trong $O(ND)$ mỗi tầng; ngưỡng thực được lưu cho dự đoán. Mỗi cây chỉ xét một tập con ngẫu nhiên các đặc trưng (\texttt{max\_features}); Thuật toán~\ref{alg:ada} tóm tắt quy trình. Chi phí huấn luyện $O(T\,d\,N\,D)$ với $T$ cây và dự đoán $O(T\,d)$; điểm số đầu ra là tỉ lệ phiếu có trọng số chứ không phải xác suất đã hiệu chỉnh.
 
 \begin{algo}{AdaBoost-SAMME (\texttt{src/models/adaboost.py})}{alg:ada}
 \item Lượng tử hóa $X$ thành bin (một lần); $w_i\leftarrow1/N$.
-\item Với $t=1,\dots,T$: dựng cây $h_t$ từ histogram có trọng số, chọn ở mỗi nút cặp (đặc trưng, ngưỡng) làm giảm tạp chất nhiều nhất; dừng khi không giảm hoặc đạt độ sâu $d$.
+\item Với $t=1,\dots,T$: dựng cây $h_t$ từ histogram có trọng số, chọn ở mỗi nút cặp (đặc trưng, ngưỡng) làm giảm Gini impurity nhiều nhất; dừng khi không giảm hoặc đạt độ sâu $d$.
 \item $\mathrm{err}_t\leftarrow\sum_i w_i\indic{h_t(\bm x_i)\ne y_i}$; nếu $\mathrm{err}_t\ge1-1/K$ thì dừng.
 \item Tính $\alpha_t$ và cập nhật, chuẩn hóa $w$ theo \cref{eq:samme}.
 \item Dự đoán: $\hat y=\argmax_k\sum_t\alpha_t\indic{h_t(\bm x)=k}$.
@@ -95,7 +95,7 @@ với $\nu$ là hệ số co. Số hạng $\ln(K-1)$ chỉ yêu cầu bộ học
 
 \subsection{Mạng tích chập nhỏ}
 \label{sec:cnn-method}
-CNN \citep{lecun1998} khác MLP ở chỗ mỗi đơn vị chỉ nhìn một cửa sổ cục bộ và các cửa sổ dùng chung trọng số. Cấu hình được chọn trên validation là hai khối tích chập $3\times3$ với $16$ và $32$ kênh, mỗi khối theo sau bởi ReLU và gộp cực đại $2\times2$, rồi hai lớp dày đặc:
+CNN \citep{lecun1998} khác MLP ở chỗ mỗi đơn vị chỉ nhìn một cửa sổ cục bộ và các cửa sổ dùng chung trọng số. Cấu hình được chọn trên validation là hai khối tích chập $3\times3$ với $16$ và $32$ kênh, mỗi khối theo sau bởi ReLU và gộp cực đại $2\times2$, rồi hai lớp kết nối đầy đủ:
 \begin{equation*}
 1{\times}28{\times}28\to16{\times}26{\times}26\to16{\times}13{\times}13\to32{\times}11{\times}11\to32{\times}5{\times}5\to800\to64\to10 .
 \end{equation*}

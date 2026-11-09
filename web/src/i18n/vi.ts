@@ -987,7 +987,7 @@ export const vi: Dict = {
       cv: 'Accuracy kiểm định chéo (validation)',
       bases: 'Mô hình cơ sở',
       weight: 'Trọng số meta-learner (TB |w|)',
-      svm: { eq: ['Điểm số của mỗi lớp', 'Hàm mất mát hinge một-chống-còn-lại, phạt L2'] },
+      svm: { eq: ['Điểm số của mỗi lớp', 'Hàm mất mát hinge one-vs-rest, regularization L2'] },
       stacking: { eq: ['Đặc trưng cấp 1: log-xác suất của từng mô hình cơ sở, điểm số của SVM', 'Meta-learner: hồi quy softmax trên đặc trưng đã chuẩn hoá'] },
     },
     arch: {
@@ -1043,7 +1043,7 @@ export const vi: Dict = {
         family: 'Phân biệt (discriminative), tuyến tính',
         how: [
           'Softmax regression cho mỗi lớp một ảnh trọng số riêng. Điểm của một lớp là tổng có trọng số của các pixel cộng với bias. Sau đó softmax đổi các điểm thành xác suất có tổng bằng một.',
-          'Loss là cross-entropy cộng với phạt L2 lên trọng số. Hàm này lồi, nên gradient descent không thể mắc kẹt ở một cực tiểu địa phương tệ.',
+          'Loss là cross-entropy cộng với regularization L2 lên trọng số. Hàm này lồi, nên gradient descent không thể mắc kẹt ở một cực tiểu địa phương tệ.',
         ],
         eq: ['Lượt truyền thẳng (forward pass)', 'Loss trên một mini-batch cỡ B', 'Gradient và bước cập nhật'],
         training: [

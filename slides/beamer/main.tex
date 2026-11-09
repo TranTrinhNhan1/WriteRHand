@@ -122,7 +122,7 @@
     \item Accuracy trên chính tập train chỉ đạt $93.62\%$: bị giới hạn bởi biên tuyến tính.
   \eul
   \medskip
-  \textbf{SVM tuyến tính} (hinge một-chống-còn-lại, đạo hàm dưới)
+  \textbf{SVM tuyến tính} (hinge one-vs-rest, subgradient)
   \[
     L=\tfrac1B\sum_{i,k}\max(0,1-t_{ik}z_{ik})+\tfrac{\lambda}2\lVert W\rVert_F^2,\qquad t_{ik}=\pm1
   \]
@@ -169,7 +169,7 @@
   \]
   \vspace{-4pt}
   \bul
-    \item Bộ học yếu: cây CART có trọng số, tạp chất Gini, dựng bằng histogram $32$ bin (tự viết bằng NumPy).
+    \item Weak learner: cây CART có trọng số, Gini impurity, dựng bằng histogram $32$ bin (tự viết bằng NumPy).
     \item Cấu hình: $393$ cây, độ sâu $10$, $\nu=0.1$, mỗi cây xét một nửa số đặc trưng.
     \item Chi phí: \fitADA\,s huấn luyện, \latADA\,ms mỗi ảnh, tệp xuất $9.2$\,MiB.
     \item Điểm số là tỉ lệ phiếu có trọng số, chưa hiệu chỉnh thành xác suất.
