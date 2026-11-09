@@ -246,6 +246,25 @@ def cmd_stack(args):
     run_stacking(data, meta, art_root=ad, out_dir=rd / "final", repeats=2 if args.smoke else 5)
 
 
+def cmd_kfold(args):
+    """Stratified K-fold evaluation of the models with the hyper-parameters chosen by `tune` (results/kfold)."""
+    from src.experiments.kfold import run_model, summarise
+
+    rd, _ad = _dirs(args)
+    folds = [int(f) for f in args.folds.split(",")] if args.folds else None
+    for m in _models(args.model):
+        run_model(m, k=args.k, only_folds=folds, results_dir=rd)
+    rows = summarise(results_dir=rd)
+    for name, r in rows.items():
+        sd = r["val_accuracy"]["std"]
+        print(
+            f"{name:<18} folds={r['n_folds_done']}/{r['k']}  held-out acc="
+            f"{100 * r['val_accuracy']['mean']:.2f}"
+            + (f" ± {100 * sd:.2f}" if sd is not None else "")
+            + f"  test acc={100 * r['test_accuracy']['mean']:.2f}"
+        )
+
+
 def cmd_compare(args):
     """CNN vs MLP table (robustness, size, speed) and the cross-dataset evaluation."""
     from src.experiments.compare import cnn_vs_mlp, cross_eval
@@ -374,6 +393,9 @@ def build_parser():
         return sp
 
     add("prepare", cmd_prepare)
+    kf = add("kfold", cmd_kfold, model=True, dataset=False)
+    kf.add_argument("--k", type=int, default=5, help="number of folds (default 5)")
+    kf.add_argument("--folds", default=None, help="only these folds, e.g. 0,1 (default: all)")
     tn = add("tune", cmd_tune, model=True, wandb=True, smoke=True)
     tn.add_argument("--light", action="store_true", help="reduced sweeps (extra datasets only)")
     tr = add("train", cmd_train, model=True, wandb=True, smoke=True)
