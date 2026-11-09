@@ -117,9 +117,7 @@ sau khi dựng lại PDF hãy ghi dấu nguồn: `python3 scripts/docs_stamp.py 
 hoặc hình đã đổi mà PDF chưa dựng lại.
 
 ## Nộp bài và quyền truy cập
-Đề bài yêu cầu repository Git **công khai** hoặc mã nén `.zip`. Repository `TranTrinhNhan1/WriteRHand` hiện ở chế độ **riêng tư** (chỉ chủ sở hữu và người được mời xem được mã nguồn);
-website, mô hình trên Hugging Face và hai PDF vẫn truy cập công khai. Nếu giữ repository riêng tư, nộp bản `.zip` sạch (không `data/`, `wandb/`, `.venv/`, `node_modules/`, `.git/`):
-`git archive --format=zip -o WriteRHand.zip HEAD`. Việc đổi chế độ hiển thị do nhóm quyết định.
+Đề bài yêu cầu repository Git **công khai** hoặc mã nén `.zip`. Repository `TranTrinhNhan1/WriteRHand` đã ở chế độ **công khai**; website, mô hình trên Hugging Face và hai PDF cũng truy cập công khai. Bản `.zip` sạch (không `data/`, `wandb/`, `.venv/`, `node_modules/`, `.git/`) tạo bằng: `git archive --format=zip -o WriteRHand.zip HEAD`.
 
 ## Cấu trúc thư mục
 ```
