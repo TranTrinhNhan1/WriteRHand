@@ -63,8 +63,9 @@ test('looking inside Softmax: the recomputed logits match the graph, and the vie
   const read = async () => {
     const t = (await panel.innerText()).replace(/\s+/g, ' ')
     const fp = /đầu vào ([0-9a-f]{8})/.exec(t)?.[1]
-    const d = /Chênh lệch tuyệt đối lớn nhất trên \d+ lớp: ([\d.]+)e[−-](\d+)/.exec(t)
-    return fp && d ? { fp, diff: Number(d[1]) * 10 ** -Number(d[2]) } : null
+    // the difference is printed as `m.me−n`, or as a plain `0` when the two computations agree exactly
+    const d = /Chênh lệch tuyệt đối lớn nhất trên \d+ lớp: (?:([\d.]+)e[−-](\d+)|(0)(?![\d.e]))/.exec(t)
+    return fp && d ? { fp, diff: d[3] !== undefined ? 0 : Number(d[1]) * 10 ** -Number(d[2]) } : null
   }
   await expect.poll(read, { timeout: 30_000 }).not.toBeNull()
   const first = (await read())!
@@ -72,11 +73,16 @@ test('looking inside Softmax: the recomputed logits match the graph, and the vie
 
   // a new input: the explorer must show the new execution, never the previous one
   await page.getByRole('button', { name: 'Vẽ số 3' }).click()
-  // while the new execution is computed the panel shows no fingerprint at all; wait for a real, different one
+  // the example is drawn stroke by stroke and the view follows every intermediate input (while an
+  // execution is computed the panel shows no fingerprint at all); wait for a different fingerprint
+  // that then stays put, i.e. the drawing is finished
   await expect
     .poll(async () => {
-      const r = await read()
-      return r !== null && r.fp !== first.fp
+      const a = await read()
+      if (a === null || a.fp === first.fp) return false
+      await page.waitForTimeout(600)
+      const b = await read()
+      return b !== null && b.fp === a.fp
     }, { timeout: 30_000 })
     .toBe(true)
   expect((await read())!.diff).toBeLessThan(1e-3)

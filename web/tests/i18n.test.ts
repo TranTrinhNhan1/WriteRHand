@@ -66,7 +66,6 @@ describe('translate', () => {
   })
 
   it('returns lists', () => {
-    expect(translateList('vi', 'about.limits.items').length).toBeGreaterThan(2)
     expect(translateList('en', 'nope' as ListKey)).toEqual([])
   })
 })

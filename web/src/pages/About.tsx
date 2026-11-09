@@ -4,16 +4,8 @@ import '../styles/about.css'
 import { useBundle } from '../engine/react'
 import { useI18n, type Key } from '../i18n'
 import { REPO_URL, hfRepoUrl, hfRevisionUrl, shortHash } from '../lib/config'
-import { date, int } from '../lib/format'
+import { int } from '../lib/format'
 import { datasetIdsOf } from '../lib/selection'
-
-function host(url: string): string {
-  try {
-    return new URL(url, window.location.href).host
-  } catch {
-    return url
-  }
-}
 
 const DATASET_TEXT: Record<string, Key> = {
   mnist: 'about.data.mnist',
@@ -23,16 +15,9 @@ const DATASET_TEXT: Record<string, Key> = {
 
 export default function About() {
   const { t, tl } = useI18n()
-  const { manifest, results, baseUrl, lock } = useBundle()
+  const { manifest, lock } = useBundle()
   const ids = datasetIdsOf(manifest)
-  const first = results[manifest.default_dataset]
   const revUrl = hfRevisionUrl(lock)
-  const generated = first?.generated
-    ? t('about.run.generated', {
-        date: date(first.generated),
-        commit: first.git?.short ? t('about.run.commit', { sha: first.git.short }) : '',
-      })
-    : ''
   const flow = tl('about.flow.steps')
 
   return (
@@ -207,31 +192,6 @@ export default function About() {
             {t('about.why.title')}
           </h2>
           <p>{t('about.why.text')}</p>
-        </section>
-
-        <section aria-labelledby="a-lim">
-          <h2 id="a-lim" className="h2">
-            {t('about.limits.title')}
-          </h2>
-          <ul className="bullets">
-            {tl('about.limits.items').map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </section>
-
-        <section aria-labelledby="a-run">
-          <h2 id="a-run" className="h2">
-            {t('about.run.title')}
-          </h2>
-          <p>{t('about.run.text', { host: host(baseUrl), generated })}</p>
-        </section>
-
-        <section aria-labelledby="a-ai">
-          <h2 id="a-ai" className="h2">
-            {t('about.ai.title')}
-          </h2>
-          <p>{t('about.ai.text')}</p>
         </section>
       </div>
     </div>

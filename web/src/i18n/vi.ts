@@ -1235,27 +1235,6 @@ export const vi: Dict = {
       title: 'Vì sao tự viết từ đầu',
       text: 'Mục đích là hiểu thuật toán, chứ không phải làm ra bộ phân loại ảnh tốt nhất. Phần fit và dự đoán của mọi bộ phân loại là do tụi mình tự viết. Thư viện chỉ xuất hiện ở vài chỗ: scikit-learn làm mốc so sánh ở trang Kết quả, tensor của PyTorch như phép tính mảng thông thường (không dùng autograd), và ONNX Runtime Web để chạy các đồ thị đã export trong trình duyệt.',
     },
-    limits: {
-      title: 'Giới hạn',
-      items: [
-        'Mỗi mô hình học trên một bộ dữ liệu gồm những ảnh 28 × 28 đơn lẻ, nằm giữa ảnh. Trang này không hề nói rằng một mô hình dùng được cho bộ dữ liệu khác.',
-        'Nét vẽ bằng chuột hoặc ngón tay trông khác chữ viết tay của MNIST, nên trên nét vẽ của bạn accuracy có thể thấp hơn điểm test ở trang Kết quả.',
-        'Mô hình chỉ có thể trả lời một trong mười lớp của nó. Không có lựa chọn “không phải lớp nào cả”: mô hình quần áo nhìn thấy một chữ số vẫn gọi tên một món đồ, và một câu trả lời tự tin chưa phải bằng chứng là nó đúng.',
-        'Ảnh Fashion-MNIST là ảnh chụp. Một hình vẽ tay chiếc giày trông chẳng giống chúng chút nào, nên trang Thử ngay có sẵn ảnh test thật.',
-        'Naive Bayes hay quá tự tin. AdaBoost cho tỉ lệ phiếu, không phải xác suất đã hiệu chỉnh.',
-        'Các tập test này đã được nghiên cứu suốt nhiều năm. Các kết quả nói được rất ít về dữ liệu khác.',
-      ],
-    },
-    run: {
-      title: 'Trang này chạy thế nào',
-      text: 'Trang là tĩnh. Mô hình được tải về từ {host} lần đầu bạn cần tới và chạy ngay trong trình duyệt bằng WebAssembly, nên nét vẽ của bạn không bao giờ bị gửi đi đâu cả. Các bảng và biểu đồ được đọc trong các tệp JSON đi kèm gói mô hình{generated}.',
-      generated: ' (tạo ngày {date}{commit})',
-      commit: ', commit {sha}',
-    },
-    ai: {
-      title: 'Phát triển có AI hỗ trợ',
-      text: 'Một phần mã nguồn được viết cùng trợ lý lập trình AI và được các tác giả xem lại.',
-    },
   },
   docs: {
     title: 'Báo cáo, slide và mã nguồn',

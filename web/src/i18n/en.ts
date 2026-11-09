@@ -1233,27 +1233,6 @@ export const en = {
       title: 'Why from scratch',
       text: 'The point was to understand the algorithms, not to build the best image classifier there is. We wrote the fitting and prediction code of every classifier ourselves. Libraries show up in a few places: scikit-learn as a reference on the Results page, PyTorch tensors as plain array arithmetic (no autograd), and ONNX Runtime Web to run the exported graphs in the browser.',
     },
-    limits: {
-      title: 'Limits',
-      items: [
-        'Each model learned from one dataset of single, centred 28 × 28 images. Nothing on this site claims that a model carries over to another dataset.',
-        'A drawing made with a mouse or a finger looks different from MNIST handwriting, so on your drawings the accuracy can be lower than the test score on the Results page.',
-        'A model can only answer with one of its ten classes. There is no “none of these” option: a clothing model shown a digit still names a garment, and a confident answer is not proof of a correct one.',
-        'Fashion-MNIST images are photos. A hand drawing of a shoe looks nothing like them, which is why the Try it page offers real test images.',
-        'Naive Bayes is often over-confident. AdaBoost gives vote shares, which are not calibrated probabilities.',
-        'These test sets have been studied for years. The results say little about other data.',
-      ],
-    },
-    run: {
-      title: 'How this page runs',
-      text: 'The site is static. The first time you need a model, it is downloaded from {host} and runs in your browser with WebAssembly, so your drawing is never sent anywhere. The tables and charts are read from JSON files that ship with the model bundle{generated}.',
-      generated: ' (generated {date}{commit})',
-      commit: ', commit {sha}',
-    },
-    ai: {
-      title: 'AI-assisted development',
-      text: 'Parts of this code were written with an AI coding assistant and reviewed by the authors.',
-    },
   },
   docs: {
     title: 'Report, slides and code',
