@@ -254,6 +254,24 @@ test('results page compares every plain model with its augmented variant, number
   await expect(page.getByText(/xoay ±30°, dịch ±2 px, co giãn 0[.,]9–1[.,]1/)).toBeVisible()
 })
 
+test('results page shows the 5-fold cross-validation of the six models after the plain / augmented comparison', async ({ page }) => {
+  await page.goto('/#/results')
+  const heading = page.getByRole('heading', { level: 2, name: 'Kiểm tra chéo 5 phần' })
+  await expect(heading).toBeVisible()
+  // placed right after the plain-vs-augmented section
+  const order = await page.locator('.rsection h2').allInnerTexts()
+  expect(order.indexOf('Kiểm tra chéo 5 phần')).toBe(order.indexOf('Thường và tăng cường') + 1)
+  const table = page.getByRole('region', { name: 'Accuracy qua 5 fold' })
+  await expect(table.locator('tbody tr')).toHaveCount(6)
+  await expect(table.getByRole('row', { name: /^CNN 98[.,]66% ± 0[.,]12 98[.,]72% ± 0[.,]09 98[.,]45–98[.,]76%$/ })).toBeVisible()
+  const plot = page.getByRole('img', { name: /Accuracy trên fold giữ lại của từng fold trong 5 fold/ })
+  await expect(plot).toBeVisible()
+  for (const m of ['naive_bayes', 'softmax', 'svm', 'mlp', 'cnn', 'adaboost']) {
+    await expect(plot.locator(`.kfdots__row[data-model="${m}"] circle.kfdots__dot`)).toHaveCount(5)
+    await expect(plot.locator(`.kfdots__row[data-model="${m}"] .kfdots__mean`)).toHaveCount(1)
+  }
+})
+
 test('at 1280 × 800 the answer of every model and variant (12 cells) is on screen together with the majority', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.getByRole('button', { name: 'Vẽ số 7' }).click()

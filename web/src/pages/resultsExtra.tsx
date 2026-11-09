@@ -8,6 +8,7 @@ import { Segmented } from '../components/Segmented'
 import { ChartFigure } from '../components/charts/ChartFigure'
 import { LineChart } from '../components/charts/LineChart'
 import type { PairSide, Pairs } from '../lib/extraModels'
+import type { KFold, KFoldModel, MeanSd } from '../lib/kfold'
 import { MODEL_ORDER, isModelKind } from '../engine/contract'
 import { useBundle } from '../engine/react'
 import { useI18n, type Key } from '../i18n'
@@ -708,6 +709,149 @@ export function PairsSection({ pairs }: { pairs: Pairs }) {
             )
           })}
         </div>
+      </ChartFigure>
+    </Section>
+  )
+}
+
+// --------------------------------------------------------------------------- k-fold cross-validation
+/** Per-fold held-out accuracy of every model (one row each) with a tick at the mean. */
+function KFoldDots({ data, label }: { data: KFold; label: string }) {
+  const { t } = useI18n()
+  const [ref, width] = useElementWidth<HTMLDivElement>()
+  const titleId = useId()
+  const all = data.models.flatMap((m) => m.folds.map((f) => f.val_accuracy))
+  const narrow = width < 520
+  // whole-point axis from a point below the lowest fold to the next tick above the highest, never past 100%
+  const step = narrow ? 5 : 2
+  const x0 = Math.floor(Math.min(...all) * 100 - 1) / 100
+  const x1 = Math.min(100, Math.ceil((Math.max(...all) * 100 + 0.5) / step) * step) / 100
+  const longest = Math.max(...data.models.map((m) => t(`model.${m.id}`).length))
+  // narrow: the model name sits above its row, so the dots get the full width
+  // EDGE: room for half of a tick label ("100%") at either end of the axis
+  const EDGE = 18
+  const LABEL = narrow ? EDGE : Math.max(120, Math.ceil(longest * 11 * 0.6) + 16)
+  const VALUE = width < 760 ? EDGE : 132
+  const ROW = narrow ? 44 : 32
+  const DOT_Y = narrow ? 28 : ROW / 2
+  const TOP = 4
+  const AXIS = 36
+  const plotW = Math.max(60, width - LABEL - VALUE)
+  const sx = (v: number) => LABEL + ((v - x0) / (x1 - x0)) * plotW
+  const bottom = TOP + data.models.length * ROW
+  const h = bottom + AXIS
+  const ticks: number[] = []
+  for (let v = Math.ceil((x0 * 100) / step) * step; v <= Math.round(x1 * 100); v += step) ticks.push(v / 100)
+  return (
+    <div ref={ref} className="kfdots">
+      {width > 0 && (
+        <svg width={width} height={h} role="img" aria-labelledby={titleId}>
+          <title id={titleId}>{label}</title>
+          {ticks.map((v) => (
+            <g key={v}>
+              <line x1={sx(v)} x2={sx(v)} y1={TOP} y2={bottom} className="grid-line" />
+              <text x={sx(v)} y={bottom + 16} textAnchor="middle" className="axis-text">
+                {pct(v, 0)}
+              </text>
+            </g>
+          ))}
+          <text x={LABEL + plotW / 2} y={h - 3} textAnchor="middle" className="axis-title">
+            {t('results.kfold.axis')}
+          </text>
+          {data.models.map((m, i) => {
+            const y = TOP + i * ROW + DOT_Y
+            const mean = sx(m.val_accuracy.mean)
+            return (
+              <g key={m.id} className="kfdots__row" data-model={m.id}>
+                <text x={narrow ? 0 : LABEL - 10} y={narrow ? y - 12 : y + 4} textAnchor={narrow ? 'start' : 'end'} className="axis-text kfdots__name">
+                  {t(`model.${m.id}`)}
+                </text>
+                <line x1={LABEL} x2={LABEL + plotW} y1={y} y2={y} className="kfdots__track" />
+                {m.folds.map((f) => (
+                  <circle key={f.fold} cx={sx(f.val_accuracy)} cy={y} r={4.5} className="kfdots__dot" />
+                ))}
+                <line x1={mean} x2={mean} y1={y - 9} y2={y + 9} className="kfdots__mean" />
+                {VALUE > EDGE && (
+                  <text x={width - 4} y={y + 4} textAnchor="end" className="axis-text num">
+                    {`${pct(m.val_accuracy.mean, 2)} ± ${(m.val_accuracy.std * 100).toFixed(2)}`}
+                  </text>
+                )}
+              </g>
+            )
+          })}
+        </svg>
+      )}
+    </div>
+  )
+}
+
+export function KFoldSection({ data }: { data: KFold }) {
+  const { t } = useI18n()
+  const { k, models } = data
+  const bestVal = Math.max(...models.map((m) => m.val_accuracy.mean))
+  const bestTest = Math.max(...models.map((m) => m.test_accuracy.mean))
+  const meanSd = (v: MeanSd) => (
+    <>
+      {pct(v.mean, 2)}
+      <span className="td-sub">{`± ${(v.std * 100).toFixed(2)}`}</span>
+    </>
+  )
+  const range = (m: KFoldModel) => {
+    const v = m.folds.map((f) => f.val_accuracy)
+    return `${(Math.min(...v) * 100).toFixed(2)}–${pct(Math.max(...v), 2)}`
+  }
+  const folds = models[0].folds.map((f) => f.fold)
+  return (
+    <Section id="r-kfold" title={t('results.kfold.title', { k })} intro={<p>{t('results.kfold.intro', { k, pool: int(data.n_pool) })}</p>}>
+      <div className="table-wrap" role="region" aria-label={t('results.kfold.region', { k })} tabIndex={0}>
+        <table className="table num kfold-table">
+          <caption className="visually-hidden">{t('results.kfold.region', { k })}</caption>
+          <thead>
+            <tr>
+              <th scope="col" className="is-left">
+                {t('results.metrics.model')}
+              </th>
+              <th scope="col">{t('results.kfold.colVal')}</th>
+              <th scope="col">{t('results.kfold.colTest')}</th>
+              <th scope="col">{t('results.kfold.colRange')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {models.map((m) => (
+              <tr key={m.id}>
+                <th scope="row" className="is-left">
+                  {t(`model.${m.id}`)}
+                </th>
+                <td className={m.val_accuracy.mean === bestVal ? 'is-best' : undefined}>{meanSd(m.val_accuracy)}</td>
+                <td className={m.test_accuracy.mean === bestTest ? 'is-best' : undefined}>{meanSd(m.test_accuracy)}</td>
+                <td>{range(m)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <ChartFigure
+        title={t('results.kfold.chartTitle')}
+        table={{
+          columns: [t('results.metrics.model'), ...folds.map((n) => t('results.kfold.foldN', { n })), t('results.kfold.mean')],
+          rows: models.map((m) => [t(`model.${m.id}`), ...m.folds.map((f) => pct(f.val_accuracy, 2)), pct(m.val_accuracy.mean, 2)]),
+        }}
+      >
+        <ul className="legend" aria-label={t('common.legend')}>
+          <li>
+            <svg width="14" height="12" viewBox="0 0 14 12" aria-hidden="true">
+              <circle cx="7" cy="6" r="4.5" className="kfdots__dot" />
+            </svg>
+            {t('results.kfold.fold')}
+          </li>
+          <li>
+            <svg width="14" height="12" viewBox="0 0 14 12" aria-hidden="true">
+              <line x1="7" x2="7" y1="0" y2="12" className="kfdots__mean" />
+            </svg>
+            {t('results.kfold.mean')}
+          </li>
+        </ul>
+        <KFoldDots data={data} label={t('results.kfold.aria', { k })} />
       </ChartFigure>
     </Section>
   )

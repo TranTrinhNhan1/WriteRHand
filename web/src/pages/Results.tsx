@@ -15,7 +15,8 @@ import { curvePanel, historyPanels, isValidMatrix, splitOf, sweepPanels, type Se
 import { datasetIdsOf } from '../lib/selection'
 import { EXTRA_ORDER, SPLIT_IDS, type ResultId, type ResultModel, type SplitId } from '../lib/types'
 import { finite } from '../lib/scale'
-import { AllDatasets, AugmentationSection, CnnVsMlpSection, CrossEvalSection, PairsSection } from './resultsExtra'
+import { AllDatasets, AugmentationSection, CnnVsMlpSection, CrossEvalSection, KFoldSection, PairsSection } from './resultsExtra'
+import { KFOLD_DATASET } from '../lib/kfold'
 
 const SPLIT_COLOR: Record<SplitId, string> = { train: 'var(--c-train)', val: 'var(--c-val)', test: 'var(--c-test)' }
 
@@ -256,6 +257,8 @@ function DatasetResults({ dataset }: { dataset: string }) {
       </Section>
 
       {extra?.pairs && <PairsSection pairs={extra.pairs} />}
+
+      {dataset === KFOLD_DATASET && bundle.kfold && <KFoldSection data={bundle.kfold} />}
 
       <Section id="r-time" title={t('results.time.title')} intro={<p>{t('results.time.intro')}</p>}>
         <div className="table-wrap" role="region" aria-label={t('results.time.region')} tabIndex={0}>

@@ -790,6 +790,53 @@
   }
 }
 
+/* k-fold cross-validation ------------------------------------------------------- */
+.kfdots {
+  width: 100%;
+  min-width: 0;
+}
+
+.kfdots svg {
+  overflow: visible;
+}
+
+.kfdots .grid-line {
+  stroke: var(--grid);
+  stroke-width: 1;
+}
+
+.kfdots .axis-text {
+  font: 400 11px var(--mono);
+  fill: var(--ink-2);
+}
+
+.kfdots .axis-title {
+  font: 500 11px var(--sans);
+  fill: var(--ink-2);
+}
+
+.kfdots .kfdots__name {
+  fill: var(--ink);
+}
+
+.kfdots__track {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.kfdots__dot {
+  fill: var(--c-val);
+  fill-opacity: 0.45;
+  stroke: var(--c-val);
+  stroke-width: 1.5;
+}
+
+.kfdots__mean {
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
 /* plain vs augmented ----------------------------------------------------------- */
 .pairs-charts {
   display: grid;

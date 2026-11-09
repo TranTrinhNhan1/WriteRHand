@@ -5,6 +5,7 @@ import { parseBundleManifest, ContractError, type BundleManifest } from './contr
 import { hfResolveUrl, MODEL_LOCK, type ModelLock } from './lock'
 import type { Results } from '../lib/types'
 import { parseExtraModels, type ExtraResults } from '../lib/extraModels'
+import { parseKFold, type KFold } from '../lib/kfold'
 
 export interface Booted {
   manifest: BundleManifest
@@ -12,6 +13,8 @@ export interface Booted {
   results: Record<string, Results>
   /** measured models that are not in the bundle (results pages only), per dataset */
   extra: Record<string, ExtraResults>
+  /** k-fold cross-validation of the six models on MNIST (results page only); null when the file is missing or invalid */
+  kfold: KFold | null
   /** where model files are fetched from: the pinned Hugging Face revision, or a local bundle in development */
   baseUrl: string
   lock: ModelLock | null
@@ -75,5 +78,11 @@ export async function loadBundle(): Promise<Booted> {
   } catch {
     extra = {}
   }
-  return { manifest, results, extra, baseUrl, lock }
+  let kfold: KFold | null = null
+  try {
+    kfold = parseKFold(JSON.parse(new TextDecoder().decode(await getBuf(`${dataBase}/kfold.json`, true))))
+  } catch {
+    kfold = null
+  }
+  return { manifest, results, extra, kfold, baseUrl, lock }
 }

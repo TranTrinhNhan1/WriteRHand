@@ -32,6 +32,10 @@ data/
 
 # Hugging Face / W&B / local artifacts
 artifacts/
+# the same paths as symlinks in a git worktree (a trailing slash does not match a symlink)
+/artifacts
+/web/node_modules
+/web/public/bundle
 wandb/
 .ruff_cache/
 .pytest_cache/
