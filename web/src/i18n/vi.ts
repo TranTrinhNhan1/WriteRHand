@@ -750,10 +750,10 @@ export const vi: Dict = {
       none: 'Không có confusion matrix nào được ghi lại cho mô hình và tập này.',
     },
     curves: {
-      title: 'Đường cong học',
+      title: 'Learning curve',
       intro:
         'Mô hình thay đổi thế nào trong lúc huấn luyện. Nếu validation tệ dần trong khi train vẫn tốt lên, mô hình đang học thuộc lòng các ví dụ. Hiện tượng đó gọi là overfitting.',
-      none: '{name} không có vòng huấn luyện, nên không có đường cong nào để vẽ.',
+      none: '{name} không có vòng huấn luyện, nên không có learning curve nào để vẽ.',
       epoch: 'Epoch',
       round: 'Vòng boosting',
       earlyStop: 'Early stopping dừng huấn luyện ở epoch {stopped} và giữ lại trọng số của epoch {best}.',
