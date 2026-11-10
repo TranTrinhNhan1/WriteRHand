@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Section } from '../components/Section'
+import { Fragment, useMemo, useState, type ReactNode } from 'react'
+import { Section, SectionNumbers } from '../components/Section'
 import '../styles/results.css'
 import { Segmented } from '../components/Segmented'
 import { BarChart } from '../components/charts/BarChart'
@@ -100,6 +100,64 @@ function MetricsTable({ models, split }: { models: ResultModel[]; split: SplitId
 
 const ALL = '__all'
 
+/** The four parts of a dataset's results, in presentation order. */
+const GROUPS = ['main', 'training', 'cost', 'advanced'] as const
+type GroupId = (typeof GROUPS)[number]
+
+interface ResultSection {
+  id: string
+  group: GroupId
+  title: string
+  node: ReactNode
+}
+
+/** Numbered links to the sections present on this tab, grouped. */
+function SectionIndex({ sections, numbers }: { sections: ResultSection[]; numbers: Record<string, number> }) {
+  const { t } = useI18n()
+  const jump = (id: string) => {
+    const el = document.getElementById(id)
+    if (!el) return
+    // the site header is sticky and taller on narrow screens (two rows): land the heading just below it
+    const header = document.querySelector('.site-header')?.getBoundingClientRect().height ?? 0
+    const top = el.getBoundingClientRect().top + window.scrollY - header - 16
+    window.scrollTo({ top, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+    el.focus({ preventScroll: true })
+  }
+  return (
+    <nav className="rindex" aria-label={t('results.index.label')}>
+      {GROUPS.map((g) => {
+        const items = sections.filter((s) => s.group === g)
+        if (!items.length) return null
+        return (
+          <div key={g} className="rindex__group">
+            <p className="rindex__label" id={`rindex-${g}`}>
+              {t(`results.index.${g}`)}
+            </p>
+            <ol aria-labelledby={`rindex-${g}`}>
+              {items.map((s) => (
+                <li key={s.id}>
+                  <a
+                    href={`#${s.id}`}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      jump(s.id)
+                    }}
+                  >
+                    <span className="rindex__num" aria-hidden="true">
+                      {numbers[s.id]}
+                    </span>
+                    {s.title}
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )
+      })}
+    </nav>
+  )
+}
+
 export default function Results() {
   const { t } = useI18n()
   const { manifest } = useBundle()
@@ -191,6 +249,422 @@ function DatasetResults({ dataset }: { dataset: string }) {
     return <p className="caption rsection">{t('results.noData', { title: entry.title })}</p>
   }
 
+  const sections: (ResultSection | false | null | undefined)[] = [
+    {
+      id: 'r-metrics',
+      group: 'main',
+      title: t('results.metrics.title'),
+      node: (
+          <Section
+            id="r-metrics"
+            title={t('results.metrics.title')}
+            intro={
+              <>
+                <p>{t('results.metrics.intro')}</p>
+                <Segmented legend={t('split.label')} value={split} onChange={setSplit} options={splitOptions} />
+              </>
+            }
+          >
+            <MetricsTable models={models} split={split} />
+            <div className="chart-pair">
+              <ChartFigure title={t('results.metrics.accBy')} caption={t('results.metrics.accByNote')} legend={legendOf()} table={tableOf(accuracyRows)}>
+                <BarChart
+                  rows={accuracyRows}
+                  series={series}
+                  scale="linear"
+                  min={0}
+                  max={1}
+                  axisLabel={t('results.metrics.accAxis')}
+                  format={(v) => pct(v, 2)}
+                  ariaLabel={t('results.metrics.accAria')}
+                />
+              </ChartFigure>
+              <ChartFigure title={t('results.metrics.f1By')} legend={legendOf()} table={tableOf(f1Rows)}>
+                <BarChart
+                  rows={f1Rows}
+                  series={series}
+                  scale="linear"
+                  min={0}
+                  max={1}
+                  axisLabel={t('results.metrics.f1Axis')}
+                  format={(v) => num(v, 4)}
+                  ariaLabel={t('results.metrics.f1Aria')}
+                />
+              </ChartFigure>
+            </div>
+          </Section>
+      ),
+    },
+    dataset === KFOLD_DATASET && bundle.kfold && { id: 'r-kfold', group: 'main', title: t('results.kfold.title', { k: bundle.kfold.k }), node: <KFoldSection data={bundle.kfold} /> },
+    {
+      id: 'r-cm',
+      group: 'main',
+      title: t('results.cm.title'),
+      node: (
+          <Section
+            id="r-cm"
+            title={t('results.cm.title')}
+            intro={
+              <>
+                <Segmented legend={t('results.cm.model')} value={cmModel} onChange={setCmModel} options={modelOptions} />
+                <Segmented legend={t('split.label')} value={cmSplit} onChange={setCmSplit} options={splitOptions} />
+              </>
+            }
+          >
+            {cm && isValidMatrix(cmMatrix) ? (
+              <ConfusionMatrix matrix={cmMatrix} classes={classes} name={t('cm.name', { model: modelName(cm.id), split: t(`split.${cmSplit}`) })} />
+            ) : (
+              <p className="caption">{t('results.cm.none')}</p>
+            )}
+          </Section>
+      ),
+    },
+    {
+      id: 'r-curves',
+      group: 'training',
+      title: t('results.curves.title'),
+      node: (
+          <Section
+            id="r-curves"
+            title={t('results.curves.title')}
+            intro={
+              <>
+                <p>{t('results.curves.intro')}</p>
+                <Segmented legend={t('results.cm.model')} value={curveModel} onChange={setCurveModel} options={modelOptions} />
+              </>
+            }
+          >
+            {panels.length === 0 ? (
+              <p className="caption">{t('results.curves.none', { name: modelName(curveModel) })}</p>
+            ) : (
+              <div className="chart-pair">
+                {panels.map((p) => {
+                  const n = Math.max(...p.series.map((s) => s.values.length))
+                  const lines: LineSeries[] = p.series.map((s) => ({
+                    key: s.key,
+                    label: t(s.labelKey),
+                    ...ROLE_STYLE[s.role],
+                    points: s.values.map((y, i) => ({ x: i + 1, y })),
+                  }))
+                  const marks: { x: number; label: string }[] = []
+                  if (curveModelData?.best_epoch && p.id !== 'alpha') marks.push({ x: curveModelData.best_epoch, label: t('results.curves.bestEpoch') })
+                  const fmt = p.format === 'pct' ? (v: number) => pct(v, 1) : (v: number) => num(v, 3)
+                  const xLabel = curveModel === 'adaboost' ? t('results.curves.round') : t('results.curves.epoch')
+                  const title = t(p.titleKey)
+                  return (
+                    <ChartFigure
+                      key={p.id}
+                      title={title}
+                      legend={lines.map((l) => ({ label: l.label, color: l.color, marker: l.marker, dashed: l.dashed }))}
+                      caption={
+                        p.id === 'loss' && curveModelData?.stopped_epoch
+                          ? t('results.curves.earlyStop', {
+                              stopped: curveModelData.stopped_epoch,
+                              best: curveModelData.best_epoch ?? curveModelData.stopped_epoch,
+                            })
+                          : undefined
+                      }
+                      table={{
+                        columns: [xLabel, ...lines.map((l) => l.label)],
+                        rows: Array.from({ length: n }, (_, i) => [i + 1, ...p.series.map((s) => (finite(s.values[i]) ? fmt(s.values[i]) : '\u2013'))]),
+                      }}
+                    >
+                      <LineChart
+                        series={lines}
+                        xLabel={xLabel}
+                        yLabel={t(p.yKey)}
+                        yFormat={fmt}
+                        xFormat={(v) => String(v)}
+                        marks={marks}
+                        ariaLabel={t('results.curves.aria', { title, name: modelName(curveModel) })}
+                      />
+                    </ChartFigure>
+                  )
+                })}
+              </div>
+            )}
+          </Section>
+      ),
+    },
+    {
+      id: 'r-tuning',
+      group: 'training',
+      title: t('results.tuning.title'),
+      node: (
+          <Section
+            id="r-tuning"
+            title={t('results.tuning.title')}
+            intro={
+              <>
+                <p>{t('results.tuning.intro')}</p>
+                <Segmented legend={t('results.cm.model')} value={tuneModel} onChange={setTuneModel} options={modelOptions} />
+              </>
+            }
+          >
+            {tuning?.best_params && (
+              <div className="chosen">
+                <p className="label">
+                  {t('results.tuning.chosenTitle')}
+                  {finite(tuning.n_trials) ? <span className="caption"> · {t('results.tuning.trials', { n: tuning.n_trials! })}</span> : null}
+                </p>
+                <dl className="params">
+                  {Object.entries(tuning.best_params).map(([k, v]) => (
+                    <div key={k}>
+                      <dt>{paramName(k)}</dt>
+                      <dd className="num">{paramValue(v)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            )}
+            {sweeps.length === 0 && !curve ? (
+              <p className="caption">{t('results.tuning.none')}</p>
+            ) : (
+              <div className="chart-pair">
+                {sweeps.map((sw) => {
+                  const train = sw.points.filter((p) => finite(p.train)).map((p) => ({ x: p.x, y: p.train! }))
+                  const val = sw.points.filter((p) => finite(p.val)).map((p) => ({ x: p.x, y: p.val! }))
+                  const lines: LineSeries[] = [
+                    { key: 'train', label: t('results.tuning.trainAcc'), ...ROLE_STYLE.train, points: train },
+                    { key: 'val', label: t('results.tuning.valAcc'), ...ROLE_STYLE.val, points: val },
+                  ]
+                  const cats = sw.kind === 'categorical' ? sw.points.map((p) => p.label) : undefined
+                  const pname = paramName(sw.param)
+                  return (
+                    <ChartFigure
+                      key={sw.param}
+                      title={t('results.tuning.accAgainst', { param: pname })}
+                      caption={[sw.chosen ? t('results.tuning.chosen', { value: sw.chosen.label }) : '', tuneModel === 'stacking' ? t('results.extra.stackCv') : ''].filter(Boolean).join(' ') || undefined}
+                      legend={lines.map((l) => ({ label: l.label, color: l.color, marker: l.marker }))}
+                      table={{
+                        columns: [pname, t('results.tuning.trainAcc'), t('results.tuning.valAcc')],
+                        rows: sw.points.map((p) => [p.label, pct(p.train, 2), pct(p.val, 2)]),
+                      }}
+                    >
+                      <LineChart
+                        series={lines}
+                        xLabel={pname}
+                        yLabel={t('results.curves.panel.yAcc')}
+                        xScale={sw.log ? 'log' : 'linear'}
+                        xCategories={cats}
+                        xFormat={cats ? undefined : (v) => paramValue(v)}
+                        yFormat={(v) => pct(v, 1)}
+                        marks={sw.chosen ? [{ x: sw.chosen.x, label: t('results.tuning.mark') }] : []}
+                        ariaLabel={t('results.tuning.aria', { param: pname, name: modelName(tuneModel) })}
+                      />
+                    </ChartFigure>
+                  )
+                })}
+                {curve && (
+                  <ChartFigure
+                    title={t('results.tuning.accAgainst', { param: paramName(curve.param) })}
+                    caption={curve.chosen ? t('results.tuning.chosen', { value: curve.chosen }) : undefined}
+                    legend={[
+                      ...(curve.train.length ? [{ label: t('results.tuning.trainAcc'), color: ROLE_STYLE.train.color, marker: ROLE_STYLE.train.marker }] : []),
+                      { label: t('results.tuning.valAcc'), color: ROLE_STYLE.val.color, marker: ROLE_STYLE.val.marker },
+                    ]}
+                    table={{
+                      columns: [paramName(curve.param), t('results.tuning.trainAcc'), t('results.tuning.valAcc')],
+                      rows: curve.val.map((v, i) => [i + 1, pct(curve.train[i], 2), pct(v, 2)]),
+                    }}
+                  >
+                    <LineChart
+                      series={[
+                        ...(curve.train.length
+                          ? [{ key: 'train', label: t('results.tuning.trainAcc'), ...ROLE_STYLE.train, points: curve.train.map((y, i) => ({ x: i + 1, y })) }]
+                          : []),
+                        { key: 'val', label: t('results.tuning.valAcc'), ...ROLE_STYLE.val, points: curve.val.map((y, i) => ({ x: i + 1, y })) },
+                      ]}
+                      xLabel={paramName(curve.param)}
+                      yLabel={t('results.curves.panel.yAcc')}
+                      xFormat={(v) => String(v)}
+                      yFormat={(v) => pct(v, 1)}
+                      marks={curve.chosen ? [{ x: curve.chosen, label: t('results.tuning.mark') }] : []}
+                      ariaLabel={t('results.tuning.ariaPlain', { param: paramName(curve.param) })}
+                    />
+                  </ChartFigure>
+                )}
+              </div>
+            )}
+          </Section>
+      ),
+    },
+    {
+      id: 'r-time',
+      group: 'cost',
+      title: t('results.time.title'),
+      node: (
+          <Section id="r-time" title={t('results.time.title')} intro={<p>{t('results.time.intro')}</p>}>
+            <div className="table-wrap" role="region" aria-label={t('results.time.region')} tabIndex={0}>
+              <table className="table num">
+                <thead>
+                  <tr>
+                    <th scope="col" className="is-left">
+                      {t('results.time.model')}
+                    </th>
+                    <th scope="col">{t('results.time.training')}</th>
+                    <th scope="col">{nTest ? t('results.time.predictN', { n: int(nTest) }) : t('results.time.predictTest')}</th>
+                    <th scope="col">{t('results.time.perImage')}</th>
+                    <th scope="col">{t('results.time.oneImage')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {models.map((m) => {
+                    const tm = splitOf(m, 'test')
+                    return (
+                      <tr key={m.id}>
+                        <th scope="row" className="is-left">
+                          <ModelName m={m} mark={m.stacking ? '‡' : undefined} />
+                        </th>
+                        <td>{seconds(m.train_time_sec)}</td>
+                        <td>{seconds(tm?.predict_time_sec)}</td>
+                        <td>{ms(tm?.predict_time_ms_per_sample)}</td>
+                        <td>{ms(m.latency_ms_single_sample)}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {stack?.stacking && (
+              <p className="caption table-note">
+                ‡ {t('results.extra.stackCost', { base: seconds(stack.stacking.base_fit_sec), meta: seconds(stack.stacking.meta_fit_sec) })}
+              </p>
+            )}
+            <p className="caption">
+              {[
+                hw?.cpu ?? t('results.time.noCpu'),
+                hw?.logical_cores ? t('results.facts.cores', { n: hw.logical_cores }) : '',
+                hw?.torch_threads ? t('results.time.threads', { n: hw.torch_threads }) : '',
+                hw?.python ? t('results.time.py', { v: hw.python }) : '',
+                hw?.numpy ? t('results.time.np', { v: hw.numpy }) : '',
+                hw?.torch ? t('results.time.torch', { v: hw.torch }) : '',
+              ]
+                .filter(Boolean)
+                .join(', ')}
+              .
+            </p>
+            <div className="chart-triple">
+              <ChartFigure
+                title={t('results.time.trainTitle')}
+                caption={t('results.time.logScale')}
+                table={{ columns: [t('results.time.model'), t('results.time.colSeconds')], rows: trainTimes.map((r) => [r.label, unit(r.values[0])]) }}
+              >
+                <BarChart
+                  rows={trainTimes}
+                  series={[{ label: t('results.time.series.train'), color: 'var(--c-train)' }]}
+                  scale="log"
+                  axisLabel={t('results.time.seconds')}
+                  format={seconds}
+                  ariaLabel={t('results.time.trainAria')}
+                />
+              </ChartFigure>
+              <ChartFigure
+                title={nTest ? t('results.time.predictTitle', { n: int(nTest) }) : t('results.time.predictTitleTest')}
+                caption={t('results.time.logScale')}
+                table={{ columns: [t('results.time.model'), t('results.time.colMs')], rows: batchTimes.map((r) => [r.label, unit(r.values[0])]) }}
+              >
+                <BarChart
+                  rows={batchTimes}
+                  series={[{ label: t('results.time.series.predict'), color: 'var(--c-val)' }]}
+                  scale="log"
+                  axisLabel={t('results.time.milliseconds')}
+                  format={(v) => ms(v)}
+                  ariaLabel={t('results.time.predictAria')}
+                />
+              </ChartFigure>
+              <ChartFigure
+                title={t('results.time.oneTitle')}
+                caption={t('results.time.logScale')}
+                table={{ columns: [t('results.time.model'), t('results.time.colMs')], rows: latency.map((r) => [r.label, unit(r.values[0])]) }}
+              >
+                <BarChart
+                  rows={latency}
+                  series={[{ label: t('results.time.series.latency'), color: 'var(--c-test)' }]}
+                  scale="log"
+                  axisLabel={t('results.time.milliseconds')}
+                  format={(v) => ms(v)}
+                  ariaLabel={t('results.time.oneAria')}
+                />
+              </ChartFigure>
+            </div>
+          </Section>
+      ),
+    },
+    {
+      id: 'r-sk',
+      group: 'cost',
+      title: t('results.sk.title'),
+      node: (
+          <Section id="r-sk" title={t('results.sk.title')} intro={<p>{t('results.sk.intro')}</p>}>
+            {sk.length === 0 ? (
+              <p className="caption">{t('results.sk.none')}</p>
+            ) : (
+              <div className="table-wrap" role="region" aria-label={t('results.sk.region')} tabIndex={0}>
+                <table className="table num table--sticky">
+                  <caption className="visually-hidden">{t('results.sk.caption')}</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col" rowSpan={2} className="is-left">
+                        {t('results.time.model')}
+                      </th>
+                      <th scope="col" rowSpan={2} className="is-left">
+                        {t('results.sk.estimator')}
+                      </th>
+                      <th scope="colgroup" colSpan={2} className="is-group">
+                        {t('results.sk.accuracy')}
+                      </th>
+                      <th scope="colgroup" colSpan={2} className="is-group">
+                        {t('results.sk.f1')}
+                      </th>
+                      <th scope="colgroup" colSpan={2} className="is-group">
+                        {t('results.sk.training')}
+                      </th>
+                    </tr>
+                    <tr>
+                      {[0, 1, 2].flatMap((g) =>
+                        [t('results.sk.ours'), t('results.sk.theirs')].map((h, i) => (
+                          <th key={`${g}-${i}`} scope="col">
+                            {h}
+                          </th>
+                        )),
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sk.map((m) => {
+                      const s = m.sklearn!
+                      const tm = splitOf(m, 'test')
+                      return (
+                        <tr key={m.id}>
+                          <th scope="row" className="is-left">
+                            <ModelName m={m} />
+                          </th>
+                          <td className="is-left">{s.class ?? '\u2013'}</td>
+                          <td>{pct(tm?.accuracy, 2)}</td>
+                          <td>{pct(s.splits?.test?.accuracy, 2)}</td>
+                          <td>{num(tm?.f1_macro, 4)}</td>
+                          <td>{num(s.splits?.test?.f1_macro, 4)}</td>
+                          <td>{seconds(m.train_time_sec)}</td>
+                          <td>{seconds(s.train_time_sec)}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Section>
+      ),
+    },
+    results.cnn_vs_mlp && { id: 'r-cvm', group: 'advanced', title: t('results.cvm.title'), node: <CnnVsMlpSection data={results.cnn_vs_mlp} /> },
+    extra?.pairs && { id: 'r-pairs', group: 'advanced', title: t('results.pairs.title'), node: <PairsSection pairs={extra.pairs} /> },
+    results.augmentation && { id: 'r-aug', group: 'advanced', title: t('results.aug.title'), node: <AugmentationSection studies={results.augmentation} /> },
+    results.cross_eval && { id: 'r-cross', group: 'advanced', title: t('results.cross.title'), node: <CrossEvalSection dataset={dataset} entries={results.cross_eval} /> },
+  ]
+  const present = sections.filter((s): s is ResultSection => !!s)
+  const numbers = Object.fromEntries(present.map((s, i) => [s.id, i + 1]))
+
   return (
     <>
       <div className="results__intro">
@@ -217,383 +691,13 @@ function DatasetResults({ dataset }: { dataset: string }) {
         </dl>
       </div>
 
-      <Section
-        id="r-metrics"
-        title={t('results.metrics.title')}
-        intro={
-          <>
-            <p>{t('results.metrics.intro')}</p>
-            <Segmented legend={t('split.label')} value={split} onChange={setSplit} options={splitOptions} />
-          </>
-        }
-      >
-        <MetricsTable models={models} split={split} />
-        <div className="chart-pair">
-          <ChartFigure title={t('results.metrics.accBy')} caption={t('results.metrics.accByNote')} legend={legendOf()} table={tableOf(accuracyRows)}>
-            <BarChart
-              rows={accuracyRows}
-              series={series}
-              scale="linear"
-              min={0}
-              max={1}
-              axisLabel={t('results.metrics.accAxis')}
-              format={(v) => pct(v, 2)}
-              ariaLabel={t('results.metrics.accAria')}
-            />
-          </ChartFigure>
-          <ChartFigure title={t('results.metrics.f1By')} legend={legendOf()} table={tableOf(f1Rows)}>
-            <BarChart
-              rows={f1Rows}
-              series={series}
-              scale="linear"
-              min={0}
-              max={1}
-              axisLabel={t('results.metrics.f1Axis')}
-              format={(v) => num(v, 4)}
-              ariaLabel={t('results.metrics.f1Aria')}
-            />
-          </ChartFigure>
-        </div>
-      </Section>
+      <SectionIndex sections={present} numbers={numbers} />
 
-      {extra?.pairs && <PairsSection pairs={extra.pairs} />}
-
-      {dataset === KFOLD_DATASET && bundle.kfold && <KFoldSection data={bundle.kfold} />}
-
-      <Section id="r-time" title={t('results.time.title')} intro={<p>{t('results.time.intro')}</p>}>
-        <div className="table-wrap" role="region" aria-label={t('results.time.region')} tabIndex={0}>
-          <table className="table num">
-            <thead>
-              <tr>
-                <th scope="col" className="is-left">
-                  {t('results.time.model')}
-                </th>
-                <th scope="col">{t('results.time.training')}</th>
-                <th scope="col">{nTest ? t('results.time.predictN', { n: int(nTest) }) : t('results.time.predictTest')}</th>
-                <th scope="col">{t('results.time.perImage')}</th>
-                <th scope="col">{t('results.time.oneImage')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {models.map((m) => {
-                const tm = splitOf(m, 'test')
-                return (
-                  <tr key={m.id}>
-                    <th scope="row" className="is-left">
-                      <ModelName m={m} mark={m.stacking ? '‡' : undefined} />
-                    </th>
-                    <td>{seconds(m.train_time_sec)}</td>
-                    <td>{seconds(tm?.predict_time_sec)}</td>
-                    <td>{ms(tm?.predict_time_ms_per_sample)}</td>
-                    <td>{ms(m.latency_ms_single_sample)}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-        {stack?.stacking && (
-          <p className="caption table-note">
-            ‡ {t('results.extra.stackCost', { base: seconds(stack.stacking.base_fit_sec), meta: seconds(stack.stacking.meta_fit_sec) })}
-          </p>
-        )}
-        <p className="caption">
-          {[
-            hw?.cpu ?? t('results.time.noCpu'),
-            hw?.logical_cores ? t('results.facts.cores', { n: hw.logical_cores }) : '',
-            hw?.torch_threads ? t('results.time.threads', { n: hw.torch_threads }) : '',
-            hw?.python ? t('results.time.py', { v: hw.python }) : '',
-            hw?.numpy ? t('results.time.np', { v: hw.numpy }) : '',
-            hw?.torch ? t('results.time.torch', { v: hw.torch }) : '',
-          ]
-            .filter(Boolean)
-            .join(', ')}
-          .
-        </p>
-        <div className="chart-triple">
-          <ChartFigure
-            title={t('results.time.trainTitle')}
-            caption={t('results.time.logScale')}
-            table={{ columns: [t('results.time.model'), t('results.time.colSeconds')], rows: trainTimes.map((r) => [r.label, unit(r.values[0])]) }}
-          >
-            <BarChart
-              rows={trainTimes}
-              series={[{ label: t('results.time.series.train'), color: 'var(--c-train)' }]}
-              scale="log"
-              axisLabel={t('results.time.seconds')}
-              format={seconds}
-              ariaLabel={t('results.time.trainAria')}
-            />
-          </ChartFigure>
-          <ChartFigure
-            title={nTest ? t('results.time.predictTitle', { n: int(nTest) }) : t('results.time.predictTitleTest')}
-            caption={t('results.time.logScale')}
-            table={{ columns: [t('results.time.model'), t('results.time.colMs')], rows: batchTimes.map((r) => [r.label, unit(r.values[0])]) }}
-          >
-            <BarChart
-              rows={batchTimes}
-              series={[{ label: t('results.time.series.predict'), color: 'var(--c-val)' }]}
-              scale="log"
-              axisLabel={t('results.time.milliseconds')}
-              format={(v) => ms(v)}
-              ariaLabel={t('results.time.predictAria')}
-            />
-          </ChartFigure>
-          <ChartFigure
-            title={t('results.time.oneTitle')}
-            caption={t('results.time.logScale')}
-            table={{ columns: [t('results.time.model'), t('results.time.colMs')], rows: latency.map((r) => [r.label, unit(r.values[0])]) }}
-          >
-            <BarChart
-              rows={latency}
-              series={[{ label: t('results.time.series.latency'), color: 'var(--c-test)' }]}
-              scale="log"
-              axisLabel={t('results.time.milliseconds')}
-              format={(v) => ms(v)}
-              ariaLabel={t('results.time.oneAria')}
-            />
-          </ChartFigure>
-        </div>
-      </Section>
-
-      <Section
-        id="r-cm"
-        title={t('results.cm.title')}
-        intro={
-          <>
-            <Segmented legend={t('results.cm.model')} value={cmModel} onChange={setCmModel} options={modelOptions} />
-            <Segmented legend={t('split.label')} value={cmSplit} onChange={setCmSplit} options={splitOptions} />
-          </>
-        }
-      >
-        {cm && isValidMatrix(cmMatrix) ? (
-          <ConfusionMatrix matrix={cmMatrix} classes={classes} name={t('cm.name', { model: modelName(cm.id), split: t(`split.${cmSplit}`) })} />
-        ) : (
-          <p className="caption">{t('results.cm.none')}</p>
-        )}
-      </Section>
-
-      <Section
-        id="r-curves"
-        title={t('results.curves.title')}
-        intro={
-          <>
-            <p>{t('results.curves.intro')}</p>
-            <Segmented legend={t('results.cm.model')} value={curveModel} onChange={setCurveModel} options={modelOptions} />
-          </>
-        }
-      >
-        {panels.length === 0 ? (
-          <p className="caption">{t('results.curves.none', { name: modelName(curveModel) })}</p>
-        ) : (
-          <div className="chart-pair">
-            {panels.map((p) => {
-              const n = Math.max(...p.series.map((s) => s.values.length))
-              const lines: LineSeries[] = p.series.map((s) => ({
-                key: s.key,
-                label: t(s.labelKey),
-                ...ROLE_STYLE[s.role],
-                points: s.values.map((y, i) => ({ x: i + 1, y })),
-              }))
-              const marks: { x: number; label: string }[] = []
-              if (curveModelData?.best_epoch && p.id !== 'alpha') marks.push({ x: curveModelData.best_epoch, label: t('results.curves.bestEpoch') })
-              const fmt = p.format === 'pct' ? (v: number) => pct(v, 1) : (v: number) => num(v, 3)
-              const xLabel = curveModel === 'adaboost' ? t('results.curves.round') : t('results.curves.epoch')
-              const title = t(p.titleKey)
-              return (
-                <ChartFigure
-                  key={p.id}
-                  title={title}
-                  legend={lines.map((l) => ({ label: l.label, color: l.color, marker: l.marker, dashed: l.dashed }))}
-                  caption={
-                    p.id === 'loss' && curveModelData?.stopped_epoch
-                      ? t('results.curves.earlyStop', {
-                          stopped: curveModelData.stopped_epoch,
-                          best: curveModelData.best_epoch ?? curveModelData.stopped_epoch,
-                        })
-                      : undefined
-                  }
-                  table={{
-                    columns: [xLabel, ...lines.map((l) => l.label)],
-                    rows: Array.from({ length: n }, (_, i) => [i + 1, ...p.series.map((s) => (finite(s.values[i]) ? fmt(s.values[i]) : '\u2013'))]),
-                  }}
-                >
-                  <LineChart
-                    series={lines}
-                    xLabel={xLabel}
-                    yLabel={t(p.yKey)}
-                    yFormat={fmt}
-                    xFormat={(v) => String(v)}
-                    marks={marks}
-                    ariaLabel={t('results.curves.aria', { title, name: modelName(curveModel) })}
-                  />
-                </ChartFigure>
-              )
-            })}
-          </div>
-        )}
-      </Section>
-
-      <Section
-        id="r-tuning"
-        title={t('results.tuning.title')}
-        intro={
-          <>
-            <p>{t('results.tuning.intro')}</p>
-            <Segmented legend={t('results.cm.model')} value={tuneModel} onChange={setTuneModel} options={modelOptions} />
-          </>
-        }
-      >
-        {tuning?.best_params && (
-          <div className="chosen">
-            <p className="label">
-              {t('results.tuning.chosenTitle')}
-              {finite(tuning.n_trials) ? <span className="caption"> · {t('results.tuning.trials', { n: tuning.n_trials! })}</span> : null}
-            </p>
-            <dl className="params">
-              {Object.entries(tuning.best_params).map(([k, v]) => (
-                <div key={k}>
-                  <dt>{paramName(k)}</dt>
-                  <dd className="num">{paramValue(v)}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        )}
-        {sweeps.length === 0 && !curve ? (
-          <p className="caption">{t('results.tuning.none')}</p>
-        ) : (
-          <div className="chart-pair">
-            {sweeps.map((sw) => {
-              const train = sw.points.filter((p) => finite(p.train)).map((p) => ({ x: p.x, y: p.train! }))
-              const val = sw.points.filter((p) => finite(p.val)).map((p) => ({ x: p.x, y: p.val! }))
-              const lines: LineSeries[] = [
-                { key: 'train', label: t('results.tuning.trainAcc'), ...ROLE_STYLE.train, points: train },
-                { key: 'val', label: t('results.tuning.valAcc'), ...ROLE_STYLE.val, points: val },
-              ]
-              const cats = sw.kind === 'categorical' ? sw.points.map((p) => p.label) : undefined
-              const pname = paramName(sw.param)
-              return (
-                <ChartFigure
-                  key={sw.param}
-                  title={t('results.tuning.accAgainst', { param: pname })}
-                  caption={[sw.chosen ? t('results.tuning.chosen', { value: sw.chosen.label }) : '', tuneModel === 'stacking' ? t('results.extra.stackCv') : ''].filter(Boolean).join(' ') || undefined}
-                  legend={lines.map((l) => ({ label: l.label, color: l.color, marker: l.marker }))}
-                  table={{
-                    columns: [pname, t('results.tuning.trainAcc'), t('results.tuning.valAcc')],
-                    rows: sw.points.map((p) => [p.label, pct(p.train, 2), pct(p.val, 2)]),
-                  }}
-                >
-                  <LineChart
-                    series={lines}
-                    xLabel={pname}
-                    yLabel={t('results.curves.panel.yAcc')}
-                    xScale={sw.log ? 'log' : 'linear'}
-                    xCategories={cats}
-                    xFormat={cats ? undefined : (v) => paramValue(v)}
-                    yFormat={(v) => pct(v, 1)}
-                    marks={sw.chosen ? [{ x: sw.chosen.x, label: t('results.tuning.mark') }] : []}
-                    ariaLabel={t('results.tuning.aria', { param: pname, name: modelName(tuneModel) })}
-                  />
-                </ChartFigure>
-              )
-            })}
-            {curve && (
-              <ChartFigure
-                title={t('results.tuning.accAgainst', { param: paramName(curve.param) })}
-                caption={curve.chosen ? t('results.tuning.chosen', { value: curve.chosen }) : undefined}
-                legend={[
-                  ...(curve.train.length ? [{ label: t('results.tuning.trainAcc'), color: ROLE_STYLE.train.color, marker: ROLE_STYLE.train.marker }] : []),
-                  { label: t('results.tuning.valAcc'), color: ROLE_STYLE.val.color, marker: ROLE_STYLE.val.marker },
-                ]}
-                table={{
-                  columns: [paramName(curve.param), t('results.tuning.trainAcc'), t('results.tuning.valAcc')],
-                  rows: curve.val.map((v, i) => [i + 1, pct(curve.train[i], 2), pct(v, 2)]),
-                }}
-              >
-                <LineChart
-                  series={[
-                    ...(curve.train.length
-                      ? [{ key: 'train', label: t('results.tuning.trainAcc'), ...ROLE_STYLE.train, points: curve.train.map((y, i) => ({ x: i + 1, y })) }]
-                      : []),
-                    { key: 'val', label: t('results.tuning.valAcc'), ...ROLE_STYLE.val, points: curve.val.map((y, i) => ({ x: i + 1, y })) },
-                  ]}
-                  xLabel={paramName(curve.param)}
-                  yLabel={t('results.curves.panel.yAcc')}
-                  xFormat={(v) => String(v)}
-                  yFormat={(v) => pct(v, 1)}
-                  marks={curve.chosen ? [{ x: curve.chosen, label: t('results.tuning.mark') }] : []}
-                  ariaLabel={t('results.tuning.ariaPlain', { param: paramName(curve.param) })}
-                />
-              </ChartFigure>
-            )}
-          </div>
-        )}
-      </Section>
-
-      <Section id="r-sk" title={t('results.sk.title')} intro={<p>{t('results.sk.intro')}</p>}>
-        {sk.length === 0 ? (
-          <p className="caption">{t('results.sk.none')}</p>
-        ) : (
-          <div className="table-wrap" role="region" aria-label={t('results.sk.region')} tabIndex={0}>
-            <table className="table num table--sticky">
-              <caption className="visually-hidden">{t('results.sk.caption')}</caption>
-              <thead>
-                <tr>
-                  <th scope="col" rowSpan={2} className="is-left">
-                    {t('results.time.model')}
-                  </th>
-                  <th scope="col" rowSpan={2} className="is-left">
-                    {t('results.sk.estimator')}
-                  </th>
-                  <th scope="colgroup" colSpan={2} className="is-group">
-                    {t('results.sk.accuracy')}
-                  </th>
-                  <th scope="colgroup" colSpan={2} className="is-group">
-                    {t('results.sk.f1')}
-                  </th>
-                  <th scope="colgroup" colSpan={2} className="is-group">
-                    {t('results.sk.training')}
-                  </th>
-                </tr>
-                <tr>
-                  {[0, 1, 2].flatMap((g) =>
-                    [t('results.sk.ours'), t('results.sk.theirs')].map((h, i) => (
-                      <th key={`${g}-${i}`} scope="col">
-                        {h}
-                      </th>
-                    )),
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {sk.map((m) => {
-                  const s = m.sklearn!
-                  const tm = splitOf(m, 'test')
-                  return (
-                    <tr key={m.id}>
-                      <th scope="row" className="is-left">
-                        <ModelName m={m} />
-                      </th>
-                      <td className="is-left">{s.class ?? '\u2013'}</td>
-                      <td>{pct(tm?.accuracy, 2)}</td>
-                      <td>{pct(s.splits?.test?.accuracy, 2)}</td>
-                      <td>{num(tm?.f1_macro, 4)}</td>
-                      <td>{num(s.splits?.test?.f1_macro, 4)}</td>
-                      <td>{seconds(m.train_time_sec)}</td>
-                      <td>{seconds(s.train_time_sec)}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Section>
-
-      {results.cnn_vs_mlp && <CnnVsMlpSection data={results.cnn_vs_mlp} />}
-      {results.augmentation && <AugmentationSection studies={results.augmentation} />}
-      {results.cross_eval && <CrossEvalSection dataset={dataset} entries={results.cross_eval} />}
+      <SectionNumbers.Provider value={numbers}>
+        {present.map((s) => (
+          <Fragment key={s.id}>{s.node}</Fragment>
+        ))}
+      </SectionNumbers.Provider>
     </>
   )
 }

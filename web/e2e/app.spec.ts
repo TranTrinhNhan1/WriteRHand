@@ -254,13 +254,13 @@ test('results page compares every plain model with its augmented variant, number
   await expect(page.getByText(/xoay ±30°, dịch ±2 px, co giãn 0[.,]9–1[.,]1/)).toBeVisible()
 })
 
-test('results page shows the 5-fold cross-validation of the six models after the plain / augmented comparison', async ({ page }) => {
+test('results page shows the 5-fold cross-validation of the six models right after the accuracy table', async ({ page }) => {
   await page.goto('/#/results')
   const heading = page.getByRole('heading', { level: 2, name: 'Kiểm tra chéo 5 phần' })
   await expect(heading).toBeVisible()
-  // placed right after the plain-vs-augmented section
-  const order = await page.locator('.rsection h2').allInnerTexts()
-  expect(order.indexOf('Kiểm tra chéo 5 phần')).toBe(order.indexOf('Thường và tăng cường') + 1)
+  // second section of the main results, right after the accuracy and macro scores
+  const order = await page.locator('.rsection h2').evaluateAll((hs) => hs.map((h) => h.id))
+  expect(order.indexOf('r-kfold')).toBe(order.indexOf('r-metrics') + 1)
   const table = page.getByRole('region', { name: 'Accuracy qua 5 fold' })
   await expect(table.locator('tbody tr')).toHaveCount(6)
   await expect(table.getByRole('row', { name: /^CNN 98[.,]66% ± 0[.,]12 98[.,]72% ± 0[.,]09 98[.,]45–98[.,]76%$/ })).toBeVisible()
@@ -271,6 +271,79 @@ test('results page shows the 5-fold cross-validation of the six models after the
     await expect(plot.locator(`.kfdots__row[data-model="${m}"] .kfdots__mean`)).toHaveCount(1)
   }
 })
+
+const RESULT_SECTIONS = ['r-metrics', 'r-kfold', 'r-cm', 'r-curves', 'r-tuning', 'r-time', 'r-sk', 'r-cvm', 'r-pairs', 'r-aug', 'r-cross']
+
+/** Section ids and the number shown before each heading, in page order. */
+const resultSections = (page: Page) =>
+  page.locator('.rsection h2').evaluateAll((hs) => hs.map((h) => ({ id: h.id, n: h.querySelector('.rsection__num')?.textContent ?? '' })))
+
+/** Every index link names a present section and scrolls its heading into view below the sticky header. */
+async function checkIndex(page: Page, ids: string[]) {
+  const nav = page.getByRole('navigation', { name: 'Các phần' })
+  await expect(nav).toBeVisible()
+  const links = nav.getByRole('link')
+  await expect(links).toHaveCount(ids.length)
+  for (let i = 0; i < ids.length; i++) {
+    const link = links.nth(i)
+    await expect(link).toHaveAttribute('href', `#${ids[i]}`)
+    await expect(link.locator('.rindex__num')).toHaveText(String(i + 1))
+    const heading = page.locator(`h2#${ids[i]}`)
+    await expect(heading).toHaveCount(1)
+    await expect(link).toHaveAccessibleName((await heading.textContent())!.replace(/^\d+/, ''))
+    await link.click()
+    await expect(heading).toBeFocused()
+    await expect(heading).toBeInViewport()
+    const header = page.locator('.site-header')
+    await expect
+      .poll(async () => {
+        const h = (await heading.boundingBox())!
+        const top = (await header.boundingBox())!
+        return h.y >= top.y + top.height - 1 && h.y + h.height <= page.viewportSize()!.height
+      })
+      .toBe(true)
+    expect(page.url()).toMatch(/#\/results$/)
+  }
+}
+
+// sections each bundled dataset has data for, in page order (MNIST has no cross-dataset evaluation, EMNIST has no augmentation runs)
+const MNIST_SECTIONS = RESULT_SECTIONS.filter((id) => id !== 'r-cross')
+const FASHION_SECTIONS = ['r-metrics', 'r-cm', 'r-curves', 'r-tuning', 'r-time', 'r-sk', 'r-cvm']
+const EMNIST_SECTIONS = ['r-metrics', 'r-cm', 'r-curves', 'r-tuning', 'r-time', 'r-sk', 'r-cvm', 'r-cross']
+
+test('MNIST results read in four parts with sections numbered 1 to 10, each reachable from the index', async ({ page }) => {
+  await page.goto('/#/results')
+  await expect(page.getByRole('heading', { level: 2, name: 'Accuracy và các điểm macro' })).toBeVisible()
+  const sections = await resultSections(page)
+  expect(sections.map((s) => s.id)).toEqual(MNIST_SECTIONS)
+  expect(sections.map((s) => s.n)).toEqual(MNIST_SECTIONS.map((_, i) => String(i + 1)))
+  const nav = page.getByRole('navigation', { name: 'Các phần' })
+  for (const g of ['Kết quả chính', 'Quá trình huấn luyện', 'Chi phí và đối chiếu', 'Nâng cao']) await expect(nav.getByText(g, { exact: true })).toBeVisible()
+  // the number before a heading is decorative: the heading keeps its plain name
+  await expect(page.getByRole('heading', { level: 2, name: 'Learning curve', exact: true })).toHaveAttribute('id', 'r-curves')
+  await checkIndex(page, MNIST_SECTIONS)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.locator('.page-head').scrollIntoViewIfNeeded()
+  await expect
+    .poll(() => page.evaluate(() => (globalThis as unknown as { document: { documentElement: { scrollWidth: number } } }).document.documentElement.scrollWidth))
+    .toBeLessThanOrEqual(390)
+  await checkIndex(page, MNIST_SECTIONS)
+})
+
+for (const [name, expected] of [
+  [/^Fashion-MNIST/, FASHION_SECTIONS],
+  [/^EMNIST/, EMNIST_SECTIONS],
+] as const) {
+  test(`${name.source.slice(1)} results keep the same order with continuous numbering`, async ({ page }) => {
+    await page.goto('/#/results')
+    await page.getByRole('radio', { name }).check({ force: true })
+    await expect(page.locator('.rsection h2').first()).toHaveAttribute('id', 'r-metrics')
+    const sections = await resultSections(page)
+    expect(sections.map((s) => s.id)).toEqual(expected)
+    expect(sections.map((s) => s.n)).toEqual(expected.map((_, i) => String(i + 1)))
+    await checkIndex(page, [...expected])
+  })
+}
 
 test('at 1280 × 800 the answer of every model and variant (12 cells) is on screen together with the majority', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 })

@@ -683,6 +683,7 @@ export const en = {
     title: 'Results',
     tabs: { legend: 'Dataset', all: 'All datasets' },
     noData: 'No results were recorded for {title}.',
+    index: { label: 'Sections', main: 'Main results', training: 'Training', cost: 'Cost and cross-check', advanced: 'Advanced' },
     facts: {
       dataset: 'Dataset',
       sizes: 'Split sizes',

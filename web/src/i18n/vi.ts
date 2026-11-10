@@ -685,6 +685,7 @@ export const vi: Dict = {
     title: 'Kết quả',
     tabs: { legend: 'Bộ dữ liệu', all: 'Mọi bộ dữ liệu' },
     noData: 'Chưa có kết quả nào được ghi lại cho {title}.',
+    index: { label: 'Các phần', main: 'Kết quả chính', training: 'Quá trình huấn luyện', cost: 'Chi phí và đối chiếu', advanced: 'Nâng cao' },
     facts: {
       dataset: 'Bộ dữ liệu',
       sizes: 'Kích thước các tập',

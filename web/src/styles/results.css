@@ -853,3 +853,82 @@
 .pairs-table td.is-neg {
   color: var(--danger);
 }
+
+/* section index under the facts; numbers repeat on the section headings ------------- */
+
+.rindex {
+  display: grid;
+  gap: 18px 40px;
+  grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
+  padding-bottom: clamp(24px, 4vw, 40px);
+}
+
+@media (max-width: 520px) {
+  .rindex {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 20px;
+  }
+}
+
+.rindex__label {
+  font: 500 0.6875rem/1.4 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0 0 6px;
+}
+
+.rindex ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.rindex a {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding-block: 4px;
+  color: var(--ink-2);
+  font-size: 0.9375rem;
+  line-height: 1.35;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.rindex a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.rindex__num,
+.rsection__num {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.rindex__num {
+  flex: none;
+  min-width: 2ch;
+  font-size: 0.8125rem;
+}
+
+.rsection__num {
+  margin-right: 0.45em;
+  font-size: 0.7em;
+  vertical-align: 0.12em;
+}
+
+.rsection .h2:focus {
+  outline: none;
+}
+
+.rsection .h2:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
