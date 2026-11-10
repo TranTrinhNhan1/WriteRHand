@@ -980,6 +980,7 @@ export const en = {
     outProb: 'softmax probabilities',
     outVote: 'vote shares (not calibrated)',
     how: 'How it works',
+    equations: 'Algorithm (equations)',
     training: 'Training',
     params: 'Hyper-parameters of the deployed model ({dataset})',
     earlyStop: 'Early stopping ended training at epoch {stopped} and kept the weights of epoch {best}.',

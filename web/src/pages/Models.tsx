@@ -37,6 +37,26 @@ function Architecture({ dataset, id }: { dataset: string; id: string }) {
   )
 }
 
+/** The algorithm's equations, collapsed by default (a native disclosure: keyboard and screen-reader friendly). */
+function Equations({ blocks, captions }: { blocks: string[][]; captions: string[] }) {
+  const { t } = useI18n()
+  return (
+    <details className="equations-box">
+      <summary>{t('models.equations')}</summary>
+      <div className="equations">
+        {blocks.map((lines, i) => (
+          <figure key={captions[i] ?? i} className="equation">
+            <figcaption className="caption">{captions[i]}</figcaption>
+            {lines.map((line) => (
+              <Tex key={line} tex={line} block />
+            ))}
+          </figure>
+        ))}
+      </div>
+    </details>
+  )
+}
+
 function ModelArticle({ dataset, id }: { dataset: string; id: ContentKind }) {
   const { t, tl } = useI18n()
   const { manifest, results, extra } = useBundle()
@@ -97,16 +117,7 @@ function ModelArticle({ dataset, id }: { dataset: string; id: ContentKind }) {
           {tl(`models.content.${id}.how`).map((p) => (
             <p key={p}>{p}</p>
           ))}
-          <div className="equations">
-            {MODEL_TEX[id].map((lines, i) => (
-              <figure key={captions[i] ?? i} className="equation">
-                <figcaption className="caption">{captions[i]}</figcaption>
-                {lines.map((line) => (
-                  <Tex key={line} tex={line} block />
-                ))}
-              </figure>
-            ))}
-          </div>
+          <Equations blocks={MODEL_TEX[id]} captions={captions} />
         </div>
 
         <div className="model__col">
@@ -260,16 +271,7 @@ function ExtraArticle({ dataset, m }: { dataset: string; m: ResultModel }) {
       {entry && <Architecture dataset={dataset} id={id} />}
       <div className="model__body">
         <div className="model__col">
-          <div className="equations">
-            {EXTRA_TEX[id].map((lines, i) => (
-              <figure key={captions[i] ?? i} className="equation">
-                <figcaption className="caption">{captions[i]}</figcaption>
-                {lines.map((line) => (
-                  <Tex key={line} tex={line} block />
-                ))}
-              </figure>
-            ))}
-          </div>
+          <Equations blocks={EXTRA_TEX[id]} captions={captions} />
         </div>
         <div className="model__col">
           {params.length > 0 && (

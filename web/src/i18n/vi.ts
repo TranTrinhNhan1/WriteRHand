@@ -982,6 +982,7 @@ export const vi: Dict = {
     outProb: 'xác suất softmax',
     outVote: 'tỉ lệ phiếu (chưa hiệu chỉnh)',
     how: 'Nó hoạt động thế nào',
+    equations: 'Thuật toán (công thức)',
     training: 'Huấn luyện',
     params: 'Hyper-parameter của mô hình đang chạy ({dataset})',
     earlyStop: 'Early stopping dừng huấn luyện ở epoch {stopped} và giữ lại trọng số của epoch {best}.',
