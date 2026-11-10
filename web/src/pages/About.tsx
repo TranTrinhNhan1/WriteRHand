@@ -2,21 +2,20 @@ import '../styles/results.css'
 import '../styles/models.css'
 import '../styles/about.css'
 import { useBundle } from '../engine/react'
-import { useI18n, type Key } from '../i18n'
+import { useI18n } from '../i18n'
+import { useChoice } from '../lib/choice'
 import { REPO_URL, hfRepoUrl, hfRevisionUrl, shortHash } from '../lib/config'
 import { int } from '../lib/format'
 import { datasetIdsOf } from '../lib/selection'
-
-const DATASET_TEXT: Record<string, Key> = {
-  mnist: 'about.data.mnist',
-  fashion_mnist: 'about.data.fashion_mnist',
-  emnist_digits: 'about.data.emnist_digits',
-}
+import { DatasetsSection } from './AboutDatasets'
 
 export default function About() {
   const { t, tl } = useI18n()
   const { manifest, lock } = useBundle()
   const ids = datasetIdsOf(manifest)
+  const { dataset } = useChoice()
+  const ds = manifest.datasets[dataset]
+  const d = ds.dataset
   const revUrl = hfRevisionUrl(lock)
   const flow = tl('about.flow.steps')
 
@@ -51,62 +50,43 @@ export default function About() {
           </ul>
         </section>
 
-        <section aria-labelledby="a-data">
-          <h2 id="a-data" className="h2">
-            {t('about.data.title')}
-          </h2>
-          <p>{t('about.data.text')}</p>
-          {ids.map((id) => {
-            const ds = manifest.datasets[id]
-            const d = ds.dataset
-            return (
-              <div key={id} className="dsabout">
-                <h3 className="h3">{ds.title}</h3>
-                {DATASET_TEXT[id] && <p>{t(DATASET_TEXT[id])}</p>}
-                <dl className="kv">
-                  <div>
-                    <dt>{t('about.data.classes')}</dt>
-                    <dd>{ds.classes.join(', ')}</dd>
-                  </div>
-                  <div>
-                    <dt>{t('about.data.source')}</dt>
-                    <dd>{ds.source}</dd>
-                  </div>
-                  <div>
-                    <dt>{t('about.split.train')}</dt>
-                    <dd className="num">{t('about.split.trainText', { n: int(d?.n_train) })}</dd>
-                  </div>
-                  <div>
-                    <dt>{t('about.split.val')}</dt>
-                    <dd className="num">{t('about.split.valText', { n: int(d?.n_val) })}</dd>
-                  </div>
-                  <div>
-                    <dt>{t('about.split.test')}</dt>
-                    <dd className="num">{t('about.split.testText', { n: int(d?.n_test) })}</dd>
-                  </div>
-                  {d?.seed != null && (
-                    <div>
-                      <dt>{t('about.split.seed')}</dt>
-                      <dd className="num">{d.seed}</dd>
-                    </div>
-                  )}
-                  {d?.split_fingerprint && (
-                    <div>
-                      <dt>{t('about.split.fingerprint')}</dt>
-                      <dd className="num">{d.split_fingerprint}</dd>
-                    </div>
-                  )}
-                </dl>
-              </div>
-            )
-          })}
-        </section>
+        <DatasetsSection />
 
         <section aria-labelledby="a-split">
           <h2 id="a-split" className="h2">
             {t('about.split.title')}
           </h2>
           <p>{t('about.split.text')}</p>
+          <dl className="kv">
+            <div>
+              <dt>{t('about.pre.dataset')}</dt>
+              <dd>{ds.title}</dd>
+            </div>
+            <div>
+              <dt>{t('about.split.train')}</dt>
+              <dd className="num">{t('about.split.trainText', { n: int(d?.n_train) })}</dd>
+            </div>
+            <div>
+              <dt>{t('about.split.val')}</dt>
+              <dd className="num">{t('about.split.valText', { n: int(d?.n_val) })}</dd>
+            </div>
+            <div>
+              <dt>{t('about.split.test')}</dt>
+              <dd className="num">{t('about.split.testText', { n: int(d?.n_test) })}</dd>
+            </div>
+            {d?.seed != null && (
+              <div>
+                <dt>{t('about.split.seed')}</dt>
+                <dd className="num">{d.seed}</dd>
+              </div>
+            )}
+            {d?.split_fingerprint && (
+              <div>
+                <dt>{t('about.split.fingerprint')}</dt>
+                <dd className="num">{d.split_fingerprint}</dd>
+              </div>
+            )}
+          </dl>
           <p>{t('about.split.note')}</p>
         </section>
 

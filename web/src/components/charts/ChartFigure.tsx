@@ -43,16 +43,19 @@ interface Props {
   legend?: LegendItem[]
   table?: TableData
   tableLabel?: string
+  /** heading level of the title (default 3) */
+  level?: 3 | 4
   children: ReactNode
 }
 
 /** A chart with a title, an always-visible legend and a table alternative for every plotted value. */
-export function ChartFigure({ title, caption, legend, table, tableLabel, children }: Props) {
+export function ChartFigure({ title, caption, legend, table, tableLabel, level = 3, children }: Props) {
+  const Title = level === 4 ? 'h4' : 'h3'
   const { t } = useI18n()
   return (
     <figure className="chart">
       <figcaption className="chart__head">
-        <h3 className="chart__title">{title}</h3>
+        <Title className="chart__title">{title}</Title>
         {caption && <p className="caption">{caption}</p>}
       </figcaption>
       {legend && legend.length > 0 && (

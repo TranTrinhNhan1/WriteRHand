@@ -6,6 +6,7 @@ import { hfResolveUrl, MODEL_LOCK, type ModelLock } from './lock'
 import type { Results } from '../lib/types'
 import { parseExtraModels, type ExtraResults } from '../lib/extraModels'
 import { parseKFold, type KFold } from '../lib/kfold'
+import { parseDatasets, type DatasetIntro } from '../lib/datasets'
 
 export interface Booted {
   manifest: BundleManifest
@@ -15,6 +16,8 @@ export interface Booted {
   extra: Record<string, ExtraResults>
   /** k-fold cross-validation of the six models on MNIST (results page only); null when the file is missing or invalid */
   kfold: KFold | null
+  /** mean and sample images and class counts per dataset (About page only); empty when the file is missing or invalid */
+  datasets: Record<string, DatasetIntro>
   /** where model files are fetched from: the pinned Hugging Face revision, or a local bundle in development */
   baseUrl: string
   lock: ModelLock | null
@@ -71,18 +74,19 @@ export async function loadBundle(): Promise<Booted> {
       results[id] = JSON.parse(new TextDecoder().decode(b)) as Results
     }),
   )
-  // committed with the site next to the manifest; it never changes which models run in the browser
-  let extra: Record<string, ExtraResults> = {}
-  try {
-    extra = parseExtraModels(JSON.parse(new TextDecoder().decode(await getBuf(`${dataBase}/extra_models.json`, true))))
-  } catch {
-    extra = {}
+  // committed with the site next to the manifest; they never change which models run in the browser.
+  // Each one is optional: a missing or invalid file only hides the section that uses it.
+  const optional = async <T,>(file: string, parse: (raw: unknown) => T, fallback: T): Promise<T> => {
+    try {
+      return parse(JSON.parse(new TextDecoder().decode(await getBuf(`${dataBase}/${file}`, true))))
+    } catch {
+      return fallback
+    }
   }
-  let kfold: KFold | null = null
-  try {
-    kfold = parseKFold(JSON.parse(new TextDecoder().decode(await getBuf(`${dataBase}/kfold.json`, true))))
-  } catch {
-    kfold = null
-  }
-  return { manifest, results, extra, kfold, baseUrl, lock }
+  const [extra, kfold, datasets] = await Promise.all([
+    optional('extra_models.json', parseExtraModels, {} as Record<string, ExtraResults>),
+    optional('kfold.json', parseKFold, null as KFold | null),
+    optional('datasets.json', parseDatasets, {} as Record<string, DatasetIntro>),
+  ])
+  return { manifest, results, extra, kfold, datasets, baseUrl, lock }
 }

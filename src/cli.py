@@ -341,6 +341,11 @@ def _write_site_extra(names):
     out = write_extra_models({n: dataset_dirs(n)[0] for n in names}, path, manifest)
     print(f"extra models -> {path} ({', '.join(out['datasets']) or 'none'})")
     from src.experiments.extras_report import kfold_site_json
+    from src.experiments.site_datasets import write as write_datasets
+
+    dpath = data / "datasets.json"
+    dout = write_datasets(dpath, [n for n in names if n in DATASETS])
+    print(f"datasets -> {dpath} ({', '.join(dout['datasets'])})")
 
     kf = kfold_site_json()
     if kf:
